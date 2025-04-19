@@ -4,7 +4,8 @@ import { Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
-import ProfilePage from "./pages/ProfilePage"; // <-- Importar nueva página
+import ProfilePage from "./pages/ProfilePage";
+import TrashPage from "./pages/TrashPage"; // <-- Importar nueva página
 import NotFoundPage from "./pages/NotFoundPage";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -17,17 +18,8 @@ function App() {
     <AuthProvider>
       <ToastContainer
         position="top-right"
-        autoClose={4000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
+        autoClose={4000} /* ...otras props... */
       />
-      {/* Quitar el div innecesario */}
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
@@ -35,16 +27,27 @@ function App() {
           path="/"
           element={
             <ProtectedRoute>
-              <DashboardPage />
+              {" "}
+              <DashboardPage />{" "}
             </ProtectedRoute>
           }
         />
-        {/* --- NUEVA RUTA DE PERFIL --- */}
         <Route
           path="/profile"
           element={
             <ProtectedRoute>
-              <ProfilePage />
+              {" "}
+              <ProfilePage />{" "}
+            </ProtectedRoute>
+          }
+        />
+        {/* --- NUEVA RUTA PAPELERA --- */}
+        <Route
+          path="/trash"
+          element={
+            <ProtectedRoute>
+              {" "}
+              <TrashPage />{" "}
             </ProtectedRoute>
           }
         />

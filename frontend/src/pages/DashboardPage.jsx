@@ -5,8 +5,8 @@ import {
   getFolderContents,
   createFolder,
   uploadFile,
-  deleteFolder,
-  deleteFile,
+  deleteFolder, // Ahora hace soft delete
+  deleteFile, // Ahora hace soft delete
   downloadFile,
   renameFolder,
   renameFile,
@@ -22,7 +22,7 @@ import styles from "./DashboardPage.module.css";
 import modalStyles from "../components/Modal.module.css";
 import { Link } from "react-router-dom";
 
-// --- Iconos SVG (sin cambios) ---
+// --- Iconos SVG ---
 const MoreVertIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -56,10 +56,22 @@ const CloseIcon = () => (
     <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
   </svg>
 );
+const TrashIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    height="20px"
+    viewBox="0 0 24 24"
+    width="20px"
+    fill="currentColor"
+  >
+    <path d="M0 0h24v24H0V0z" fill="none" />
+    <path d="M15 4V3H9v1H4v2h1v13c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V6h1V4h-5zm2 15H7V6h10v13z" />
+    <path d="M9 8h2v9H9zm4 0h2v9h-2z" />
+  </svg>
+);
 // --- Fin Iconos ---
 
 function DashboardPage() {
-  // ... (Todos los estados y hooks existentes sin cambios) ...
   const { user, logout } = useAuth();
   const [currentFolderId, setCurrentFolderId] = useState("root");
   const [folders, setFolders] = useState([]);
@@ -70,63 +82,60 @@ function DashboardPage() {
   const [showFabMenu, setShowFabMenu] = useState(false);
   const fileInputRef = useRef(null);
 
+  // Estados para Búsqueda
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState(null);
   const searchTimeoutRef = useRef(null);
 
+  // Estados UI móvil
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileSearchVisible, setIsMobileSearchVisible] = useState(false);
   const mobileMenuRef = useRef(null);
 
+  // Estados para Modales
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [isConfirmDeleteModalOpen, setIsConfirmDeleteModalOpen] =
     useState(false);
-  const [itemToDelete, setItemToDelete] = useState(null);
+  const [itemToDelete, setItemToDelete] = useState(null); // { type, id, name }
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
-  const [itemToRename, setItemToRename] = useState(null);
+  const [itemToRename, setItemToRename] = useState(null); // { type, id, currentName }
   const [renameInputValue, setRenameInputValue] = useState("");
   const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
-  const [itemToMove, setItemToMove] = useState(null);
+  const [itemToMove, setItemToMove] = useState(null); // { type, id, name, parent_folder_id?, folder_id? }
 
+  // Estados específicos para indicar carga de acciones
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
-  const [isDeletingItem, setIsDeletingItem] = useState(false);
+  const [isDeletingItem, setIsDeletingItem] = useState(false); // Usado para soft delete
   const [isRenamingItem, setIsRenamingItem] = useState(false);
   const [isMovingItem, setIsMovingItem] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
+  // Estado combinado para deshabilitar botones durante cualquier carga o acción
   const [isActionLoading, setIsActionLoading] = useState(false);
 
-  // ... (Todas las funciones como loadContents, performSearch, handleFolderClick, etc., sin cambios) ...
+  // --- Funciones de Carga y Navegación ---
   const loadContents = useCallback(
     async (folderIdToLoad) => {
-      console.log(`-> loadContents llamado para: ${folderIdToLoad}`);
       setIsLoading(true);
       try {
         const response = await getFolderContents(folderIdToLoad);
-        console.log(
-          `Contenido recibido para ${folderIdToLoad}:`,
-          response.data
-        );
         setFolders(response.data.subFolders || []);
         setFiles(response.data.files || []);
 
         if (folderIdToLoad === "root") {
           setCurrentFolderName("Raíz");
           if (path.length > 1 || path[0]?.id !== "root") {
-            console.log("Reseteando path a Raíz en loadContents");
             setPath([{ id: "root", name: "Raíz" }]);
           }
         } else {
-          let folderNameInPath = path.find(
-            (p) => p.id === folderIdToLoad
-          )?.name;
-          if (folderNameInPath) {
-            setCurrentFolderName(folderNameInPath);
+          const currentPathEntry = path.find((p) => p.id === folderIdToLoad);
+          if (currentPathEntry) {
+            setCurrentFolderName(currentPathEntry.name);
           } else {
             console.warn(
-              `Nombre no encontrado en path para ${folderIdToLoad}, recargando desde root.`
+              `ID ${folderIdToLoad} no encontrado en path. Volviendo a raíz.`
             );
             setCurrentFolderId("root");
             setCurrentFolderName("Raíz");
@@ -141,7 +150,6 @@ function DashboardPage() {
         if (err.response?.status === 401 || err.response?.status === 403)
           logout();
         if (folderIdToLoad !== "root") {
-          console.log("Fallo al cargar subcarpeta, volviendo a root");
           setCurrentFolderId("root");
           setCurrentFolderName("Raíz");
           setPath([{ id: "root", name: "Raíz" }]);
@@ -157,8 +165,9 @@ function DashboardPage() {
     if (!searchTerm) {
       loadContents(currentFolderId);
     }
-  }, [currentFolderId, searchTerm, loadContents]); // Incluir searchTerm y loadContents
+  }, [currentFolderId, searchTerm, loadContents]);
 
+  // --- Lógica de Búsqueda ---
   const performSearch = useCallback(async (term) => {
     if (!term.trim()) {
       setSearchResults(null);
@@ -184,9 +193,7 @@ function DashboardPage() {
     setSearchTerm(newTerm);
     clearTimeout(searchTimeoutRef.current);
     if (newTerm.trim()) {
-      searchTimeoutRef.current = setTimeout(() => {
-        performSearch(newTerm);
-      }, 500);
+      searchTimeoutRef.current = setTimeout(() => performSearch(newTerm), 500);
     } else {
       setSearchResults(null);
       setIsSearching(false);
@@ -204,6 +211,7 @@ function DashboardPage() {
     }
   };
 
+  // --- Lógica UI Móvil ---
   useEffect(() => {
     const handleClickOutside = (event) => {
       const menuButton = document.querySelector(
@@ -232,6 +240,7 @@ function DashboardPage() {
     setIsMobileMenuOpen(false);
   };
 
+  // --- Acciones de Usuario y Elementos ---
   const handleLogout = () => {
     logout();
     toast.info("Sesión cerrada");
@@ -283,7 +292,8 @@ function DashboardPage() {
       link.click();
       toast.update(toastId, {
         render: `"${fileName}" descargado.`,
-        type: toast.TYPE.SUCCESS,
+        type: "success",
+        isLoading: false,
         autoClose: 3000,
       });
       link.parentNode.removeChild(link);
@@ -299,16 +309,20 @@ function DashboardPage() {
         try {
           errorMsg =
             JSON.parse(await err.response.data.text()).message || errorMsg;
-        } catch (parseErr) {
-          console.error("Error parseando respuesta de error blob:", parseErr);
+          // --- CORRECCIÓN ---
+        } catch /* (parseErr) - Eliminado */ {
+          // Si falla el parseo del Blob, simplemente mantenemos el errorMsg genérico
+          console.log("No se pudo parsear el error Blob como JSON."); // Log opcional
         }
+        // --- FIN CORRECCIÓN ---
       } else {
         errorMsg = err.response?.data?.message || errorMsg;
       }
       if (toastId) {
         toast.update(toastId, {
           render: errorMsg,
-          type: toast.TYPE.ERROR,
+          type: "error",
+          isLoading: false,
           autoClose: 5000,
         });
       } else {
@@ -335,14 +349,17 @@ function DashboardPage() {
     formData.append("file", file);
     if (currentFolderId !== "root")
       formData.append("folderId", currentFolderId);
+
     let toastId = toast.info(`Subiendo "${file.name}"...`, {
       autoClose: false,
     });
+
     try {
       await uploadFile(formData);
       toast.update(toastId, {
         render: `Archivo "${file.name}" subido.`,
-        type: toast.TYPE.SUCCESS,
+        type: "success",
+        isLoading: false,
         autoClose: 3000,
       });
       if (!searchTerm) {
@@ -354,7 +371,8 @@ function DashboardPage() {
       console.error("Error subiendo archivo:", err);
       toast.update(toastId, {
         render: errorMsg,
-        type: toast.TYPE.ERROR,
+        type: "error",
+        isLoading: false,
         autoClose: 5000,
       });
     } finally {
@@ -363,6 +381,7 @@ function DashboardPage() {
     }
   };
 
+  // --- Funciones para Modales ---
   const openCreateFolderModal = () => {
     if (isActionLoading) return;
     setNewFolderName("");
@@ -370,7 +389,6 @@ function DashboardPage() {
     setShowFabMenu(false);
     setIsMobileMenuOpen(false);
   };
-
   const handleConfirmCreateFolder = async (e) => {
     e.preventDefault();
     if (!newFolderName.trim() || isActionLoading) return;
@@ -389,7 +407,6 @@ function DashboardPage() {
     } catch (err) {
       const errorMsg =
         err.response?.data?.message || "Error al crear la carpeta.";
-      console.error("Error creando carpeta:", err);
       toast.error(errorMsg);
     } finally {
       setIsCreatingFolder(false);
@@ -402,18 +419,17 @@ function DashboardPage() {
     setIsConfirmDeleteModalOpen(true);
     setIsMobileMenuOpen(false);
   };
-
   const handleConfirmDelete = async () => {
+    // Soft delete
     if (!itemToDelete || isActionLoading) return;
     setIsDeletingItem(true);
     setIsConfirmDeleteModalOpen(false);
     const { type, id, name } = itemToDelete;
+    const action = type === "folder" ? deleteFolder : deleteFile;
+    const typeText = type === "folder" ? "Carpeta" : "Archivo";
     try {
-      if (type === "folder") await deleteFolder(id);
-      else if (type === "file") await deleteFile(id);
-      toast.success(
-        `${type === "folder" ? "Carpeta" : "Archivo"} "${name}" eliminado.`
-      );
+      await action(id);
+      toast.success(`${typeText} "${name}" movida a la papelera.`);
       if (!searchTerm) {
         loadContents(currentFolderId);
       } else {
@@ -431,8 +447,8 @@ function DashboardPage() {
       }
     } catch (err) {
       const errorMsg =
-        err.response?.data?.message || `Error al eliminar ${type}.`;
-      console.error(`Error eliminando ${type}:`, err);
+        err.response?.data?.message ||
+        `Error al mover ${typeText.toLowerCase()} a la papelera.`;
       toast.error(errorMsg);
     } finally {
       setIsDeletingItem(false);
@@ -452,35 +468,33 @@ function DashboardPage() {
     setShowFabMenu(false);
     setIsMobileMenuOpen(false);
   };
-
   const handleConfirmRename = async (e) => {
     e.preventDefault();
-    if (
-      !itemToRename ||
-      !renameInputValue.trim() ||
-      renameInputValue.trim() === itemToRename.currentName ||
-      isActionLoading
-    ) {
+    const trimmedNewName = renameInputValue.trim();
+    if (!itemToRename || !trimmedNewName || isActionLoading) {
+      setIsRenameModalOpen(false);
+      return;
+    }
+    if (trimmedNewName === itemToRename.currentName) {
+      toast.info("No se realizaron cambios en el nombre.");
       setIsRenameModalOpen(false);
       setItemToRename(null);
-      if (renameInputValue.trim() === itemToRename?.currentName) {
-        toast.info("No se realizaron cambios en el nombre.");
-      }
       return;
     }
     setIsRenamingItem(true);
     setIsRenameModalOpen(false);
     const { type, id } = itemToRename;
-    const newName = renameInputValue.trim();
     try {
       let response;
       if (type === "folder") {
-        response = await renameFolder(id, { newName });
-      } else if (type === "file") {
-        response = await renameFile(id, { newName });
+        response = await renameFolder(id, { newName: trimmedNewName });
+      } else {
+        response = await renameFile(id, { newName: trimmedNewName });
       }
       const finalName =
-        response.data.file?.name || response.data.folder?.name || newName;
+        response.data.file?.name ||
+        response.data.folder?.name ||
+        trimmedNewName;
       toast.success(
         `${
           type === "folder" ? "Carpeta" : "Archivo"
@@ -511,7 +525,6 @@ function DashboardPage() {
       }
     } catch (err) {
       const errorMsg = err.response?.data?.message || `Error al renombrar.`;
-      console.error(`Error renombrando ${type}:`, err);
       toast.error(errorMsg);
     } finally {
       setIsRenamingItem(false);
@@ -519,39 +532,47 @@ function DashboardPage() {
     }
   };
 
+  // Abre el modal de mover, pasando la info necesaria incluyendo el padre/carpeta actual
   const openMoveModal = (type, id, name) => {
     if (isActionLoading) return;
-    setItemToMove({ type, id, name });
+    const itemData =
+      type === "folder"
+        ? folders.find((f) => f.id === id)
+        : files.find((f) => f.id === id);
+    if (!itemData) {
+      console.error("No se encontraron datos para el item a mover:", type, id);
+      toast.error("Error al preparar la acción de mover.");
+      return;
+    }
+    setItemToMove({
+      type,
+      id,
+      name,
+      parent_folder_id:
+        (type === "folder" ? itemData.parent_folder_id : undefined) ?? null,
+      folder_id: (type === "file" ? itemData.folder_id : undefined) ?? null,
+    });
     setIsMoveModalOpen(true);
     setShowFabMenu(false);
     setIsMobileMenuOpen(false);
   };
 
+  // Confirma la acción de mover
   const handleConfirmMove = async (item, destinationId) => {
     if (!item || isActionLoading) return;
-    if (item.type === "folder" && item.id === destinationId) {
-      toast.warn("No se puede mover una carpeta dentro de sí misma.");
-      setIsMoveModalOpen(false);
-      return;
-    }
+    const destinationIdForApi = destinationId === null ? null : destinationId;
+    const currentParentId =
+      (item.type === "folder" ? item.parent_folder_id : item.folder_id) ?? null;
+    if (item.type === "folder" && item.id === destinationIdForApi) return;
+    if (currentParentId === destinationIdForApi) return;
+
     setIsMovingItem(true);
     setIsMoveModalOpen(false);
     const { type, id, name } = item;
-    const destinationFolderId =
-      destinationId === "root" || destinationId === null ? null : destinationId;
-    const currentParentId =
-      (type === "folder"
-        ? folders.find((f) => f.id === id)?.parent_folder_id
-        : files.find((f) => f.id === id)?.folder_id) ?? null;
-    if (currentParentId === destinationFolderId) {
-      toast.info(`"${name}" ya está en la carpeta de destino.`);
-      setIsMovingItem(false);
-      setItemToMove(null);
-      return;
-    }
     try {
-      if (type === "folder") await moveFolder(id, { destinationFolderId });
-      else if (type === "file") await moveFile(id, { destinationFolderId });
+      if (type === "folder")
+        await moveFolder(id, { destinationFolderId: destinationIdForApi });
+      else await moveFile(id, { destinationFolderId: destinationIdForApi });
       toast.success(
         `${type === "folder" ? "Carpeta" : "Archivo"} "${name}" movido.`
       );
@@ -572,7 +593,6 @@ function DashboardPage() {
       }
     } catch (err) {
       const errorMsg = err.response?.data?.message || `Error al mover.`;
-      console.error(`Error moviendo ${type}:`, err);
       toast.error(errorMsg);
     } finally {
       setIsMovingItem(false);
@@ -580,6 +600,7 @@ function DashboardPage() {
     }
   };
 
+  // --- Efecto para estado de carga combinado ---
   useEffect(() => {
     const anyActionInProgress =
       isCreatingFolder ||
@@ -599,6 +620,7 @@ function DashboardPage() {
     isUploading,
   ]);
 
+  // --- Función de Renderizado de Items ---
   const renderItem = (item, type) => {
     const isFolder = type === "folder";
     const isImage =
@@ -613,6 +635,7 @@ function DashboardPage() {
 
     return (
       <li key={`${type}-${item.id}`} className={styles.listItem}>
+        {/* Nombre e icono */}
         <span
           className={`${styles.itemName} ${isFolder ? "" : styles.fileInfo}`}
         >
@@ -640,8 +663,8 @@ function DashboardPage() {
             </>
           )}
         </span>
+        {/* Acciones */}
         <div className={styles.itemActions}>
-          {/* Botón Renombrar (sin cambios) */}
           <button
             onClick={() => openRenameModal(type, item.id, item.name)}
             className={`${styles.itemActionButton} ${styles.renameButton}`}
@@ -660,15 +683,12 @@ function DashboardPage() {
               />
             </svg>
           </button>
-
-          {/* Botón Mover (ICONO ACTUALIZADO) */}
           <button
             onClick={() => openMoveModal(type, item.id, item.name)}
             className={`${styles.itemActionButton} ${styles.moveButton}`}
             title="Mover"
             disabled={isActionLoading}
           >
-            {/* Icono de Flecha Derecha (Mover) */}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               height="18px"
@@ -680,8 +700,6 @@ function DashboardPage() {
               <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8-8-8z" />
             </svg>
           </button>
-
-          {/* Botón Descargar (sin cambios, solo si es archivo) */}
           {!isFolder && (
             <button
               onClick={() => handleDownloadFile(item.id, item.name)}
@@ -702,8 +720,6 @@ function DashboardPage() {
               </svg>
             </button>
           )}
-
-          {/* Botón Eliminar (sin cambios) */}
           <button
             onClick={() =>
               isFolder
@@ -711,7 +727,7 @@ function DashboardPage() {
                 : handleDeleteFile(item.id, item.name)
             }
             className={`${styles.itemActionButton} ${styles.deleteButton}`}
-            title="Eliminar"
+            title="Mover a Papelera"
             disabled={isActionLoading}
           >
             <svg
@@ -731,9 +747,10 @@ function DashboardPage() {
     );
   };
 
+  // --- Renderizado Principal ---
   return (
     <div className={styles.pageWrapper}>
-      {/* Header */}
+      {/* --- Header --- */}
       <header className={styles.header}>
         <button
           onClick={() => handleBreadcrumbClick("root", 0)}
@@ -774,20 +791,29 @@ function DashboardPage() {
         <div
           className={`${styles.desktopActionsContainer} ${styles.desktopOnlyActions}`}
         >
-          {/* NUEVO: Enlace a Perfil para Escritorio */}
+          <Link
+            to="/trash"
+            className={styles.trashLinkDesktop}
+            title="Papelera"
+          >
+            {" "}
+            <TrashIcon />{" "}
+          </Link>
           <Link
             to="/profile"
             className={styles.profileLinkDesktop}
             title="Mi Perfil"
           >
-            Mi Perfil
+            {" "}
+            Mi Perfil{" "}
           </Link>
           <button
             onClick={handleLogout}
             className={`${styles.logoutButton}`}
             disabled={isActionLoading}
           >
-            Logout
+            {" "}
+            Logout{" "}
           </button>
         </div>
 
@@ -814,21 +840,20 @@ function DashboardPage() {
           {isMobileMenuOpen && (
             <div className={styles.mobileDropdownMenu} ref={mobileMenuRef}>
               <Link
+                to="/trash"
+                className={styles.mobileDropdownLink}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {" "}
+                <button disabled={isActionLoading}> Papelera </button>{" "}
+              </Link>
+              <Link
                 to="/profile"
                 className={styles.mobileDropdownLink}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <button
-                  disabled={isActionLoading}
-                  style={{
-                    width: "100%",
-                    textAlign: "left",
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  {" "}
-                  Mi Perfil{" "}
-                </button>
+                {" "}
+                <button disabled={isActionLoading}> Mi Perfil </button>{" "}
               </Link>
               <button
                 onClick={() => {
@@ -837,11 +862,6 @@ function DashboardPage() {
                 }}
                 disabled={isActionLoading}
                 className={styles.mobileDropdownLogout}
-                style={{
-                  color: "var(--error-red)",
-                  width: "100%",
-                  textAlign: "left",
-                }}
               >
                 {" "}
                 Logout{" "}
@@ -851,7 +871,7 @@ function DashboardPage() {
         </div>
       </header>
 
-      {/* Mobile Search Overlay */}
+      {/* --- Overlay Búsqueda Móvil --- */}
       {isMobileSearchVisible && (
         <div
           className={styles.mobileSearchOverlay}
@@ -894,7 +914,7 @@ function DashboardPage() {
         </div>
       )}
 
-      {/* Breadcrumbs */}
+      {/* --- Breadcrumbs --- */}
       <nav className={styles.navBar}>
         {!searchTerm && (
           <div className={styles.breadcrumbsContainer}>
@@ -917,9 +937,9 @@ function DashboardPage() {
         )}
       </nav>
 
-      {/* Main Content */}
+      {/* --- Contenido Principal --- */}
       <main className={styles.mainContent}>
-        {searchTerm && (
+        {searchTerm /* Renderizado Búsqueda */ && (
           <>
             <h2 className={styles.contentHeader}>
               {" "}
@@ -950,37 +970,39 @@ function DashboardPage() {
                 <>
                   {searchResults.folders.length > 0 && (
                     <>
+                      {" "}
                       <h3 className={styles.sectionTitle}>
                         {" "}
                         Carpetas Encontradas{" "}
-                      </h3>
+                      </h3>{" "}
                       <ul className={styles.itemList}>
                         {" "}
                         {searchResults.folders.map((folder) =>
                           renderItem(folder, "folder")
                         )}{" "}
-                      </ul>
+                      </ul>{" "}
                     </>
                   )}
                   {searchResults.files.length > 0 && (
                     <>
+                      {" "}
                       <h3 className={styles.sectionTitle}>
                         {" "}
                         Archivos Encontrados{" "}
-                      </h3>
+                      </h3>{" "}
                       <ul className={styles.itemList}>
                         {" "}
                         {searchResults.files.map((file) =>
                           renderItem(file, "file")
                         )}{" "}
-                      </ul>
+                      </ul>{" "}
                     </>
                   )}
                 </>
               )}
           </>
         )}
-        {!searchTerm && (
+        {!searchTerm /* Renderizado Contenido Carpeta */ && (
           <>
             <h2 className={styles.contentHeader}>
               {" "}
@@ -996,22 +1018,24 @@ function DashboardPage() {
               <>
                 {folders.length > 0 && (
                   <>
-                    <h3 className={styles.sectionTitle}>Carpetas</h3>
+                    {" "}
+                    <h3 className={styles.sectionTitle}>Carpetas</h3>{" "}
                     <ul className={styles.itemList}>
                       {" "}
                       {folders.map((folder) =>
                         renderItem(folder, "folder")
                       )}{" "}
-                    </ul>
+                    </ul>{" "}
                   </>
                 )}
                 {files.length > 0 && (
                   <>
-                    <h3 className={styles.sectionTitle}>Archivos</h3>
+                    {" "}
+                    <h3 className={styles.sectionTitle}>Archivos</h3>{" "}
                     <ul className={styles.itemList}>
                       {" "}
                       {files.map((file) => renderItem(file, "file"))}{" "}
-                    </ul>
+                    </ul>{" "}
                   </>
                 )}
               </>
@@ -1020,7 +1044,7 @@ function DashboardPage() {
         )}
       </main>
 
-      {/* Modales */}
+      {/* --- Modales --- */}
       <Modal
         isOpen={isCreateFolderModalOpen}
         onClose={
@@ -1068,30 +1092,18 @@ function DashboardPage() {
         onClose={
           !isDeletingItem ? () => setIsConfirmDeleteModalOpen(false) : null
         }
-        title="Confirmar Eliminación"
+        title="Mover a Papelera"
       >
         {itemToDelete && (
           <>
             <p>
               {" "}
-              ¿Estás seguro de que quieres eliminar{" "}
+              ¿Estás seguro de que quieres mover{" "}
               {itemToDelete.type === "folder"
                 ? " la carpeta"
                 : " el archivo"}{" "}
-              <strong> "{itemToDelete.name}"</strong>?{" "}
+              <strong> "{itemToDelete.name}"</strong> a la papelera?{" "}
             </p>
-            {itemToDelete.type === "folder" && (
-              <p
-                style={{
-                  color: "var(--error-red)",
-                  fontSize: "0.9em",
-                  fontWeight: "500",
-                }}
-              >
-                {" "}
-                ¡Todo su contenido también será eliminado permanentemente!{" "}
-              </p>
-            )}
             <div className={modalStyles.modalActions}>
               <button
                 type="button"
@@ -1110,7 +1122,7 @@ function DashboardPage() {
                 {isDeletingItem && (
                   <span className={modalStyles.spinner}></span>
                 )}{" "}
-                {isDeletingItem ? "Eliminando..." : "Eliminar"}
+                {isDeletingItem ? "Moviendo..." : "Mover a Papelera"}
               </button>
             </div>
           </>
@@ -1167,12 +1179,12 @@ function DashboardPage() {
       <MoveItemModal
         isOpen={isMoveModalOpen}
         onClose={!isMovingItem ? () => setIsMoveModalOpen(false) : null}
-        itemToMove={itemToMove}
+        itemToMove={itemToMove} // Ahora itemToMove tiene la info del padre
         onConfirmMove={handleConfirmMove}
-        isActionLoading={isActionLoading}
+        isActionLoading={isActionLoading} // Pasar estado de carga general
       />
 
-      {/* Input oculto y FAB */}
+      {/* --- Input Oculto y FAB --- */}
       <input
         id="file-upload-input"
         type="file"
@@ -1221,7 +1233,7 @@ function DashboardPage() {
           </svg>
         </button>
       </div>
-    </div>
+    </div> // Cierre de pageWrapper
   );
 }
 
