@@ -1,0 +1,815 @@
+/* frontend/src/pages/DashboardPage.module.css */
+
+.pageWrapper {
+  position: relative; /* Necesario para posicionar overlay móvil */
+  background-color: var(--background-page);
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+/* --- Header (Estilo iOS Refinado) --- */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: var(--background-elevated);
+  flex-wrap: wrap; /* Permitir wrap en móvil */
+  gap: 10px;
+  flex-shrink: 0;
+  position: relative; /* Para menú móvil */
+  z-index: 1050;
+}
+
+/* Botón que envuelve el título */
+.headerTitleButton {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: inherit;
+  text-align: left;
+  order: 1;
+  border-radius: var(--border-radius-small);
+  transition: background-color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 1;
+  overflow: hidden;
+}
+.headerTitleButton:hover:not(:disabled) {
+}
+.headerTitleButton:disabled {
+  cursor: default;
+  background-color: transparent !important;
+  opacity: 1;
+}
+
+.headerTitle {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  transition: color 0.2s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.headerTitleButton:disabled .headerTitle {
+  color: var(--system-gray-500);
+}
+
+/* --- Search (Escritorio) --- */
+.searchContainer {
+  display: flex;
+  align-items: center;
+  flex-grow: 1;
+  min-width: 200px;
+  max-width: 450px;
+  position: relative;
+  order: 2;
+}
+.searchInput {
+  width: 100%;
+  padding: 8px 35px 8px 15px;
+  border: none;
+  border-radius: var(--border-radius-medium);
+  font-size: 0.95rem;
+  background-color: var(--system-gray-100);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  color: var(--text-primary);
+}
+.searchInput::placeholder {
+  color: var(--text-placeholder);
+}
+.searchInput:focus {
+  background-color: var(--background-elevated);
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+}
+.searchInput::-webkit-search-cancel-button,
+.searchInput::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+.searchInput::-ms-clear {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.clearSearchButton {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--system-gray-500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  border-radius: 50%;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.clearSearchButton:hover {
+  color: var(--text-primary);
+  background-color: rgba(0, 0, 0, 0.05);
+}
+.clearSearchButton:active {
+  transform: translateY(-50%) scale(1);
+} /* Evitar escalado en active */
+.clearSearchButton svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+/* --- Logout Button (Estilo Texto iOS) --- */
+.logoutButton {
+  background-color: transparent;
+  color: var(--error-red);
+  border: none;
+  padding: 6px 8px;
+  font-size: 0.95rem;
+  font-weight: 400;
+  border-radius: var(--border-radius-small);
+  transition: background-color 0.2s ease, color 0.2s ease;
+  margin: 0;
+  order: 3;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.header .logoutButton:hover:not(:disabled) {
+  background-color: rgba(255, 59, 48, 0.1);
+  color: var(--error-red);
+}
+.logoutButton:disabled {
+  color: var(--system-gray-400);
+  background-color: transparent !important;
+  opacity: 0.5;
+}
+
+/* --- Iconos y Menú Móvil --- */
+.mobileHeaderActions {
+  display: none;
+  align-items: center;
+  gap: 5px;
+  order: 3;
+  position: relative;
+}
+.mobileIconButton {
+  background: none;
+  border: none;
+  padding: 8px;
+  margin: 0;
+  cursor: pointer;
+  color: var(--primary-blue);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease;
+}
+.mobileIconButton:hover {
+  background-color: rgba(0, 122, 255, 0.1);
+}
+.mobileIconButton:active {
+  transform: scale(1);
+} /* Evitar escalado en active */
+.mobileIconButton svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+.mobileDropdownMenu {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 0;
+  background-color: var(--background-elevated);
+  border-radius: var(--border-radius-medium);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 8px 0;
+  z-index: 1100;
+  min-width: 150px;
+  border: 1px solid var(--system-gray-200);
+}
+.mobileDropdownMenu button {
+  display: block;
+  width: 100%;
+  padding: 10px 15px;
+  background: none;
+  border: none;
+  text-align: left;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  border-radius: 0;
+}
+.mobileDropdownMenu button:first-of-type {
+  color: var(--error-red);
+}
+.mobileDropdownMenu button:hover {
+  background-color: var(--system-gray-100);
+}
+
+/* --- Superposición de Búsqueda Móvil (Centrada) --- */
+.mobileSearchOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4); /* Fondo oscuro */
+  z-index: 1090;
+  display: flex;
+  justify-content: center; /* Centrar horizontalmente */
+  align-items: flex-start; /* Alinear arriba para empezar */
+  padding: 20px;
+  padding-top: 15vh; /* Bajar el input desde arriba (ajustar %) */
+  opacity: 1;
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* Contenedor centrado para la barra de búsqueda y botón cancelar */
+.mobileSearchInputWrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 500px; /* Ancho máximo */
+  padding: 0; /* Sin padding extra aquí */
+  background-color: transparent; /* Sin fondo propio */
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Contenedor interno para icono lupa, input y botón X */
+.mobileSearchInner {
+  display: flex;
+  align-items: center;
+  flex-grow: 1;
+  position: relative;
+  background-color: var(--background-elevated); /* Fondo blanco */
+  border-radius: var(--border-radius-medium); /* Redondeo */
+  padding: 0 8px 0 10px; /* Padding DERECHA reducido para X, Izquierda para icono */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Sombra sutil */
+}
+.mobileSearchInner > svg:first-of-type {
+  /* Estilo icono lupa */
+  fill: var(--system-gray-500);
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+/* Input dentro del overlay móvil */
+.mobileSearchOverlay .searchInput {
+  flex-grow: 1;
+  padding: 10px 25px 10px 0;
+  border: none;
+  background-color: transparent;
+  font-size: 1rem;
+  outline: none;
+  border-radius: 0;
+  box-shadow: none !important;
+  -webkit-appearance: none;
+  appearance: none;
+  color: var(--text-primary);
+}
+.mobileSearchOverlay .searchInput::placeholder {
+  color: var(--text-placeholder);
+}
+
+/* Botón Limpiar (X) dentro del overlay móvil */
+.mobileSearchOverlay .clearSearchButton {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--system-gray-500);
+  padding: 4px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  border-radius: 50%;
+  transition: background-color 0.15s ease;
+}
+.mobileSearchOverlay .clearSearchButton:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+.mobileSearchOverlay .clearSearchButton:active {
+  transform: translateY(-50%) scale(1); /* Mantener transform vertical pero sin escalar */
+}
+.mobileSearchOverlay .clearSearchButton svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+/* Botón Cancelar (Estilo Texto iOS Refinado) */
+.mobileSearchCancelButton {
+  background-color: transparent !important;
+  border: none;
+  color: white; /* Texto blanco/claro */
+  font-size: 1rem;
+  font-weight: 500; /* Medium weight */
+  padding: 8px 8px; /* Padding */
+  margin-left: 8px; /* Más espacio */
+  cursor: pointer;
+  flex-shrink: 0;
+  border-radius: var(--border-radius-medium); /* Redondeo iOS */
+  transition: background-color 0.15s ease, color 0.15s ease;
+  line-height: 1.2;
+  -webkit-tap-highlight-color: transparent;
+  opacity: 0.9;
+}
+.mobileSearchCancelButton:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #f0f0f0;
+}
+.mobileSearchCancelButton:active {
+  transform: scale(1);
+} /* Evitar escalado */
+.mobileSearchCancelButton:disabled {
+  color: rgba(255, 255, 255, 0.5) !important;
+  background-color: transparent !important;
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* --- Navigation / Toolbar Minimalista --- */
+.navBar {
+  padding: 10px 20px 5px 20px !important;
+  background: none !important;
+  border-bottom: none !important;
+  flex-shrink: 0;
+  transition: padding-top 0.2s ease-in-out;
+  position: relative;
+  z-index: 1000;
+}
+.breadcrumbsContainer {
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+  color: var(--system-gray-600);
+  white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.breadcrumbsContainer::-webkit-scrollbar {
+  display: none;
+}
+.breadcrumbItem {
+  display: inline-block;
+}
+.breadcrumbLink {
+  background: none;
+  border: none;
+  color: var(--text-link);
+  text-decoration: none;
+  cursor: pointer;
+  padding: 1px 3px;
+  margin: 0 1px;
+  font-size: 0.9rem;
+  font-weight: 400;
+  border-radius: var(--border-radius-small);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.breadcrumbLink:hover:not(:disabled) {
+  text-decoration: underline;
+  background-color: transparent !important;
+}
+.breadcrumbLink:active {
+  transform: scale(1);
+} /* Evitar escalado */
+.breadcrumbLink:disabled {
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: default;
+  text-decoration: none;
+  background-color: transparent !important;
+}
+.breadcrumbSeparator {
+  margin: 0 5px;
+  color: var(--system-gray-400);
+}
+
+/* --- Main Content Area --- */
+.mainContent {
+  padding: 10px 20px 90px 20px !important;
+  background-color: transparent !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  flex-grow: 1;
+  transition: padding-top 0.2s ease-in-out;
+  position: relative;
+  z-index: 1;
+}
+.contentHeader {
+  font-size: 1.4rem;
+  color: var(--text-primary);
+  margin-top: 10px;
+  margin-bottom: 20px;
+  font-weight: 700;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.loadingMessage,
+.errorMessage,
+.emptyMessage {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--system-gray-600);
+  font-size: 1rem;
+}
+.sectionTitle {
+  font-size: 0.8rem;
+  margin-top: 25px;
+  margin-bottom: 8px;
+  color: var(--system-gray-600);
+  text-transform: uppercase;
+  font-weight: 500;
+  padding-left: 15px;
+}
+
+/* --- Item List (Estilo Lista iOS) --- */
+.itemList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+  background-color: var(--background-elevated);
+  border-radius: var(--border-radius-large);
+  overflow: hidden;
+}
+.listItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--border-color-light);
+}
+.itemList > .listItem:last-child {
+  border-bottom: none;
+}
+.itemName {
+  flex-grow: 1;
+  margin-right: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+.itemIcon {
+  margin-right: 15px;
+  color: var(--primary-blue);
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.itemThumbnail {
+  width: 38px;
+  height: 38px;
+  object-fit: cover;
+  border-radius: var(--border-radius-small);
+  margin-right: 15px;
+  border: 1px solid var(--system-gray-200);
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.folderLink {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 400;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+.folderLink:hover:not(:disabled) {
+  background-color: transparent !important;
+}
+.folderLink:active {
+  transform: scale(1);
+} /* Evitar escalado */
+.listItem:hover .folderLink:not(:disabled) {
+  color: var(--primary-blue);
+}
+.fileInfo {
+}
+.fileSize {
+  font-size: 0.85rem;
+  color: var(--system-gray-600);
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+/* --- Item Actions (Refinado) --- */
+.itemActions {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.15s ease-in-out;
+  flex-shrink: 0;
+}
+.listItem:hover .itemActions {
+  opacity: 1;
+}
+.itemActionButton {
+  margin-left: 5px;
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  color: var(--system-gray-600);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.itemActionButton:hover:not(:disabled) {
+  background-color: var(--system-gray-200);
+  color: var(--primary-blue);
+}
+.itemActionButton:active {
+  transform: scale(1);
+} /* Evitar escalado */
+.itemActionButton.deleteButton:hover:not(:disabled) {
+  background-color: rgba(255, 59, 48, 0.1);
+  color: var(--error-red);
+}
+.itemActionButton.downloadButton:hover:not(:disabled) {
+  background-color: rgba(0, 122, 255, 0.1);
+  color: var(--primary-blue);
+}
+.itemActionButton.moveButton:hover:not(:disabled),
+.itemActionButton.renameButton:hover:not(:disabled) {
+  background-color: var(--system-gray-200);
+  color: var(--primary-blue);
+}
+.itemActionButton:disabled {
+  color: var(--system-gray-400);
+  cursor: not-allowed;
+  background-color: transparent !important;
+}
+.itemActionButton svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+/* --- Floating Action Button (FAB) --- */
+.fabContainer {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+}
+.fabButton {
+  width: 56px;
+  height: 56px;
+  background-color: var(--primary-blue);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-round);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 16px rgba(0, 122, 255, 0.3);
+  cursor: pointer;
+  z-index: 1001;
+  transition: background-color 0.2s ease, transform 0.15s ease,
+    opacity 0.2s ease;
+  margin: 0;
+  padding: 0;
+}
+.fabButton:hover:not(:disabled) {
+  background-color: var(--hover-blue);
+}
+.fabButton:active:not(:disabled) {
+  transform: scale(0.95);
+}
+.fabButton:disabled {
+  background-color: var(--primary-blue);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.fabButton svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+.fabMenu {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-bottom: 12px;
+  transition: opacity 0.15s ease-in-out, transform 0.15s ease-in-out;
+  opacity: 0;
+  transform: translateY(8px) scale(0.95);
+  pointer-events: none;
+  transform-origin: bottom center;
+}
+.fabMenuVisible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+.fabMenuItem {
+  background-color: rgba(242, 242, 247, 0.85);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  color: var(--text-link);
+  border-radius: var(--border-radius-medium);
+  padding: 10px 18px;
+  margin-top: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  text-align: right;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+.fabMenuItem:hover:not(:disabled) {
+  background-color: rgba(229, 229, 234, 0.85);
+}
+.fabMenuItem:active {
+  transform: scale(1);
+} /* Evitar escalado */
+.fabMenuItem:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: rgba(242, 242, 247, 0.8);
+  transform: none;
+}
+.fabMenuItem svg {
+  margin-right: 10px;
+}
+
+/* --- Clases para ocultar/mostrar y desplazar --- */
+.desktopOnlySearch,
+.desktopOnlyLogout {
+  display: none;
+}
+.mobileHeaderActions {
+  display: none;
+}
+.navBarShifted,
+.mainContentShifted {
+  padding-top: 0 !important;
+}
+
+/* --- Media Queries --- */
+@media (min-width: 701px) {
+  .desktopOnlySearch,
+  .desktopOnlyLogout {
+    display: flex;
+  }
+  .mobileHeaderActions {
+    display: none;
+  }
+  .mobileSearchOverlay {
+    display: none !important;
+  }
+
+  /* ... Estilos Grid View ... */
+  .itemList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 18px;
+    background-color: transparent;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
+    margin-bottom: 20px;
+  }
+  .listItem {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 25px 15px;
+    border-bottom: none;
+    border-radius: var(--border-radius-large);
+    background-color: var(--background-elevated);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    overflow: hidden;
+  }
+  .listItem:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  }
+  .itemName {
+    flex-direction: column;
+    white-space: normal;
+    text-align: center;
+    margin-right: 0;
+    margin-bottom: 10px;
+    width: 100%;
+    font-size: 0.9rem;
+    line-height: 1.3;
+  }
+  .itemIcon {
+    margin-bottom: 15px;
+    font-size: 3rem;
+  }
+  .itemThumbnail {
+    width: 70px;
+    height: 70px;
+    margin-bottom: 15px;
+    border-radius: var(--border-radius-medium);
+  }
+  .folderLink {
+    text-align: center;
+    font-weight: 500;
+    word-break: break-word;
+  }
+  .listItem:hover .folderLink:not(:disabled) {
+    color: var(--primary-blue);
+    text-decoration: none;
+  }
+  .fileSize {
+    display: block;
+    text-align: center;
+    width: 100%;
+    margin-left: 0;
+    margin-top: 5px;
+    font-size: 0.8rem;
+  }
+  .itemActions {
+    opacity: 1;
+    margin-top: 15px;
+    width: 100%;
+    justify-content: center;
+    gap: 8px;
+  }
+  .itemActionButton {
+    width: 34px;
+    height: 34px;
+  }
+  .itemActionButton svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+@media (max-width: 700px) {
+  .mobileHeaderActions {
+    display: flex !important;
+  }
+  .desktopOnlySearch,
+  .desktopOnlyLogout {
+    display: none !important;
+  }
+  .header {
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+  .mainContent {
+    padding-bottom: 80px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .headerTitle {
+    max-width: 150px;
+  }
+  .mobileHeaderActions {
+    gap: 0;
+  }
+  .mobileIconButton {
+    padding: 6px;
+  }
+}

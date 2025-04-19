@@ -1,0 +1,247 @@
+/* frontend/src/components/Modal.module.css */
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4); /* Negro semitransparente */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+  padding: 15px;
+}
+
+.modalContent {
+  /* Estilo Material Translúcido iOS */
+  background-color: rgba(242, 242, 247, 0.85);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  /* --- */
+  padding: 20px;
+  border-radius: var(--border-radius-large);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  min-width: 280px;
+  max-width: 480px;
+  width: 100%;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+  color: var(--text-primary);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+}
+
+.modalTitle {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--text-primary);
+
+  /* *** Truncamiento para títulos largos *** */
+  padding: 0 35px; /* Espacio para botón X */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* max-width: calc(100% - 70px); */ /* Opcional */
+}
+
+/* Botón de cierre con SVG */
+.modalCloseButton {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: var(--system-gray-200);
+  border: none;
+  cursor: pointer;
+  color: var(--system-gray-600);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  transform: none !important;
+}
+.modalCloseButton:hover {
+  background-color: var(--system-gray-300);
+  color: var(--text-primary);
+  transform: none !important;
+}
+.modalCloseButton:active {
+  transform: scale(1) !important;
+  background-color: var(--system-gray-400);
+}
+.modalCloseButton svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+  fill: currentColor;
+}
+
+.modalBody {
+}
+
+.modalBody p {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.45;
+  margin-bottom: 15px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  text-align: center;
+}
+.modalBody p strong {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  font-weight: 600;
+}
+
+.modalBody form {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  margin-top: 10px;
+}
+.modalBody label {
+  margin-bottom: 6px;
+}
+.modalBody input {
+  margin-bottom: 20px;
+  background-color: var(--background-elevated);
+  border-color: var(--system-gray-300);
+}
+.modalBody input:focus {
+}
+
+.modalActions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+.modalActions button {
+  padding: 10px 20px;
+  font-size: 1rem;
+  flex-grow: 1;
+  min-width: 100px;
+}
+.modalActions .cancelButton {
+  background-color: var(--system-gray-200);
+  color: var(--primary-blue);
+  font-weight: 400;
+  order: 1;
+}
+.modalActions .cancelButton:hover:not(:disabled) {
+  background-color: var(--system-gray-300);
+}
+.modalActions .cancelButton:active {
+  transform: scale(1);
+}
+
+.modalActions .confirmButton {
+  background-color: var(--primary-blue);
+  color: var(--button-text-light);
+  font-weight: 600;
+  order: 2;
+}
+.modalActions .confirmButton:hover:not(:disabled) {
+  background-color: var(--hover-blue);
+}
+.modalActions .confirmButton:active {
+  transform: scale(0.98);
+}
+
+.modalActions .confirmButtonDanger {
+  background-color: var(--error-red);
+  color: var(--button-text-light);
+  font-weight: 600;
+  order: 2;
+}
+.modalActions .confirmButtonDanger:hover:not(:disabled) {
+  background-color: #d9362d;
+}
+.modalActions .confirmButtonDanger:active {
+  transform: scale(0.98);
+}
+
+/* Spinner */
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: var(--button-text-light);
+  animation: spin 0.8s ease-in-out infinite;
+  vertical-align: middle;
+  margin-right: 8px;
+  margin-bottom: -2px;
+}
+.modalActions .cancelButton .spinner {
+  border-top-color: var(--primary-blue);
+  border-color: rgba(0, 122, 255, 0.2);
+  border-top-color: var(--primary-blue);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .modalContent {
+    padding: 15px;
+    border-radius: var(--border-radius-large);
+    max-height: 85vh;
+  }
+  .modalTitle {
+    font-size: 1.05rem;
+    padding: 0 25px;
+  } /* Ajustar padding */
+  .modalCloseButton {
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+  }
+  .modalCloseButton svg {
+    width: 14px;
+    height: 14px;
+  }
+  .modalBody p {
+    font-size: 0.9rem;
+  }
+  .modalActions {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .modalActions button {
+    width: 100%;
+    padding: 12px 15px;
+    margin: 0;
+    flex-grow: 0;
+  }
+  .spinner {
+    width: 14px;
+    height: 14px;
+  }
+}

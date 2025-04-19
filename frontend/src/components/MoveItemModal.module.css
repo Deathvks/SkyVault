@@ -1,0 +1,105 @@
+/* frontend/src/components/MoveItemModal.module.css */
+
+.modalBodyContent {
+  /* Contenedor general si necesitas estilos específicos */
+  /* Probablemente no sea necesario si Modal.module.css maneja el body */
+}
+
+/* Contenedor del árbol de carpetas */
+.folderTreeContainer {
+  max-height: 300px; /* Limitar altura y habilitar scroll */
+  overflow-y: auto;
+  border: 1px solid var(--system-gray-300); /* Borde gris sutil */
+  border-radius: var(--border-radius-medium); /* Redondeo iOS */
+  margin-top: 10px;
+  margin-bottom: 20px;
+  padding: 5px 0; /* Padding vertical interno */
+  background-color: var(
+    --background-elevated
+  ); /* Fondo blanco dentro del modal */
+}
+
+/* Estilo de cada carpeta en el árbol */
+.folderItem {
+  padding: 8px 12px; /* Padding ajustado */
+  cursor: pointer;
+  border-radius: var(--border-radius-small); /* Redondeo interno */
+  margin: 2px 5px; /* Margen alrededor */
+  transition: background-color 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.95rem; /* Tamaño texto */
+  color: var(--text-primary); /* Color texto normal */
+  display: flex; /* Para alinear icono y texto */
+  align-items: center;
+}
+.folderItem::before {
+  /* Simular icono de carpeta */
+  content: "📁"; /* O un SVG como background-image */
+  margin-right: 8px;
+  font-size: 1.1em; /* Tamaño del icono */
+  opacity: 0.8;
+}
+
+/* Hover sobre carpeta (no seleccionada, no deshabilitada) */
+.folderItem:not(.selected):not(.disabled):hover {
+  background-color: var(--system-gray-100); /* Fondo gris muy claro en hover */
+}
+
+/* Carpeta seleccionada */
+.selected {
+  background-color: var(
+    --primary-blue
+  ) !important; /* Fondo azul (importante para sobreescribir hover) */
+  color: var(--button-text-light) !important; /* Texto blanco */
+  font-weight: 500; /* Medium */
+}
+.selected::before {
+  /* Icono en blanco para seleccionados */
+  opacity: 1;
+  /* Podrías cambiar el color si usaras un icono SVG tintable */
+}
+
+/* Carpeta deshabilitada */
+.disabled {
+  color: var(--system-gray-400); /* Gris claro */
+  cursor: not-allowed;
+  font-style: italic; /* Opcional: cursiva */
+  opacity: 0.7;
+}
+.disabled:hover {
+  background-color: transparent; /* No resaltar hover si está deshabilitado */
+}
+.disabled::before {
+  opacity: 0.5;
+}
+
+/* Contenedor de hijos (si necesitas estilos específicos para el anidamiento) */
+.folderChildren {
+  /* Por ejemplo: */
+  /* border-left: 1px solid var(--system-gray-200); */
+  /* margin-left: 5px; */
+  /* padding-left: 5px; */
+}
+
+/* Texto de error específico del árbol */
+.errorText {
+  color: var(--error-red); /* Rojo sistema */
+  font-size: 0.9em;
+  text-align: center; /* Centrar si aplica */
+  margin-top: 10px;
+}
+
+/* Estilo para mostrar destino seleccionado */
+.selectedDestination {
+  text-align: center; /* Centrar texto */
+  font-size: 0.9rem;
+  color: var(--system-gray-600); /* Gris secundario */
+  margin-top: 5px;
+  margin-bottom: 15px; /* Espacio antes de botones */
+}
+.selectedDestination strong {
+  font-weight: 600; /* Semibold */
+  color: var(--text-primary); /* Nombre en negro */
+}

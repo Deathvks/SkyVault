@@ -1,68 +1,268 @@
+/* frontend/src/index.css */
+
+/* 1. Variables CSS Refinadas (Inspirado en iOS - Light Mode) */
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  /* Colores Principales */
+  --system-blue: #007aff; /* Azul estándar iOS */
+  --system-red: #ff3b30; /* Rojo estándar iOS */
+  --system-green: #34c759; /* Verde estándar iOS */
+  --system-gray-100: #f2f2f7; /* Gris muy claro (fondo página) */
+  --system-gray-200: #e5e5ea; /* Gris claro (fondos sutiles, bordes) */
+  --system-gray-300: #d1d1d6; /* Gris medio-claro (bordes input) */
+  --system-gray-400: #c7c7cc; /* Gris medio */
+  --system-gray-500: #aeaeb2; /* Gris medio-oscuro (texto placeholder) */
+  --system-gray-600: #8e8e93; /* Gris oscuro (texto secundario) */
+  --system-label: #000000; /* Texto principal (negro) */
+  --system-background-primary: #ffffff; /* Fondo elementos elevados (blanco) */
+  --system-background-secondary: var(--system-gray-100); /* Fondo página */
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  /* Asignación a variables semánticas */
+  --primary-blue: var(--system-blue);
+  --hover-blue: #006ae6; /* Azul un poco más oscuro para hover */
+  --text-primary: var(--system-label);
+  --text-secondary: var(--system-gray-600);
+  --text-link: var(--primary-blue);
+  --text-placeholder: var(--system-gray-500);
+  --background-page: var(--system-background-secondary);
+  --background-elevated: var(--system-background-primary);
+  --border-color-light: var(--system-gray-200);
+  --border-color-input: var(--system-gray-300);
+  --button-text-light: #ffffff;
+  --error-red: var(--system-red);
+  --success-green: var(--system-green);
+  /* Colores para mensajes (pueden ajustarse más) */
+  --success-green-dark: #2b8a4f; /* Ajustado */
+  --success-bg-light: #eaf9ed; /* Ajustado */
+  --success-border: #a6d9b8; /* Ajustado */
+  --error-bg-light: #ffeeed; /* Ajustado */
+  --error-border: #f5b1ad; /* Ajustado */
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+  /* Radios de Borde (ligeramente más redondeado) */
+  --border-radius-small: 6px;
+  --border-radius-medium: 10px; /* Más redondeado */
+  --border-radius-large: 14px;
+  --border-radius-pill: 30px; /* Para botones tipo píldora */
+  --border-radius-round: 50%;
+}
+
+/* 2. Reset y Box-sizing Global */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* 3. Estilos Base del Body */
+html {
+  font-size: 16px;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+  /* height: 100%; <-- QUITAR */
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  line-height: 1.45;
+  color: var(--text-primary);
+  background-color: var(--background-page);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  /* height: 100%; <-- QUITAR */
+  /* overflow: hidden; <-- QUITAR *** IMPORTANTE *** */
+  min-height: 100vh; /* Asegurar que el body ocupe al menos la ventana */
 }
 
-a {
+#root {
+  /* height: 100%; <-- QUITAR */
+  min-height: 100vh; /* *** RESTAURAR/ASEGURAR min-height aquí *** */
+  display: flex;
+  flex-direction: column;
+}
+
+/* 4. Estilos Base para Elementos Comunes */
+
+/* --- Botones --- */
+button {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1rem; /* ~17pt en iOS */
+  border-radius: var(--border-radius-medium);
+  padding: 10px 16px;
+  border: none; /* iOS buttons typically don't have borders unless needed */
+  background-color: var(--system-gray-200); /* Default gray button */
+  color: var(--text-primary);
+  transition: background-color 0.2s ease, opacity 0.2s ease, transform 0.1s ease;
+  font-weight: 500; /* Medium weight */
+  outline: none; /* Quitar outline */
+  -webkit-tap-highlight-color: transparent; /* Quitar highlight azul en toque móvil */
+}
+button:hover:not(:disabled) {
+  /* Sutil oscurecimiento en hover para botones grises */
+  background-color: var(--system-gray-300);
+}
+button:active:not(:disabled) {
+  transform: scale(0.98); /* Efecto de presión */
+}
+button:disabled {
+  cursor: not-allowed;
+  /* Usar color de texto específico para deshabilitado */
+  color: var(--system-gray-400);
+  background-color: var(--system-gray-200);
+  opacity: 0.7; /* Opacidad adicional */
+}
+
+/* Estilos específicos para clases de botón */
+.button-primary {
+  /* Estilo 'Filled' */
+  background-color: var(--primary-blue);
+  color: var(--button-text-light);
+  font-weight: 600; /* Semibold para primario */
+}
+.button-primary:hover:not(:disabled) {
+  background-color: var(--hover-blue);
+}
+.button-primary:disabled {
+  background-color: var(--primary-blue); /* Mantener color base */
+  color: rgba(255, 255, 255, 0.8);
+  opacity: 0.5;
+}
+
+.button-tinted {
+  /* Estilo 'Tinted' */
+  background-color: rgba(0, 122, 255, 0.1); /* Fondo azul muy sutil */
+  color: var(--primary-blue);
+}
+.button-tinted:hover:not(:disabled) {
+  background-color: rgba(0, 122, 255, 0.15);
+}
+.button-tinted:disabled {
+  background-color: rgba(0, 122, 255, 0.1);
+  color: var(--system-gray-400);
+  opacity: 0.7;
+}
+
+.button-text {
+  /* Estilo botón de solo texto */
+  background-color: transparent;
+  color: var(--primary-blue);
+  padding: 6px 8px; /* Menos padding para texto */
   font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+}
+.button-text:hover:not(:disabled) {
+  background-color: rgba(0, 122, 255, 0.08); /* Fondo muy sutil en hover */
+}
+.button-text:disabled {
+  background-color: transparent;
+  color: var(--system-gray-400);
+  opacity: 0.7;
+}
+
+/* --- Inputs --- */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"] {
+  font-family: inherit;
+  font-size: 1rem; /* ~17pt */
+  padding: 11px 15px; /* Padding típico iOS */
+  border: 1px solid var(--border-color-input);
+  border-radius: var(--border-radius-medium);
+  width: 100%;
+  background-color: var(--background-elevated); /* Fondo blanco */
+  color: var(--text-primary);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none; /* Quitar outline */
+  -webkit-appearance: none; /* Quitar apariencia nativa */
+  -moz-appearance: none;
+  appearance: none;
+}
+input[type="text"]::placeholder,
+input[type="email"]::placeholder,
+input[type="password"]::placeholder,
+input[type="search"]::placeholder {
+  color: var(--text-placeholder);
+}
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="search"]:focus {
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2); /* Halo azul al enfocar */
+}
+/* Estilo específico para búsqueda (si se usa type="search") */
+input[type="search"] {
+  border-radius: var(--border-radius-pill); /* Más redondeado para búsqueda */
+  background-color: var(--system-gray-100); /* Fondo grisáceo */
+  border-color: var(--system-gray-100);
+}
+input[type="search"]:focus {
+  background-color: var(--background-elevated); /* Blanco al enfocar */
+  border-color: var(--primary-blue);
+}
+
+/* --- Labels --- */
+label {
+  display: block;
+  margin-bottom: 8px; /* Más espacio */
+  font-weight: 400; /* Peso normal */
+  color: var(--text-secondary); /* Usar gris secundario */
+  font-size: 0.9rem; /* ~15pt */
+}
+
+/* --- Links --- */
+a {
+  color: var(--text-link);
+  text-decoration: none;
 }
 a:hover {
-  color: #535bf2;
+  text-decoration: underline;
 }
 
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+/* --- Listas --- */
+ul {
+  list-style: none;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/* --- Mensajes (Toast o globales) --- */
+.error-message {
+  color: var(--error-red);
+  background-color: var(--error-bg-light);
+  border: 1px solid var(--error-border);
+  padding: 10px 15px;
+  border-radius: var(--border-radius-medium);
+  margin-bottom: 15px;
+  font-size: 0.95rem;
+}
+.success-message {
+  color: var(--success-green-dark);
+  background-color: var(--success-bg-light);
+  border: 1px solid var(--success-border);
+  padding: 10px 15px;
+  border-radius: var(--border-radius-medium);
+  margin-bottom: 15px;
+  font-size: 0.95rem;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
+/* 5. Limpieza (Asegurar que no haya estilos de componentes específicos aquí) */
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+/* 6. Media Queries globales (si son necesarias) */
+@media (max-width: 480px) {
+  html {
+    font-size: 15px; /* Ligeramente más pequeño en móvil */
   }
-  a:hover {
-    color: #747bff;
+  /* Botones más grandes para tocar */
+  button,
+  .button-primary,
+  .button-tinted {
+    padding: 12px 16px;
+    font-size: 1.05rem; /* Un poco más grande para compensar tamaño de fuente base */
   }
-  button {
-    background-color: #f9f9f9;
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"] {
+    font-size: 1rem; /* Mantener 16px para evitar zoom automático en iOS */
   }
 }
