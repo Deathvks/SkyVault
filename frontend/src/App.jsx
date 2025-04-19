@@ -1,49 +1,56 @@
 // frontend/src/App.jsx
-import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import DashboardPage from './pages/DashboardPage';
-import NotFoundPage from './pages/NotFoundPage';
-import { AuthProvider } from './context/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
+import React from "react";
+import { Routes, Route } from "react-router-dom";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import DashboardPage from "./pages/DashboardPage";
+import ProfilePage from "./pages/ProfilePage"; // <-- Importar nueva página
+import NotFoundPage from "./pages/NotFoundPage";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 
-// --- Importaciones para react-toastify ---
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-// -----------------------------------------
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function App() {
   return (
     <AuthProvider>
-      {/* Envolver la app o ponerlo en un nivel alto */}
       <ToastContainer
-          position="top-right" // Posición de las notificaciones
-          autoClose={4000} // Duración en ms
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light" // o "dark" o "colored"
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
       />
-      <div>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </div>
+      {/* Quitar el div innecesario */}
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        {/* --- NUEVA RUTA DE PERFIL --- */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        {/* --- FIN NUEVA RUTA --- */}
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
     </AuthProvider>
   );
 }

@@ -6,6 +6,7 @@
   display: flex;
   flex-direction: column;
   flex-grow: 1;
+  min-height: 100vh; /* Asegurar altura mínima */
 }
 
 /* --- Header (Estilo iOS Refinado) --- */
@@ -20,6 +21,7 @@
   flex-shrink: 0;
   position: relative; /* Para menú móvil */
   z-index: 1050;
+  border-bottom: 1px solid var(--border-color-light); /* Borde inferior sutil */
 }
 
 /* Botón que envuelve el título */
@@ -36,9 +38,10 @@
   transition: background-color 0.15s ease;
   -webkit-tap-highlight-color: transparent;
   flex-shrink: 1;
-  overflow: hidden;
+  overflow: hidden; /* Para el ellipsis del título */
 }
 .headerTitleButton:hover:not(:disabled) {
+  /* No es necesario hover visual si el texto cambia */
 }
 .headerTitleButton:disabled {
   cursor: default;
@@ -55,6 +58,7 @@
   transition: color 0.2s ease;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 250px; /* Limitar ancho si es necesario */
 }
 .headerTitleButton:disabled .headerTitle {
   color: var(--system-gray-500);
@@ -124,8 +128,8 @@
   background-color: rgba(0, 0, 0, 0.05);
 }
 .clearSearchButton:active {
-  transform: translateY(-50%) scale(1);
-} /* Evitar escalado en active */
+  transform: translateY(-50%) scale(1); /* Evitar escalado en active */
+}
 .clearSearchButton svg {
   width: 16px;
   height: 16px;
@@ -133,6 +137,7 @@
 }
 
 /* --- Logout Button (Estilo Texto iOS) --- */
+/* Ya no usamos .desktopOnlyLogout, el botón se mete en .desktopActionsContainer */
 .logoutButton {
   background-color: transparent;
   color: var(--error-red);
@@ -143,11 +148,11 @@
   border-radius: var(--border-radius-small);
   transition: background-color 0.2s ease, color 0.2s ease;
   margin: 0;
-  order: 3;
+  /* order: 3; -- El orden lo da el contenedor padre */
   white-space: nowrap;
   cursor: pointer;
 }
-.header .logoutButton:hover:not(:disabled) {
+.logoutButton:hover:not(:disabled) {
   background-color: rgba(255, 59, 48, 0.1);
   color: var(--error-red);
 }
@@ -157,12 +162,36 @@
   opacity: 0.5;
 }
 
+/* --- Contenedor Acciones Desktop --- */
+.desktopActionsContainer {
+  display: flex;
+  align-items: center;
+  gap: 15px; /* Espacio entre link perfil y logout */
+  order: 3; /* Asegurar que esté a la derecha */
+}
+
+/* --- Link Perfil Desktop --- */
+.profileLinkDesktop {
+  color: var(--primary-blue); /* Mismo color que links */
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500; /* Medium */
+  padding: 6px 8px; /* Similar al padding de logout button */
+  border-radius: var(--border-radius-small);
+  transition: background-color 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
+}
+.profileLinkDesktop:hover {
+  background-color: rgba(0, 122, 255, 0.1); /* Fondo sutil azul */
+  text-decoration: none; /* Quitar subrayado en hover si hay fondo */
+}
+
 /* --- Iconos y Menú Móvil --- */
 .mobileHeaderActions {
-  display: none;
+  display: none; /* Oculto por defecto */
   align-items: center;
   gap: 5px;
-  order: 3;
+  order: 3; /* A la derecha en móvil */
   position: relative;
 }
 .mobileIconButton {
@@ -182,8 +211,8 @@
   background-color: rgba(0, 122, 255, 0.1);
 }
 .mobileIconButton:active {
-  transform: scale(1);
-} /* Evitar escalado en active */
+  transform: scale(1); /* Evitar escalado en active */
+}
 .mobileIconButton svg {
   width: 24px;
   height: 24px;
@@ -202,7 +231,15 @@
   min-width: 150px;
   border: 1px solid var(--system-gray-200);
 }
+/* Estilos para Link y botones dentro del dropdown */
+.mobileDropdownLink {
+  display: block;
+  width: 100%;
+  text-decoration: none;
+}
+.mobileDropdownLink button,
 .mobileDropdownMenu button {
+  /* Aplicar a ambos */
   display: block;
   width: 100%;
   padding: 10px 15px;
@@ -212,12 +249,19 @@
   color: var(--text-primary);
   font-size: 0.95rem;
   border-radius: 0;
+  cursor: pointer; /* Asegurar cursor pointer */
 }
-.mobileDropdownMenu button:first-of-type {
-  color: var(--error-red);
-}
-.mobileDropdownMenu button:hover {
+.mobileDropdownLink button:hover,
+.mobileDropdownMenu button:not(.mobileDropdownLogout):hover {
+  /* Hover para perfil y otros */
   background-color: var(--system-gray-100);
+}
+.mobileDropdownLogout {
+  /* Estilo específico para logout */
+  color: var(--error-red) !important;
+}
+.mobileDropdownLogout:hover {
+  background-color: rgba(255, 59, 48, 0.1) !important;
 }
 
 /* --- Superposición de Búsqueda Móvil (Centrada) --- */
@@ -238,20 +282,18 @@
   transition: opacity 0.2s ease-in-out;
 }
 
-/* Contenedor centrado para la barra de búsqueda y botón cancelar */
 .mobileSearchInputWrapper {
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
   max-width: 500px; /* Ancho máximo */
-  padding: 0; /* Sin padding extra aquí */
-  background-color: transparent; /* Sin fondo propio */
+  padding: 0;
+  background-color: transparent;
   border-radius: 0;
   box-shadow: none;
 }
 
-/* Contenedor interno para icono lupa, input y botón X */
 .mobileSearchInner {
   display: flex;
   align-items: center;
@@ -259,11 +301,10 @@
   position: relative;
   background-color: var(--background-elevated); /* Fondo blanco */
   border-radius: var(--border-radius-medium); /* Redondeo */
-  padding: 0 8px 0 10px; /* Padding DERECHA reducido para X, Izquierda para icono */
+  padding: 0 8px 0 10px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Sombra sutil */
 }
 .mobileSearchInner > svg:first-of-type {
-  /* Estilo icono lupa */
   fill: var(--system-gray-500);
   width: 18px;
   height: 18px;
@@ -271,7 +312,6 @@
   flex-shrink: 0;
 }
 
-/* Input dentro del overlay móvil */
 .mobileSearchOverlay .searchInput {
   flex-grow: 1;
   padding: 10px 25px 10px 0;
@@ -289,7 +329,6 @@
   color: var(--text-placeholder);
 }
 
-/* Botón Limpiar (X) dentro del overlay móvil */
 .mobileSearchOverlay .clearSearchButton {
   position: absolute;
   right: 5px;
@@ -311,7 +350,7 @@
   background-color: rgba(0, 0, 0, 0.1);
 }
 .mobileSearchOverlay .clearSearchButton:active {
-  transform: translateY(-50%) scale(1); /* Mantener transform vertical pero sin escalar */
+  transform: translateY(-50%) scale(1);
 }
 .mobileSearchOverlay .clearSearchButton svg {
   width: 16px;
@@ -319,15 +358,14 @@
   fill: currentColor;
 }
 
-/* Botón Cancelar (Estilo Texto iOS Refinado) */
 .mobileSearchCancelButton {
   background-color: transparent !important;
   border: none;
   color: white; /* Texto blanco/claro */
   font-size: 1rem;
   font-weight: 500; /* Medium weight */
-  padding: 8px 8px; /* Padding */
-  margin-left: 8px; /* Más espacio */
+  padding: 8px 8px;
+  margin-left: 8px;
   cursor: pointer;
   flex-shrink: 0;
   border-radius: var(--border-radius-medium); /* Redondeo iOS */
@@ -342,7 +380,7 @@
 }
 .mobileSearchCancelButton:active {
   transform: scale(1);
-} /* Evitar escalado */
+}
 .mobileSearchCancelButton:disabled {
   color: rgba(255, 255, 255, 0.5) !important;
   background-color: transparent !important;
@@ -366,10 +404,10 @@
   color: var(--system-gray-600);
   white-space: nowrap;
   overflow-x: auto;
-  scrollbar-width: none;
+  scrollbar-width: none; /* Firefox */
 }
 .breadcrumbsContainer::-webkit-scrollbar {
-  display: none;
+  display: none; /* Chrome, Safari, Edge */
 }
 .breadcrumbItem {
   display: inline-block;
@@ -392,8 +430,8 @@
   background-color: transparent !important;
 }
 .breadcrumbLink:active {
-  transform: scale(1);
-} /* Evitar escalado */
+  transform: scale(1); /* Evitar escalado */
+}
 .breadcrumbLink:disabled {
   color: var(--text-primary);
   font-weight: 600;
@@ -408,7 +446,7 @@
 
 /* --- Main Content Area --- */
 .mainContent {
-  padding: 10px 20px 90px 20px !important;
+  padding: 10px 20px 90px 20px !important; /* Más padding inferior para FAB */
   background-color: transparent !important;
   margin: 0 !important;
   box-shadow: none !important;
@@ -441,10 +479,10 @@
   color: var(--system-gray-600);
   text-transform: uppercase;
   font-weight: 500;
-  padding-left: 15px;
+  padding-left: 15px; /* Indentación título sección */
 }
 
-/* --- Item List (Estilo Lista iOS) --- */
+/* --- Item List (Estilo Lista iOS por defecto) --- */
 .itemList {
   list-style: none;
   padding: 0;
@@ -459,13 +497,14 @@
   align-items: center;
   padding: 12px 15px;
   border-bottom: 1px solid var(--border-color-light);
+  position: relative; /* Para posicionar acciones absolutamente si fuera necesario */
 }
 .itemList > .listItem:last-child {
   border-bottom: none;
 }
 .itemName {
   flex-grow: 1;
-  margin-right: 10px;
+  margin-right: 10px; /* Espacio antes de acciones */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -477,9 +516,11 @@
 .itemIcon {
   margin-right: 15px;
   color: var(--primary-blue);
-  font-size: 1.5rem;
+  font-size: 1.5rem; /* Ajustar tamaño emoji */
   flex-shrink: 0;
   line-height: 1;
+  width: 38px; /* Ancho fijo para alinear */
+  text-align: center;
 }
 .itemThumbnail {
   width: 38px;
@@ -490,6 +531,7 @@
   border: 1px solid var(--system-gray-200);
   vertical-align: middle;
   flex-shrink: 0;
+  background-color: var(--system-gray-100); /* Fondo placeholder */
 }
 .folderLink {
   background: none;
@@ -501,28 +543,46 @@
   padding: 0;
   margin: 0;
   text-align: left;
-  flex-grow: 1;
+  flex-grow: 1; /* Ocupa espacio restante */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   transition: color 0.15s ease;
+  /* Para tooltip */
+  display: inline-block;
+  vertical-align: middle;
 }
 .folderLink:hover:not(:disabled) {
   background-color: transparent !important;
 }
 .folderLink:active {
-  transform: scale(1);
-} /* Evitar escalado */
+  transform: scale(1); /* Evitar escalado */
+}
 .listItem:hover .folderLink:not(:disabled) {
-  color: var(--primary-blue);
+  color: var(--primary-blue); /* Cambiar color en hover de fila */
 }
 .fileInfo {
+  /* Contenedor para icono/thumb + nombre + tamaño */
+  display: flex;
+  align-items: center;
+  flex-grow: 1;
+  overflow: hidden;
+}
+.fileInfo > span:not(.fileSize) {
+  /* Nombre del archivo */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-grow: 1; /* Que el nombre ocupe espacio */
+  margin-right: 8px; /* Espacio antes del tamaño */
 }
 .fileSize {
   font-size: 0.85rem;
   color: var(--system-gray-600);
-  margin-left: 8px;
+  margin-left: auto; /* Empujar a la derecha */
   white-space: nowrap;
+  flex-shrink: 0; /* Evitar que se encoja */
+  padding-left: 8px; /* Espacio a la izquierda */
 }
 
 /* --- Item Actions (Refinado) --- */
@@ -530,11 +590,13 @@
   display: flex;
   align-items: center;
   white-space: nowrap;
-  opacity: 0;
+  opacity: 0; /* Oculto por defecto */
   transition: opacity 0.15s ease-in-out;
-  flex-shrink: 0;
+  flex-shrink: 0; /* No encoger */
 }
-.listItem:hover .itemActions {
+/* Mostrar acciones al hacer hover sobre la fila O si está enfocado un botón dentro */
+.listItem:hover .itemActions,
+.listItem:focus-within .itemActions {
   opacity: 1;
 }
 .itemActionButton {
@@ -557,8 +619,8 @@
   color: var(--primary-blue);
 }
 .itemActionButton:active {
-  transform: scale(1);
-} /* Evitar escalado */
+  transform: scale(1); /* Evitar escalado */
+}
 .itemActionButton.deleteButton:hover:not(:disabled) {
   background-color: rgba(255, 59, 48, 0.1);
   color: var(--error-red);
@@ -576,9 +638,10 @@
   color: var(--system-gray-400);
   cursor: not-allowed;
   background-color: transparent !important;
+  opacity: 0.5;
 }
 .itemActionButton svg {
-  width: 18px;
+  width: 18px; /* Iconos ligeramente más pequeños */
   height: 18px;
   fill: currentColor;
 }
@@ -664,8 +727,8 @@
   background-color: rgba(229, 229, 234, 0.85);
 }
 .fabMenuItem:active {
-  transform: scale(1);
-} /* Evitar escalado */
+  transform: scale(1); /* Evitar escalado */
+}
 .fabMenuItem:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -678,31 +741,32 @@
 
 /* --- Clases para ocultar/mostrar y desplazar --- */
 .desktopOnlySearch,
-.desktopOnlyLogout {
-  display: none;
+.desktopOnlyActions {
+  display: none; /* Oculto por defecto, se muestra en media query */
 }
 .mobileHeaderActions {
-  display: none;
+  display: none; /* Oculto por defecto, se muestra en media query */
 }
-.navBarShifted,
+/* Estas clases ya no son necesarias con el enfoque actual */
+/* .navBarShifted,
 .mainContentShifted {
   padding-top: 0 !important;
-}
+} */
 
 /* --- Media Queries --- */
 @media (min-width: 701px) {
   .desktopOnlySearch,
-  .desktopOnlyLogout {
-    display: flex;
+  .desktopOnlyActions {
+    display: flex !important;
   }
   .mobileHeaderActions {
-    display: none;
+    display: none !important;
   }
   .mobileSearchOverlay {
     display: none !important;
   }
 
-  /* ... Estilos Grid View ... */
+  /* --- Estilos Grid View --- */
   .itemList {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -723,7 +787,7 @@
     background-color: var(--background-elevated);
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
-    overflow: hidden;
+    overflow: hidden; /* Para contener elementos */
   }
   .listItem:hover {
     transform: translateY(-2px);
@@ -731,19 +795,24 @@
   }
   .itemName {
     flex-direction: column;
-    white-space: normal;
+    white-space: normal; /* Permitir wrap */
     text-align: center;
     margin-right: 0;
     margin-bottom: 10px;
     width: 100%;
     font-size: 0.9rem;
     line-height: 1.3;
+    /* Quitar flex-grow para que no interfiera con el centrado */
+    flex-grow: 0;
   }
   .itemIcon {
+    margin-right: 0; /* Sin margen en grid */
     margin-bottom: 15px;
     font-size: 3rem;
+    width: auto; /* Ancho automático */
   }
   .itemThumbnail {
+    margin-right: 0; /* Sin margen en grid */
     width: 70px;
     height: 70px;
     margin-bottom: 15px;
@@ -752,11 +821,26 @@
   .folderLink {
     text-align: center;
     font-weight: 500;
-    word-break: break-word;
+    word-break: break-word; /* Permitir corte de palabra */
+    width: 100%; /* Ocupar ancho para centrar texto */
+    flex-grow: 0; /* Quitar flex-grow */
+    display: block; /* Asegurar bloque para centrado */
   }
   .listItem:hover .folderLink:not(:disabled) {
     color: var(--primary-blue);
     text-decoration: none;
+  }
+  .fileInfo {
+    flex-direction: column; /* Apilar icono/thumb, nombre, tamaño */
+    flex-grow: 0; /* No crecer */
+    width: 100%; /* Ocupar ancho */
+    text-align: center;
+  }
+  .fileInfo > span:not(.fileSize) {
+    /* Nombre archivo */
+    margin-right: 0;
+    text-align: center;
+    word-break: break-word; /* Permitir corte */
   }
   .fileSize {
     display: block;
@@ -765,30 +849,33 @@
     margin-left: 0;
     margin-top: 5px;
     font-size: 0.8rem;
+    padding-left: 0; /* Sin padding extra */
   }
   .itemActions {
-    opacity: 1;
+    opacity: 1; /* Siempre visible en grid */
     margin-top: 15px;
     width: 100%;
-    justify-content: center;
+    justify-content: center; /* Centrar botones */
     gap: 8px;
   }
   .itemActionButton {
-    width: 34px;
+    width: 34px; /* Ligeramente más grandes */
     height: 34px;
+    margin-left: 0; /* Sin margen izquierdo, usar gap */
   }
   .itemActionButton svg {
     width: 18px;
     height: 18px;
   }
-}
+} /* Fin @media (min-width: 701px) */
 
 @media (max-width: 700px) {
   .mobileHeaderActions {
     display: flex !important;
   }
   .desktopOnlySearch,
-  .desktopOnlyLogout {
+  .desktopOnlyActions {
+    /* Ocultar acciones desktop */
     display: none !important;
   }
   .header {
@@ -798,13 +885,18 @@
     padding-right: 15px;
   }
   .mainContent {
-    padding-bottom: 80px !important;
+    padding-bottom: 80px !important; /* Más espacio inferior para FAB */
   }
-}
+  /* Asegurar que itemActions se muestren en hover también en móvil/tablet */
+  .listItem:hover .itemActions,
+  .listItem:focus-within .itemActions {
+    opacity: 1;
+  }
+} /* Fin @media (max-width: 700px) */
 
 @media (max-width: 380px) {
   .headerTitle {
-    max-width: 150px;
+    max-width: 150px; /* Ajustar si el nombre de usuario es largo */
   }
   .mobileHeaderActions {
     gap: 0;
@@ -812,4 +904,21 @@
   .mobileIconButton {
     padding: 6px;
   }
-}
+  /* Reducir tamaño de fuente para elementos en pantallas muy pequeñas */
+  .itemName,
+  .folderLink,
+  .fileInfo > span:not(.fileSize) {
+    font-size: 0.95rem;
+  }
+  .fileSize {
+    font-size: 0.8rem;
+  }
+  .itemActionButton {
+    width: 30px;
+    height: 30px;
+  }
+  .itemActionButton svg {
+    width: 16px;
+    height: 16px;
+  }
+} /* Fin @media (max-width: 380px) */
