@@ -1,12 +1,13 @@
 // frontend/src/pages/DashboardPage.jsx
 import React, { useState, useEffect, useCallback, useRef } from "react";
+// import path from 'path'; // No es necesario aquí si el backend maneja la extensión al renombrar
 import { useAuth } from "../context/AuthContext";
 import {
   getFolderContents,
   createFolder,
   uploadFile,
-  deleteFolder, // Ahora hace soft delete
-  deleteFile, // Ahora hace soft delete
+  deleteFolder,
+  deleteFile,
   downloadFile,
   renameFolder,
   renameFile,
@@ -17,6 +18,7 @@ import {
 import ImageThumbnail from "../components/ImageThumbnail";
 import Modal from "../components/Modal";
 import MoveItemModal from "../components/MoveItemModal";
+import FilePreviewModal from "../components/FilePreviewModal"; // Se sigue usando
 import { toast } from "react-toastify";
 import styles from "./DashboardPage.module.css";
 import modalStyles from "../components/Modal.module.css";
@@ -69,6 +71,18 @@ const TrashIcon = () => (
     <path d="M9 8h2v9H9zm4 0h2v9h-2z" />
   </svg>
 );
+const PreviewIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    height="18px"
+    viewBox="0 0 24 24"
+    width="18px"
+    fill="currentColor"
+  >
+    <path d="M0 0h24v24H0V0z" fill="none" />
+    <path d="M12 6c3.79 0 7.17 2.13 8.82 5.5C19.17 14.87 15.79 17 12 17s-7.17-2.13-8.82-5.5C4.83 8.13 8.21 6 12 6m0-2C7 4 2.73 7.11 1 11.5 2.73 15.89 7 19 12 19s9.27-3.11 11-7.5C21.27 7.11 17 4 12 4zm0 5c1.38 0 2.5 1.12 2.5 2.5S13.38 14 12 14s-2.5-1.12-2.5-2.5S10.62 9 12 9m0-2c-2.48 0-4.5 2.02-4.5 4.5S9.52 16 12 16s4.5-2.02 4.5-4.5S14.48 7 12 7z" />
+  </svg>
+);
 // --- Fin Iconos ---
 
 function DashboardPage() {
@@ -98,16 +112,18 @@ function DashboardPage() {
   const [newFolderName, setNewFolderName] = useState("");
   const [isConfirmDeleteModalOpen, setIsConfirmDeleteModalOpen] =
     useState(false);
-  const [itemToDelete, setItemToDelete] = useState(null); // { type, id, name }
+  const [itemToDelete, setItemToDelete] = useState(null);
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
-  const [itemToRename, setItemToRename] = useState(null); // { type, id, currentName }
+  const [itemToRename, setItemToRename] = useState(null);
   const [renameInputValue, setRenameInputValue] = useState("");
   const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
-  const [itemToMove, setItemToMove] = useState(null); // { type, id, name, parent_folder_id?, folder_id? }
+  const [itemToMove, setItemToMove] = useState(null);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [fileToPreview, setFileToPreview] = useState(null);
 
   // Estados específicos para indicar carga de acciones
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
-  const [isDeletingItem, setIsDeletingItem] = useState(false); // Usado para soft delete
+  const [isDeletingItem, setIsDeletingItem] = useState(false);
   const [isRenamingItem, setIsRenamingItem] = useState(false);
   const [isMovingItem, setIsMovingItem] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -165,34 +181,41 @@ function DashboardPage() {
     if (!searchTerm) {
       loadContents(currentFolderId);
     }
-  }, [currentFolderId, searchTerm, loadContents]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentFolderId, searchTerm]);
 
   // --- Lógica de Búsqueda ---
-  const performSearch = useCallback(async (term) => {
-    if (!term.trim()) {
+  const performSearch = useCallback(
+    async (term) => {
+      if (!term.trim()) {
+        setSearchResults(null);
+        setIsSearching(false);
+        return;
+      }
+      setIsSearching(true);
       setSearchResults(null);
-      setIsSearching(false);
-      return;
-    }
-    setIsSearching(true);
-    setSearchResults(null);
-    try {
-      const response = await searchItems(term.trim());
-      setSearchResults(response.data);
-    } catch (err) {
-      const errorMsg = err.response?.data?.message || "Error al buscar.";
-      toast.error(errorMsg);
-      setSearchResults(false);
-    } finally {
-      setIsSearching(false);
-    }
-  }, []);
+      try {
+        const response = await searchItems(term.trim());
+        setSearchResults(response.data);
+      } catch (err) {
+        const errorMsg = err.response?.data?.message || "Error al buscar.";
+        toast.error(errorMsg);
+        setSearchResults({ folders: [], files: [] });
+        if (err.response?.status === 401 || err.response?.status === 403)
+          logout();
+      } finally {
+        setIsSearching(false);
+      }
+    },
+    [logout]
+  );
 
   const handleSearchChange = (event) => {
     const newTerm = event.target.value;
     setSearchTerm(newTerm);
     clearTimeout(searchTimeoutRef.current);
     if (newTerm.trim()) {
+      setIsSearching(true);
       searchTimeoutRef.current = setTimeout(() => performSearch(newTerm), 500);
     } else {
       setSearchResults(null);
@@ -208,6 +231,7 @@ function DashboardPage() {
       setIsSearching(false);
       clearTimeout(searchTimeoutRef.current);
       loadContents(currentFolderId);
+      if (isMobileSearchVisible) setIsMobileSearchVisible(false);
     }
   };
 
@@ -237,7 +261,9 @@ function DashboardPage() {
 
   const toggleMobileSearch = () => {
     setIsMobileSearchVisible((prev) => !prev);
-    setIsMobileMenuOpen(false);
+    if (!isMobileSearchVisible) {
+      setIsMobileMenuOpen(false);
+    }
   };
 
   // --- Acciones de Usuario y Elementos ---
@@ -282,22 +308,26 @@ function DashboardPage() {
     try {
       toastId = toast.info(`Preparando descarga de "${fileName}"...`, {
         autoClose: false,
+        closeOnClick: false,
+        draggable: false,
       });
       const response = await downloadFile(fileId);
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", fileName);
+      link.setAttribute("download", fileName || "descarga");
       document.body.appendChild(link);
       link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
       toast.update(toastId, {
         render: `"${fileName}" descargado.`,
         type: "success",
         isLoading: false,
         autoClose: 3000,
+        closeOnClick: true,
+        draggable: true,
       });
-      link.parentNode.removeChild(link);
-      window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Error descargando archivo:", err);
       let errorMsg = "Error al descargar el archivo.";
@@ -307,14 +337,14 @@ function DashboardPage() {
         err.response.data.type === "application/json"
       ) {
         try {
-          errorMsg =
-            JSON.parse(await err.response.data.text()).message || errorMsg;
-          // --- CORRECCIÓN ---
-        } catch /* (parseErr) - Eliminado */ {
-          // Si falla el parseo del Blob, simplemente mantenemos el errorMsg genérico
-          console.log("No se pudo parsear el error Blob como JSON."); // Log opcional
+          const errorJson = JSON.parse(await err.response.data.text());
+          errorMsg = errorJson.message || errorMsg;
+        } catch (parseErr) {
+          console.error(
+            "No se pudo parsear el error Blob como JSON:",
+            parseErr
+          );
         }
-        // --- FIN CORRECCIÓN ---
       } else {
         errorMsg = err.response?.data?.message || errorMsg;
       }
@@ -324,6 +354,8 @@ function DashboardPage() {
           type: "error",
           isLoading: false,
           autoClose: 5000,
+          closeOnClick: true,
+          draggable: true,
         });
       } else {
         toast.error(errorMsg);
@@ -334,6 +366,7 @@ function DashboardPage() {
   };
 
   const toggleFabMenu = () => setShowFabMenu((prev) => !prev);
+
   const triggerFileInput = () => {
     if (isActionLoading) return;
     fileInputRef.current?.click();
@@ -352,6 +385,8 @@ function DashboardPage() {
 
     let toastId = toast.info(`Subiendo "${file.name}"...`, {
       autoClose: false,
+      closeOnClick: false,
+      draggable: false,
     });
 
     try {
@@ -361,6 +396,8 @@ function DashboardPage() {
         type: "success",
         isLoading: false,
         autoClose: 3000,
+        closeOnClick: true,
+        draggable: true,
       });
       if (!searchTerm) {
         loadContents(currentFolderId);
@@ -374,7 +411,11 @@ function DashboardPage() {
         type: "error",
         isLoading: false,
         autoClose: 5000,
+        closeOnClick: true,
+        draggable: true,
       });
+      if (err.response?.status === 401 || err.response?.status === 403)
+        logout();
     } finally {
       setIsUploading(false);
       if (originalInput) originalInput.value = null;
@@ -389,6 +430,7 @@ function DashboardPage() {
     setShowFabMenu(false);
     setIsMobileMenuOpen(false);
   };
+
   const handleConfirmCreateFolder = async (e) => {
     e.preventDefault();
     if (!newFolderName.trim() || isActionLoading) return;
@@ -408,8 +450,11 @@ function DashboardPage() {
       const errorMsg =
         err.response?.data?.message || "Error al crear la carpeta.";
       toast.error(errorMsg);
+      if (err.response?.status === 401 || err.response?.status === 403)
+        logout();
     } finally {
       setIsCreatingFolder(false);
+      setNewFolderName("");
     }
   };
 
@@ -419,6 +464,7 @@ function DashboardPage() {
     setIsConfirmDeleteModalOpen(true);
     setIsMobileMenuOpen(false);
   };
+
   const handleConfirmDelete = async () => {
     // Soft delete
     if (!itemToDelete || isActionLoading) return;
@@ -430,31 +476,32 @@ function DashboardPage() {
     try {
       await action(id);
       toast.success(`${typeText} "${name}" movida a la papelera.`);
-      if (!searchTerm) {
-        loadContents(currentFolderId);
-      } else {
+      if (searchTerm) {
         setSearchResults((prevResults) => {
           if (!prevResults) return null;
+          const key = type === "folder" ? "folders" : "files";
           return {
-            folders: prevResults.folders.filter(
-              (f) => !(type === "folder" && f.id === id)
-            ),
-            files: prevResults.files.filter(
-              (f) => !(type === "file" && f.id === id)
-            ),
+            ...prevResults,
+            [key]: prevResults[key].filter((item) => item.id !== id),
           };
         });
+      } else {
+        const stateUpdater = type === "folder" ? setFolders : setFiles;
+        stateUpdater((prevItems) => prevItems.filter((item) => item.id !== id));
       }
     } catch (err) {
       const errorMsg =
         err.response?.data?.message ||
         `Error al mover ${typeText.toLowerCase()} a la papelera.`;
       toast.error(errorMsg);
+      if (err.response?.status === 401 || err.response?.status === 403)
+        logout();
     } finally {
       setIsDeletingItem(false);
       setItemToDelete(null);
     }
   };
+
   const handleDeleteFolder = (folderId, folderName) =>
     openConfirmDeleteModal("folder", folderId, folderName);
   const handleDeleteFile = (fileId, fileName) =>
@@ -468,9 +515,11 @@ function DashboardPage() {
     setShowFabMenu(false);
     setIsMobileMenuOpen(false);
   };
+
   const handleConfirmRename = async (e) => {
     e.preventDefault();
     const trimmedNewName = renameInputValue.trim();
+
     if (!itemToRename || !trimmedNewName || isActionLoading) {
       setIsRenameModalOpen(false);
       return;
@@ -481,16 +530,20 @@ function DashboardPage() {
       setItemToRename(null);
       return;
     }
+
     setIsRenamingItem(true);
     setIsRenameModalOpen(false);
+
     const { type, id } = itemToRename;
     try {
       let response;
       if (type === "folder") {
         response = await renameFolder(id, { newName: trimmedNewName });
       } else {
+        // Enviar nombre tal cual al backend para archivos
         response = await renameFile(id, { newName: trimmedNewName });
       }
+
       const finalName =
         response.data.file?.name ||
         response.data.folder?.name ||
@@ -500,45 +553,53 @@ function DashboardPage() {
           type === "folder" ? "Carpeta" : "Archivo"
         } renombrado a "${finalName}".`
       );
-      if (type === "folder") {
-        setPath((currentPath) =>
-          currentPath.map((p) => (p.id === id ? { ...p, name: finalName } : p))
-        );
-        if (currentFolderId === id) {
-          setCurrentFolderName(finalName);
-        }
-      }
-      if (!searchTerm) {
-        loadContents(currentFolderId);
-      } else {
+
+      // Actualizar UI
+      if (searchTerm) {
         setSearchResults((prevResults) => {
           if (!prevResults) return null;
+          const key = type === "folder" ? "folders" : "files";
           return {
-            folders: prevResults.folders.map((f) =>
-              type === "folder" && f.id === id ? { ...f, name: finalName } : f
-            ),
-            files: prevResults.files.map((f) =>
-              type === "file" && f.id === id ? { ...f, name: finalName } : f
+            ...prevResults,
+            [key]: prevResults[key].map((item) =>
+              item.id === id ? { ...item, name: finalName } : item
             ),
           };
         });
+      } else {
+        const stateUpdater = type === "folder" ? setFolders : setFiles;
+        stateUpdater((prevItems) =>
+          prevItems.map((item) =>
+            item.id === id ? { ...item, name: finalName } : item
+          )
+        );
+        if (type === "folder") {
+          setPath((currentPath) =>
+            currentPath.map((p) =>
+              p.id === id ? { ...p, name: finalName } : p
+            )
+          );
+          if (currentFolderId === id) {
+            setCurrentFolderName(finalName);
+          }
+        }
       }
     } catch (err) {
       const errorMsg = err.response?.data?.message || `Error al renombrar.`;
       toast.error(errorMsg);
+      if (err.response?.status === 401 || err.response?.status === 403)
+        logout();
     } finally {
       setIsRenamingItem(false);
       setItemToRename(null);
+      setRenameInputValue("");
     }
   };
 
-  // Abre el modal de mover, pasando la info necesaria incluyendo el padre/carpeta actual
   const openMoveModal = (type, id, name) => {
     if (isActionLoading) return;
-    const itemData =
-      type === "folder"
-        ? folders.find((f) => f.id === id)
-        : files.find((f) => f.id === id);
+    const items = type === "folder" ? folders : files;
+    const itemData = items.find((i) => i.id === id);
     if (!itemData) {
       console.error("No se encontraron datos para el item a mover:", type, id);
       toast.error("Error al preparar la acción de mover.");
@@ -549,67 +610,101 @@ function DashboardPage() {
       id,
       name,
       parent_folder_id:
-        (type === "folder" ? itemData.parent_folder_id : undefined) ?? null,
-      folder_id: (type === "file" ? itemData.folder_id : undefined) ?? null,
+        (type === "folder" ? itemData.parent_folder_id : itemData.folder_id) ??
+        null,
     });
     setIsMoveModalOpen(true);
     setShowFabMenu(false);
     setIsMobileMenuOpen(false);
   };
 
-  // Confirma la acción de mover
   const handleConfirmMove = async (item, destinationId) => {
     if (!item || isActionLoading) return;
     const destinationIdForApi = destinationId === null ? null : destinationId;
-    const currentParentId =
-      (item.type === "folder" ? item.parent_folder_id : item.folder_id) ?? null;
+    const currentParentId = item.parent_folder_id ?? null;
     if (item.type === "folder" && item.id === destinationIdForApi) return;
-    if (currentParentId === destinationIdForApi) return;
+    if (currentParentId === destinationIdForApi) {
+      toast.info(`"${item.name}" ya se encuentra en la ubicación de destino.`);
+      setIsMoveModalOpen(false);
+      return;
+    }
 
     setIsMovingItem(true);
     setIsMoveModalOpen(false);
     const { type, id, name } = item;
     try {
-      if (type === "folder")
-        await moveFolder(id, { destinationFolderId: destinationIdForApi });
-      else await moveFile(id, { destinationFolderId: destinationIdForApi });
+      const action = type === "folder" ? moveFolder : moveFile;
+      await action(id, { destinationFolderId: destinationIdForApi });
       toast.success(
         `${type === "folder" ? "Carpeta" : "Archivo"} "${name}" movido.`
       );
-      if (!searchTerm) {
-        loadContents(currentFolderId);
-      } else {
+      if (searchTerm) {
         setSearchResults((prevResults) => {
           if (!prevResults) return null;
+          const key = type === "folder" ? "folders" : "files";
           return {
-            folders: prevResults.folders.filter(
-              (f) => !(type === "folder" && f.id === id)
-            ),
-            files: prevResults.files.filter(
-              (f) => !(type === "file" && f.id === id)
-            ),
+            ...prevResults,
+            [key]: prevResults[key].filter((i) => i.id !== id),
           };
         });
+      } else {
+        const stateUpdater = type === "folder" ? setFolders : setFiles;
+        stateUpdater((prevItems) => prevItems.filter((i) => i.id !== id));
       }
     } catch (err) {
       const errorMsg = err.response?.data?.message || `Error al mover.`;
       toast.error(errorMsg);
+      if (err.response?.status === 401 || err.response?.status === 403)
+        logout();
     } finally {
       setIsMovingItem(false);
       setItemToMove(null);
     }
   };
 
+  // --- Función para decidir qué hacer al previsualizar ---
+  const handlePreview = (file) => {
+    if (isActionLoading || !file) return;
+
+    const mime = file.mime_type || "";
+    // Lista de tipos soportados para previsualización en modal (incluye PDF ahora)
+    const supportedTypes = [
+      "image/",
+      "application/pdf",
+      "text/",
+      "video/",
+      "audio/",
+      "application/json",
+      "application/javascript",
+      "application/xml",
+      "application/xhtml+xml",
+    ];
+    const isPreviewable = supportedTypes.some(
+      (typePrefix) => mime.startsWith(typePrefix) || mime === typePrefix
+    );
+
+    if (isPreviewable) {
+      setFileToPreview(file); // Establecer el archivo a previsualizar
+      setIsPreviewModalOpen(true); // Abrir el modal para todos los tipos soportados
+      setShowFabMenu(false);
+      setIsMobileMenuOpen(false);
+    } else {
+      toast.info(
+        `La previsualización no está disponible para '${file.name}'. Puedes descargarlo.`
+      );
+    }
+  };
+
   // --- Efecto para estado de carga combinado ---
   useEffect(() => {
-    const anyActionInProgress =
+    const anyUserActionInProgress =
       isCreatingFolder ||
       isDeletingItem ||
       isRenamingItem ||
       isMovingItem ||
       isUploading ||
       isSearching;
-    setIsActionLoading(anyActionInProgress || isLoading);
+    setIsActionLoading(anyUserActionInProgress || isLoading);
   }, [
     isLoading,
     isSearching,
@@ -633,9 +728,23 @@ function DashboardPage() {
         : `${fileSizeKB.toFixed(1)} KB`
       : "0 KB";
 
+    const mime = item.mime_type || "";
+    const isPreviewable =
+      !isFolder &&
+      (mime.startsWith("image/") ||
+        mime === "application/pdf" ||
+        mime.startsWith("text/") ||
+        mime.startsWith("video/") ||
+        mime.startsWith("audio/") ||
+        [
+          "application/json",
+          "application/javascript",
+          "application/xml",
+          "application/xhtml+xml",
+        ].includes(mime));
+
     return (
       <li key={`${type}-${item.id}`} className={styles.listItem}>
-        {/* Nombre e icono */}
         <span
           className={`${styles.itemName} ${isFolder ? "" : styles.fileInfo}`}
         >
@@ -655,16 +764,42 @@ function DashboardPage() {
             <>
               {isImage ? (
                 <ImageThumbnail fileId={item.id} alt={item.name} />
+              ) : // Puedes poner un icono específico para PDF aquí si quieres
+              mime === "application/pdf" ? (
+                <span className={styles.itemIcon}>📄</span>
               ) : (
                 <span className={styles.itemIcon}>📄</span>
               )}
-              <span title={item.name}>{item.name}</span>
+              {/* Este botón ahora llama a handlePreview */}
+              <button
+                onClick={() => handlePreview(item)}
+                className={styles.folderLink}
+                disabled={isActionLoading || !isPreviewable}
+                title={
+                  isPreviewable
+                    ? `Previsualizar ${item.name}`
+                    : `Previsualización no disponible`
+                }
+              >
+                {item.name}
+              </button>
               <span className={styles.fileSize}>({displaySize})</span>
             </>
           )}
         </span>
-        {/* Acciones */}
         <div className={styles.itemActions}>
+          {/* Botón de icono para previsualizar */}
+          {isPreviewable && (
+            <button
+              onClick={() => handlePreview(item)}
+              className={`${styles.itemActionButton} ${styles.previewButton}`}
+              title="Previsualizar"
+              disabled={isActionLoading}
+            >
+              <PreviewIcon />
+            </button>
+          )}
+          {/* Resto de botones */}
           <button
             onClick={() => openRenameModal(type, item.id, item.name)}
             className={`${styles.itemActionButton} ${styles.renameButton}`}
@@ -750,7 +885,7 @@ function DashboardPage() {
   // --- Renderizado Principal ---
   return (
     <div className={styles.pageWrapper}>
-      {/* --- Header --- */}
+      {/* Header */}
       <header className={styles.header}>
         <button
           onClick={() => handleBreadcrumbClick("root", 0)}
@@ -759,11 +894,10 @@ function DashboardPage() {
           disabled={isActionLoading || currentFolderId === "root"}
         >
           <h2 className={styles.headerTitle}>
-            SkyVault {user?.username ? `- ${user.username}` : ""}
+            {" "}
+            SkyVault {user?.username ? `- ${user.username}` : ""}{" "}
           </h2>
         </button>
-
-        {/* Desktop Search */}
         <div
           className={`${styles.searchContainer} ${styles.desktopOnlySearch}`}
         >
@@ -780,14 +914,13 @@ function DashboardPage() {
               onClick={clearSearch}
               className={styles.clearSearchButton}
               title="Limpiar búsqueda"
+              disabled={isActionLoading}
             >
               {" "}
               <CloseIcon />{" "}
             </button>
           )}
         </div>
-
-        {/* Desktop Actions */}
         <div
           className={`${styles.desktopActionsContainer} ${styles.desktopOnlyActions}`}
         >
@@ -816,8 +949,6 @@ function DashboardPage() {
             Logout{" "}
           </button>
         </div>
-
-        {/* Mobile Actions */}
         <div className={styles.mobileHeaderActions}>
           <button
             onClick={toggleMobileSearch}
@@ -871,7 +1002,7 @@ function DashboardPage() {
         </div>
       </header>
 
-      {/* --- Overlay Búsqueda Móvil --- */}
+      {/* Overlay Búsqueda Móvil */}
       {isMobileSearchVisible && (
         <div
           className={styles.mobileSearchOverlay}
@@ -897,6 +1028,7 @@ function DashboardPage() {
                   onClick={clearSearch}
                   className={styles.clearSearchButton}
                   title="Limpiar búsqueda"
+                  disabled={isActionLoading}
                 >
                   {" "}
                   <CloseIcon />{" "}
@@ -914,7 +1046,7 @@ function DashboardPage() {
         </div>
       )}
 
-      {/* --- Breadcrumbs --- */}
+      {/* Breadcrumbs */}
       <nav className={styles.navBar}>
         {!searchTerm && (
           <div className={styles.breadcrumbsContainer}>
@@ -937,9 +1069,9 @@ function DashboardPage() {
         )}
       </nav>
 
-      {/* --- Contenido Principal --- */}
+      {/* Contenido Principal */}
       <main className={styles.mainContent}>
-        {searchTerm /* Renderizado Búsqueda */ && (
+        {searchTerm ? (
           <>
             <h2 className={styles.contentHeader}>
               {" "}
@@ -948,11 +1080,8 @@ function DashboardPage() {
             {isSearching && (
               <p className={styles.loadingMessage}>Buscando...</p>
             )}
-            {searchResults === false && (
-              <p className={styles.errorMessage}>
-                {" "}
-                Error al realizar la búsqueda.{" "}
-              </p>
+            {searchResults === null && !isSearching && (
+              <p className={styles.loadingMessage}>Inicia la búsqueda...</p>
             )}
             {searchResults &&
               !isSearching &&
@@ -1001,50 +1130,57 @@ function DashboardPage() {
                 </>
               )}
           </>
-        )}
-        {!searchTerm /* Renderizado Contenido Carpeta */ && (
+        ) : (
           <>
-            <h2 className={styles.contentHeader}>
-              {" "}
-              Contenido de: {currentFolderName}{" "}
-            </h2>
-            {isLoading && !isActionLoading ? (
-              <p className={styles.loadingMessage}>Cargando...</p>
-            ) : isUploading ? (
-              <p className={styles.loadingMessage}>Subiendo archivo...</p>
-            ) : !isLoading && folders.length === 0 && files.length === 0 ? (
-              <p className={styles.emptyMessage}>Esta carpeta está vacía.</p>
-            ) : (
-              <>
-                {folders.length > 0 && (
-                  <>
-                    {" "}
-                    <h3 className={styles.sectionTitle}>Carpetas</h3>{" "}
-                    <ul className={styles.itemList}>
-                      {" "}
-                      {folders.map((folder) =>
-                        renderItem(folder, "folder")
-                      )}{" "}
-                    </ul>{" "}
-                  </>
-                )}
-                {files.length > 0 && (
-                  <>
-                    {" "}
-                    <h3 className={styles.sectionTitle}>Archivos</h3>{" "}
-                    <ul className={styles.itemList}>
-                      {" "}
-                      {files.map((file) => renderItem(file, "file"))}{" "}
-                    </ul>{" "}
-                  </>
-                )}
-              </>
+            {!isLoading && (
+              <h2 className={styles.contentHeader}>
+                {" "}
+                Contenido de: {currentFolderName}{" "}
+              </h2>
             )}
+            {isLoading && <p className={styles.loadingMessage}>Cargando...</p>}
+            {isUploading && !isLoading && (
+              <p className={styles.loadingMessage}>Subiendo archivo...</p>
+            )}
+            {!isLoading &&
+              !isUploading &&
+              folders.length === 0 &&
+              files.length === 0 && (
+                <p className={styles.emptyMessage}>Esta carpeta está vacía.</p>
+              )}
+            {!isLoading &&
+              !isUploading &&
+              (folders.length > 0 || files.length > 0) && (
+                <>
+                  {folders.length > 0 && (
+                    <>
+                      {" "}
+                      <h3 className={styles.sectionTitle}>Carpetas</h3>{" "}
+                      <ul className={styles.itemList}>
+                        {" "}
+                        {folders.map((folder) =>
+                          renderItem(folder, "folder")
+                        )}{" "}
+                      </ul>{" "}
+                    </>
+                  )}
+                  {files.length > 0 && (
+                    <>
+                      {" "}
+                      <h3 className={styles.sectionTitle}>Archivos</h3>{" "}
+                      <ul className={styles.itemList}>
+                        {" "}
+                        {files.map((file) => renderItem(file, "file"))}{" "}
+                      </ul>{" "}
+                    </>
+                  )}
+                </>
+              )}
           </>
         )}
       </main>
 
-      {/* --- Modales --- */}
+      {/* Modales */}
       <Modal
         isOpen={isCreateFolderModalOpen}
         onClose={
@@ -1079,10 +1215,11 @@ function DashboardPage() {
               className={`${modalStyles.confirmButton}`}
               disabled={!newFolderName.trim() || isCreatingFolder}
             >
+              {" "}
               {isCreatingFolder && (
                 <span className={modalStyles.spinner}></span>
               )}{" "}
-              {isCreatingFolder ? "Creando..." : "Crear"}
+              {isCreatingFolder ? "Creando..." : "Crear"}{" "}
             </button>
           </div>
         </form>
@@ -1119,10 +1256,11 @@ function DashboardPage() {
                 className={`${modalStyles.confirmButtonDanger}`}
                 disabled={isDeletingItem}
               >
+                {" "}
                 {isDeletingItem && (
                   <span className={modalStyles.spinner}></span>
                 )}{" "}
-                {isDeletingItem ? "Moviendo..." : "Mover a Papelera"}
+                {isDeletingItem ? "Moviendo..." : "Mover a Papelera"}{" "}
               </button>
             </div>
           </>
@@ -1167,10 +1305,11 @@ function DashboardPage() {
                   isRenamingItem
                 }
               >
+                {" "}
                 {isRenamingItem && (
                   <span className={modalStyles.spinner}></span>
                 )}{" "}
-                {isRenamingItem ? "Renombrando..." : "Renombrar"}
+                {isRenamingItem ? "Renombrando..." : "Renombrar"}{" "}
               </button>
             </div>
           </form>
@@ -1179,12 +1318,18 @@ function DashboardPage() {
       <MoveItemModal
         isOpen={isMoveModalOpen}
         onClose={!isMovingItem ? () => setIsMoveModalOpen(false) : null}
-        itemToMove={itemToMove} // Ahora itemToMove tiene la info del padre
+        itemToMove={itemToMove}
         onConfirmMove={handleConfirmMove}
-        isActionLoading={isActionLoading} // Pasar estado de carga general
+        isActionLoading={isActionLoading}
+      />
+      {/* FilePreviewModal ahora se abre para todos los tipos */}
+      <FilePreviewModal
+        isOpen={isPreviewModalOpen}
+        onClose={() => setIsPreviewModalOpen(false)}
+        file={fileToPreview}
       />
 
-      {/* --- Input Oculto y FAB --- */}
+      {/* Input Oculto y FAB */}
       <input
         id="file-upload-input"
         type="file"
