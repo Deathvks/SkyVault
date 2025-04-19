@@ -6,12 +6,12 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.4); /* Negro semitransparente */
+  background-color: rgba(0, 0, 0, 0.4);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1100;
-  padding: 15px;
+  padding: 15px; /* Mantener padding para que no toque bordes */
 }
 
 .modalContent {
@@ -25,11 +25,16 @@
   border-radius: var(--border-radius-large);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   min-width: 280px;
-  max-width: 480px;
-  width: 100%;
+  /* --- MODIFICACIÓN: Hacerlo más flexible --- */
+  /* Quitar o aumentar mucho max-width y max-height */
+  max-width: 95vw; /* Permitir que sea muy ancho */
+  max-height: 95vh; /* Permitir que sea muy alto */
+  width: auto; /* Ancho basado en contenido */
+  /* --------------------------------------- */
   position: relative;
-  max-height: 90vh;
-  overflow-y: auto;
+  display: flex; /* Usar flex para que el contenido interno controle mejor */
+  flex-direction: column;
+  overflow: hidden; /* El scroll principal estará en previewContainer */
   color: var(--text-primary);
 }
 
@@ -40,6 +45,9 @@
   position: relative;
   padding-bottom: 15px;
   margin-bottom: 15px;
+  flex-shrink: 0; /* Evitar que el header se encoja */
+  /* Separador visual opcional si el fondo del preview es igual al del modal */
+  /* border-bottom: 1px solid var(--border-color-light); */
 }
 
 .modalTitle {
@@ -210,13 +218,17 @@
 @media (max-width: 480px) {
   .modalContent {
     padding: 15px;
-    border-radius: var(--border-radius-large);
-    max-height: 85vh;
+    max-width: 98vw; /* Casi todo el ancho en móvil */
+    max-height: 90vh;
   }
   .modalTitle {
     font-size: 1.05rem;
     padding: 0 25px;
   } /* Ajustar padding */
+  .modalTitle {
+    font-size: 1.05rem;
+    padding: 0 25px;
+  }
   .modalCloseButton {
     top: 8px;
     right: 8px;
