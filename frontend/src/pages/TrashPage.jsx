@@ -8,11 +8,12 @@ import {
   restoreFolder,
   deleteFilePermanently,
   deleteFolderPermanently,
+  emptyUserTrash, // <-- Importar nueva función API
 } from "../services/api";
-import Modal from "../components/Modal"; // Reutilizamos el modal
+import Modal from "../components/Modal";
 import { toast } from "react-toastify";
-import styles from "./TrashPage.module.css"; // Estilos específicos de esta página
-import modalStyles from "../components/Modal.module.css"; // Estilos del modal genérico
+import styles from "./TrashPage.module.css";
+import modalStyles from "../components/Modal.module.css";
 
 // Iconos simples (puedes importarlos o definirlos aquí)
 const RestoreIcon = () => (
@@ -40,6 +41,19 @@ const DeleteForeverIcon = () => (
     <path d="M0 0h24v24H0z" fill="none" />
   </svg>
 );
+const EmptyTrashIcon = () => (
+  // <-- Icono para Vaciar Papelera
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    height="20px"
+    viewBox="0 0 24 24"
+    width="20px"
+    fill="currentColor"
+  >
+    <path d="M0 0h24v24H0V0z" fill="none" />
+    <path d="M15 4V3H9v1H4v2h1v13c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V6h1V4h-5zm2 15H7V6h10v13zm-5-9.72l-3.15 3.15 1.41 1.41L12 10.83l3.15 3.15 1.41-1.41L13.41 9.41 16.59 6.22l-1.41-1.41L12 7.59 8.82 4.41 7.41 5.82 10.59 9z" />
+  </svg>
+);
 
 function TrashPage() {
   const { logout } = useAuth();
@@ -50,12 +64,11 @@ function TrashPage() {
     isConfirmPermanentDeleteModalOpen,
     setIsConfirmPermanentDeleteModalOpen,
   ] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false); // Para deshabilitar botones durante acción
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isEmptyTrashModalOpen, setIsEmptyTrashModalOpen] = useState(false); // <-- Nuevo estado para modal
 
-  // Variable para el tiempo de retención (podría venir de una config)
-  const RETENTION_HOURS = 24; // Horas antes de la eliminación automática
+  const RETENTION_HOURS = 24;
 
-  // Función para cargar el contenido de la papelera
   const fetchTrash = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -77,7 +90,6 @@ function TrashPage() {
     }
   }, [logout]);
 
-  // Cargar la papelera al montar el componente
   useEffect(() => {
     fetchTrash();
   }, [fetchTrash]);
@@ -87,7 +99,6 @@ function TrashPage() {
   const handleRestore = async (type, id, name) => {
     if (isProcessing) return;
     setIsProcessing(true);
-    // Usar toast.loading para indicar proceso
     const toastId = toast.loading(`Restaurando "${name}"...`);
     try {
       let response;
@@ -96,7 +107,6 @@ function TrashPage() {
       } else {
         response = await restoreFile(id);
       }
-      // Actualizar a éxito
       toast.update(toastId, {
         render:
           response.data.message ||
@@ -105,10 +115,9 @@ function TrashPage() {
         isLoading: false,
         autoClose: 3000,
       });
-      fetchTrash(); // Recargar papelera para reflejar el cambio
+      fetchTrash();
     } catch (error) {
       console.error(`Error restoring ${type}:`, error);
-      // Actualizar a error
       toast.update(toastId, {
         render: error.response?.data?.message || `Error al restaurar.`,
         type: "error",
@@ -131,9 +140,7 @@ function TrashPage() {
     setIsProcessing(true);
     setIsConfirmPermanentDeleteModalOpen(false);
     const { type, id, name } = itemToPermanentlyDelete;
-    // Iniciar notificación de carga
     const toastId = toast.loading(`Eliminando "${name}" permanentemente...`);
-
     try {
       let response;
       if (type === "folder") {
@@ -141,25 +148,23 @@ function TrashPage() {
       } else {
         response = await deleteFilePermanently(id);
       }
-      // Actualizar a éxito
       toast.update(toastId, {
         render:
           response.data.message ||
           `${
             type === "folder" ? "Carpeta" : "Archivo"
           } eliminado permanentemente.`,
-        type: "success", // Correcto: usar string 'success'
+        type: "success",
         isLoading: false,
         autoClose: 3000,
       });
-      fetchTrash(); // Recargar papelera para quitar el item
+      fetchTrash();
     } catch (error) {
       console.error(`Error permanently deleting ${type}:`, error);
-      // Actualizar a error
       toast.update(toastId, {
         render:
           error.response?.data?.message || `Error en eliminación permanente.`,
-        type: "error", // Correcto: usar string 'error'
+        type: "error",
         isLoading: false,
         autoClose: 5000,
       });
@@ -169,11 +174,44 @@ function TrashPage() {
     }
   };
 
-  // --- Función para Renderizar cada Item ---
+  // --- NUEVAS Funciones para Vaciar Papelera ---
+  const openEmptyTrashModal = () => {
+    if (isProcessing || !hasItems) return; // No abrir si está procesando o vacía
+    setIsEmptyTrashModalOpen(true);
+  };
 
+  const handleConfirmEmptyTrash = async () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    setIsEmptyTrashModalOpen(false);
+    const toastId = toast.loading("Vaciando papelera...");
+
+    try {
+      const response = await emptyUserTrash();
+      toast.update(toastId, {
+        render: response.data.message || "Papelera vaciada.",
+        type: "success",
+        isLoading: false,
+        autoClose: 4000,
+      });
+      fetchTrash(); // Recargar para mostrarla vacía
+    } catch (error) {
+      console.error("Error emptying trash:", error);
+      toast.update(toastId, {
+        render: error.response?.data?.message || "Error al vaciar la papelera.",
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+  // --- FIN NUEVAS Funciones ---
+
+  // --- Función para Renderizar cada Item ---
   const renderTrashItem = (item, type) => {
     const isFolder = type === "folder";
-    // Formatear la fecha de borrado
     const deletedDate = item.deletedAt
       ? new Date(item.deletedAt).toLocaleDateString("es-ES", {
           day: "2-digit",
@@ -181,7 +219,6 @@ function TrashPage() {
           year: "numeric",
         })
       : "N/A";
-    // Formatear tamaño
     const fileSizeMB = item.size ? item.size / (1024 * 1024) : 0;
     const fileSizeKB = item.size ? item.size / 1024 : 0;
     const displaySize = item.size
@@ -197,15 +234,12 @@ function TrashPage() {
           <span className={styles.itemName} title={item.name}>
             {item.name}
           </span>
-          {/* Mostrar tamaño solo para archivos */}
           {!isFolder && displaySize && (
             <span className={styles.itemSize}>({displaySize})</span>
           )}
-          {/* Mostrar fecha de eliminación */}
           <span className={styles.deletedDate}>Eliminado: {deletedDate}</span>
         </span>
         <div className={styles.itemActions}>
-          {/* Botón Restaurar */}
           <button
             onClick={() => handleRestore(type, item.id, item.name)}
             className={`${styles.actionButton} ${styles.restoreButton}`}
@@ -214,7 +248,6 @@ function TrashPage() {
           >
             <RestoreIcon />
           </button>
-          {/* Botón Eliminar Permanentemente */}
           <button
             onClick={() => openPermanentDeleteModal(type, item.id, item.name)}
             className={`${styles.actionButton} ${styles.deleteButton}`}
@@ -228,7 +261,6 @@ function TrashPage() {
     );
   };
 
-  // Determinar si hay items para mostrar
   const hasItems =
     !isLoading &&
     (trashItems.folders.length > 0 || trashItems.files.length > 0);
@@ -237,28 +269,35 @@ function TrashPage() {
   return (
     <div className={styles.pageContainer}>
       <div className={styles.trashCard}>
-        {/* Encabezado */}
         <div className={styles.header}>
           <h2 className={styles.title}>Papelera de Reciclaje</h2>
+          {/* --- BOTÓN VACIAR PAPELERA --- */}
+          <button
+            onClick={openEmptyTrashModal}
+            className={styles.emptyTrashButton} // <-- Añadir clase para estilo
+            disabled={!hasItems || isProcessing} // Deshabilitar si no hay items o se está procesando algo
+            title={!hasItems ? "La papelera está vacía" : "Vaciar papelera"}
+          >
+            <EmptyTrashIcon /> {/* <-- Usar el icono */}
+            Vaciar Papelera
+          </button>
+          {/* --------------------------- */}
           <Link to="/" className={styles.backLink}>
             Volver al Dashboard
           </Link>
         </div>
 
-        {/* Mensaje Informativo sobre retención */}
         <p className={styles.infoMessage}>
           Los elementos en la papelera se eliminarán permanentemente después de{" "}
           {RETENTION_HOURS} horas.
         </p>
 
-        {/* Contenido: Carga, Vacío o Lista */}
         {isLoading ? (
           <p className={styles.message}>Cargando papelera...</p>
         ) : !hasItems ? (
           <p className={styles.message}>La papelera está vacía.</p>
         ) : (
           <ul className={styles.itemList}>
-            {/* Renderizar carpetas y luego archivos */}
             {trashItems.folders.map((folder) =>
               renderTrashItem(folder, "folder")
             )}
@@ -267,7 +306,7 @@ function TrashPage() {
         )}
       </div>
 
-      {/* Modal de Confirmación para Eliminación Permanente */}
+      {/* Modal Confirmación Eliminación Permanente Individual */}
       <Modal
         isOpen={isConfirmPermanentDeleteModalOpen}
         onClose={
@@ -280,7 +319,7 @@ function TrashPage() {
         {itemToPermanentlyDelete && (
           <>
             <p>
-              ¿Estás seguro de que quieres eliminar permanentemente
+              ¿Estás seguro de que quieres eliminar permanentemente{" "}
               {itemToPermanentlyDelete.type === "folder"
                 ? " la carpeta"
                 : " el archivo"}
@@ -316,7 +355,50 @@ function TrashPage() {
           </>
         )}
       </Modal>
-    </div> // Cierre de pageContainer
+
+      {/* --- NUEVO Modal Confirmación Vaciar Papelera --- */}
+      <Modal
+        isOpen={isEmptyTrashModalOpen}
+        onClose={!isProcessing ? () => setIsEmptyTrashModalOpen(false) : null}
+        title="Confirmar Vaciar Papelera"
+      >
+        <>
+          <p>
+            ¿Estás seguro de que quieres{" "}
+            <strong>eliminar permanentemente</strong> todos los elementos de la
+            papelera?
+          </p>
+          <p
+            style={{
+              color: "var(--error-red)",
+              fontWeight: "500",
+              fontSize: "0.9em",
+            }}
+          >
+            ¡Esta acción no se puede deshacer!
+          </p>
+          <div className={modalStyles.modalActions}>
+            <button
+              type="button"
+              onClick={() => setIsEmptyTrashModalOpen(false)}
+              className={modalStyles.cancelButton}
+              disabled={isProcessing}
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleConfirmEmptyTrash}
+              className={modalStyles.confirmButtonDanger}
+              disabled={isProcessing}
+            >
+              {isProcessing && <span className={modalStyles.spinner}></span>}
+              {isProcessing ? "Vaciando..." : "Vaciar Papelera"}
+            </button>
+          </div>
+        </>
+      </Modal>
+      {/* --- FIN NUEVO Modal --- */}
+    </div>
   );
 }
 
