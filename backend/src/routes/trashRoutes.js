@@ -53,4 +53,13 @@ router.delete(
   trashController.permanentlyDeleteFile
 );
 
+// --- NUEVA RUTA ---
+// DELETE /api/trash/empty - Vaciar toda la papelera del usuario
+router.delete(
+  "/empty",
+  // No necesita validación específica, usa el userId del token
+  trashController.emptyTrash
+);
+// --- FIN NUEVA RUTA ---
+
 module.exports = router;

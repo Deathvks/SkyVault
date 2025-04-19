@@ -22,11 +22,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px; /* Reducir espacio inferior */
+  margin-bottom: 20px;
   padding-bottom: 15px;
   border-bottom: 1px solid var(--border-color-light);
-  flex-wrap: wrap; /* Permitir wrap en móvil */
-  gap: 10px; /* Espacio si hace wrap */
+  flex-wrap: wrap; /* Permitir wrap */
+  gap: 15px; /* Espacio entre elementos si hacen wrap */
 }
 
 .title {
@@ -34,7 +34,44 @@
   color: var(--text-primary);
   font-size: 1.6rem;
   font-weight: 600;
+  flex-grow: 1; /* Ocupar espacio */
 }
+
+/* --- NUEVO ESTILO BOTÓN VACIAR --- */
+.emptyTrashButton {
+  /* Hereda estilos base de botón */
+  padding: 8px 14px;
+  background-color: var(--system-gray-200); /* Fondo gris */
+  color: var(--error-red); /* Texto rojo */
+  font-weight: 500; /* Medium */
+  font-size: 0.9rem;
+  border: 1px solid var(--system-gray-300); /* Borde sutil */
+  display: inline-flex;
+  align-items: center;
+  gap: 6px; /* Espacio entre icono y texto */
+  white-space: nowrap; /* Evitar salto de línea */
+}
+.emptyTrashButton svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.emptyTrashButton:hover:not(:disabled) {
+  background-color: var(--system-gray-300); /* Oscurecer un poco */
+  border-color: var(--system-gray-400);
+}
+.emptyTrashButton:disabled {
+  color: var(--system-gray-400); /* Color deshabilitado */
+  background-color: var(--system-gray-100);
+  border-color: var(--system-gray-200);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.emptyTrashButton:disabled svg {
+  opacity: 0.6;
+}
+/* --- FIN NUEVO ESTILO --- */
 
 .backLink {
   color: var(--text-link);
@@ -45,6 +82,7 @@
   border-radius: var(--border-radius-medium);
   transition: background-color 0.15s ease;
   white-space: nowrap; /* Evitar que el link se parta */
+  flex-shrink: 0; /* Evitar que se encoja */
 }
 .backLink:hover {
   background-color: var(--system-gray-100);
@@ -184,22 +222,32 @@
     padding: 20px 15px;
   }
   .header {
+    /* Ajustar para que el botón quede bien */
+    flex-direction: row; /* Mantener en fila si cabe */
+    align-items: center; /* Centrar verticalmente */
+    /* O volver a column si prefieres:
     flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
-    margin-bottom: 20px;
-    border-bottom: none; /* Quizás quitar borde en móvil */
-    padding-bottom: 0;
+    */
   }
   .title {
-    font-size: 1.4rem;
-    width: 100%; /* Ocupar ancho */
-    text-align: left; /* Alinear a la izquierda */
+    /* Puede necesitar ajustar tamaño/orden si el botón es muy grande */
+  }
+  .emptyTrashButton {
+    order: 2; /* Ponerlo después del título */
+    margin-left: auto; /* Empujar a la derecha si hay espacio */
+    font-size: 0.85rem; /* Ligeramente más pequeño */
+    padding: 6px 10px;
+  }
+  .emptyTrashButton svg {
+    width: 16px;
+    height: 16px;
   }
   .backLink {
-    align-self: flex-start; /* Alinear link */
-    margin-top: 5px; /* Espacio sobre el link */
+    order: 3; /* El link al final */
+    /* align-self: flex-start; si está en columna */
   }
+
   .infoMessage {
     margin-bottom: 20px;
     font-size: 0.85rem;
@@ -232,5 +280,20 @@
   .actionButton svg {
     width: 16px;
     height: 16px;
+  }
+  /* Ajustes botón vaciar en móvil muy pequeño */
+  .header {
+    gap: 10px; /* Ajustar gap si es necesario */
+  }
+  .emptyTrashButton {
+    /* Puede necesitar ocupar todo el ancho si no cabe bien */
+    /* width: 100%; */
+    /* order: 3; */ /* Cambiar orden si ocupa todo el ancho */
+    /* margin-left: 0; */
+  }
+  .backLink {
+    /* Ajustar orden/margen si el botón vaciar ocupa todo */
+    /* order: 4; */
+    /* margin-top: 10px; */
   }
 }

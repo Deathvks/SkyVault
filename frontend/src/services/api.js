@@ -38,7 +38,7 @@ export const createFolder = (folderData) =>
 export const getFolderContents = (folderId = "root") =>
   apiClient.get(`/folders/contents/${folderId}`);
 export const deleteFolder = (folderId) =>
-  apiClient.delete(`/folders/${folderId}`); // Ahora hace soft delete
+  apiClient.delete(`/folders/${folderId}`);
 export const renameFolder = (folderId, data) =>
   apiClient.put(`/folders/${folderId}`, data);
 export const moveFolder = (folderId, data) =>
@@ -54,7 +54,7 @@ export const uploadFile = (formData) =>
   });
 export const downloadFile = (fileId) =>
   apiClient.get(`/files/${fileId}/download`, { responseType: "blob" });
-export const deleteFile = (fileId) => apiClient.delete(`/files/${fileId}`); // Ahora hace soft delete
+export const deleteFile = (fileId) => apiClient.delete(`/files/${fileId}`);
 export const getFileDataAsBlob = (fileId) =>
   apiClient.get(`/files/${fileId}/view`, { responseType: "blob" });
 export const renameFile = (fileId, data) =>
@@ -62,7 +62,7 @@ export const renameFile = (fileId, data) =>
 export const moveFile = (fileId, data) =>
   apiClient.put(`/files/${fileId}/move`, data);
 
-// --- NUEVAS FUNCIONES PAPELERA ---
+// --- Papelera ---
 export const getTrashItems = () => apiClient.get("/trash");
 export const restoreFolder = (folderId) =>
   apiClient.put(`/trash/folders/${folderId}/restore`);
@@ -72,6 +72,8 @@ export const deleteFolderPermanently = (folderId) =>
   apiClient.delete(`/trash/folders/${folderId}/permanent`);
 export const deleteFilePermanently = (fileId) =>
   apiClient.delete(`/trash/files/${fileId}/permanent`);
-// --- FIN FUNCIONES PAPELERA ---
+// --- NUEVA FUNCIÓN API ---
+export const emptyUserTrash = () => apiClient.delete("/trash/empty");
+// --- FIN NUEVA FUNCIÓN API ---
 
 export default apiClient;
