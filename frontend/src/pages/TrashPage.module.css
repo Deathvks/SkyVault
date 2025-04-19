@@ -1,0 +1,236 @@
+/* frontend/src/pages/TrashPage.module.css */
+
+.pageContainer {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px 20px;
+  background-color: var(--background-page);
+  min-height: 100vh; /* Ocupar al menos toda la altura de la ventana */
+}
+
+.trashCard {
+  background-color: var(--background-elevated);
+  padding: 25px 30px;
+  border-radius: var(--border-radius-large);
+  width: 100%;
+  max-width: 900px; /* Ancho máximo para la tarjeta principal */
+  /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); */ /* Sombra suave opcional */
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px; /* Reducir espacio inferior */
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--border-color-light);
+  flex-wrap: wrap; /* Permitir wrap en móvil */
+  gap: 10px; /* Espacio si hace wrap */
+}
+
+.title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+.backLink {
+  color: var(--text-link);
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: var(--border-radius-medium);
+  transition: background-color 0.15s ease;
+  white-space: nowrap; /* Evitar que el link se parta */
+}
+.backLink:hover {
+  background-color: var(--system-gray-100);
+  text-decoration: none;
+}
+
+/* Mensaje Informativo sobre retención */
+.infoMessage {
+  text-align: center;
+  padding: 10px 15px;
+  margin-bottom: 25px; /* Espacio debajo del mensaje */
+  font-size: 0.9rem;
+  color: var(--text-secondary); /* Color secundario */
+  background-color: var(--system-gray-100); /* Fondo sutil */
+  border-radius: var(--border-radius-medium);
+  border: 1px solid var(--border-color-light);
+}
+
+/* Mensaje de Carga o Papelera Vacía */
+.message {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--system-gray-600);
+  font-size: 1rem;
+}
+
+/* Lista de Items */
+.itemList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.trashItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--border-color-light);
+  gap: 10px; /* Espacio entre info y acciones */
+}
+.itemList > .trashItem:last-child {
+  border-bottom: none;
+}
+
+.itemInfo {
+  display: flex;
+  align-items: center;
+  flex-grow: 1; /* Ocupa el espacio disponible */
+  overflow: hidden; /* Evita que el contenido se desborde */
+  gap: 10px; /* Espacio entre icono, nombre, tamaño, fecha */
+}
+
+.itemIcon {
+  color: var(--system-gray-600); /* Icono gris en papelera */
+  font-size: 1.3rem;
+  flex-shrink: 0; /* Evita que el icono se encoja */
+}
+
+.itemName {
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1; /* Permitir que el nombre se encoja si es necesario */
+  flex-grow: 1; /* Intentar ocupar espacio */
+}
+
+.itemSize {
+  font-size: 0.85rem;
+  color: var(--system-gray-500);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.deletedDate {
+  font-size: 0.85rem;
+  color: var(--system-gray-500);
+  margin-left: auto; /* Empujar a la derecha dentro de itemInfo */
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding-left: 10px; /* Espacio a la izquierda */
+}
+
+/* Contenedor de Acciones */
+.itemActions {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  flex-shrink: 0; /* No encoger los botones */
+}
+
+.actionButton {
+  margin-left: 8px; /* Espacio entre botones */
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  color: var(--system-gray-600);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.actionButton:hover:not(:disabled) {
+  background-color: var(--system-gray-200);
+}
+.actionButton:disabled {
+  color: var(--system-gray-400);
+  cursor: not-allowed;
+  background-color: transparent !important;
+  opacity: 0.5;
+}
+.actionButton svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+/* Estilos específicos para botones de acción */
+.restoreButton:hover:not(:disabled) {
+  color: var(--system-green); /* Verde para restaurar */
+  background-color: rgba(52, 199, 89, 0.1); /* Fondo verde sutil */
+}
+
+.deleteButton:hover:not(:disabled) {
+  color: var(--error-red); /* Rojo para eliminar */
+  background-color: rgba(255, 59, 48, 0.1); /* Fondo rojo sutil */
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+  .trashCard {
+    padding: 20px 15px;
+  }
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: none; /* Quizás quitar borde en móvil */
+    padding-bottom: 0;
+  }
+  .title {
+    font-size: 1.4rem;
+    width: 100%; /* Ocupar ancho */
+    text-align: left; /* Alinear a la izquierda */
+  }
+  .backLink {
+    align-self: flex-start; /* Alinear link */
+    margin-top: 5px; /* Espacio sobre el link */
+  }
+  .infoMessage {
+    margin-bottom: 20px;
+    font-size: 0.85rem;
+  }
+  .itemInfo {
+    margin-right: 10px;
+    gap: 8px; /* Menos espacio interno */
+  }
+  .deletedDate {
+    display: none; /* Ocultar fecha en móvil si falta espacio */
+  }
+}
+
+@media (max-width: 480px) {
+  .trashItem {
+    padding: 10px; /* Menos padding */
+  }
+  .itemName {
+    /* Podríamos limitar el ancho máximo si es necesario */
+    /* max-width: 150px; */
+  }
+  .itemSize {
+    display: none; /* Ocultar tamaño en pantallas muy pequeñas */
+  }
+  .actionButton {
+    width: 30px;
+    height: 30px;
+    margin-left: 5px;
+  }
+  .actionButton svg {
+    width: 16px;
+    height: 16px;
+  }
+}

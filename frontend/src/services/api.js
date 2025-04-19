@@ -1,26 +1,19 @@
 // frontend/src/services/api.js
 import axios from "axios";
 
-// La URL base de tu backend API
-const API_URL = "http://localhost:3001/api"; // Asegúrate que coincida con tu backend
+const API_URL = "http://localhost:3001/api";
 
 const apiClient = axios.create({
   baseURL: API_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  headers: { "Content-Type": "application/json" },
 });
 
-// Interceptor para añadir el token JWT a las cabeceras
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("skyvault_token");
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }
-    // *** Añadido: Log para depurar cabeceras ***
-    // console.log('Request Headers:', config.headers);
-    // *** Fin añadido ***
     return config;
   },
   (error) => {
@@ -33,13 +26,11 @@ export const registerUser = (userData) =>
   apiClient.post("/users/register", userData);
 export const loginUser = (credentials) =>
   apiClient.post("/users/login", credentials);
-// --- NUEVAS FUNCIONES DE USUARIO ---
 export const getUserProfile = () => apiClient.get("/users/profile");
 export const updateUserProfile = (profileData) =>
-  apiClient.put("/users/profile", profileData); // profileData = { email?, username? }
+  apiClient.put("/users/profile", profileData);
 export const changeUserPassword = (passwordData) =>
-  apiClient.put("/users/password", passwordData); // passwordData = { currentPassword, newPassword }
-// --- FIN NUEVAS FUNCIONES ---
+  apiClient.put("/users/password", passwordData);
 
 // --- Carpetas ---
 export const createFolder = (folderData) =>
@@ -47,11 +38,11 @@ export const createFolder = (folderData) =>
 export const getFolderContents = (folderId = "root") =>
   apiClient.get(`/folders/contents/${folderId}`);
 export const deleteFolder = (folderId) =>
-  apiClient.delete(`/folders/${folderId}`);
+  apiClient.delete(`/folders/${folderId}`); // Ahora hace soft delete
 export const renameFolder = (folderId, data) =>
-  apiClient.put(`/folders/${folderId}`, data); // data = { newName: '...' }
+  apiClient.put(`/folders/${folderId}`, data);
 export const moveFolder = (folderId, data) =>
-  apiClient.put(`/folders/${folderId}/move`, data); // data = { destinationFolderId: '...' }
+  apiClient.put(`/folders/${folderId}/move`, data);
 export const getFolderTree = () => apiClient.get("/folders/tree");
 export const searchItems = (term) =>
   apiClient.get("/search", { params: { term } });
@@ -62,17 +53,25 @@ export const uploadFile = (formData) =>
     headers: { "Content-Type": "multipart/form-data" },
   });
 export const downloadFile = (fileId) =>
-  apiClient.get(`/files/${fileId}/download`, {
-    responseType: "blob",
-  });
-export const deleteFile = (fileId) => apiClient.delete(`/files/${fileId}`);
+  apiClient.get(`/files/${fileId}/download`, { responseType: "blob" });
+export const deleteFile = (fileId) => apiClient.delete(`/files/${fileId}`); // Ahora hace soft delete
 export const getFileDataAsBlob = (fileId) =>
-  apiClient.get(`/files/${fileId}/view`, {
-    responseType: "blob",
-  });
+  apiClient.get(`/files/${fileId}/view`, { responseType: "blob" });
 export const renameFile = (fileId, data) =>
-  apiClient.put(`/files/${fileId}`, data); // data = { newName: '...' }
+  apiClient.put(`/files/${fileId}`, data);
 export const moveFile = (fileId, data) =>
-  apiClient.put(`/files/${fileId}/move`, data); // data = { destinationFolderId: '...' }
+  apiClient.put(`/files/${fileId}/move`, data);
+
+// --- NUEVAS FUNCIONES PAPELERA ---
+export const getTrashItems = () => apiClient.get("/trash");
+export const restoreFolder = (folderId) =>
+  apiClient.put(`/trash/folders/${folderId}/restore`);
+export const restoreFile = (fileId) =>
+  apiClient.put(`/trash/files/${fileId}/restore`);
+export const deleteFolderPermanently = (folderId) =>
+  apiClient.delete(`/trash/folders/${folderId}/permanent`);
+export const deleteFilePermanently = (fileId) =>
+  apiClient.delete(`/trash/files/${fileId}/permanent`);
+// --- FIN FUNCIONES PAPELERA ---
 
 export default apiClient;

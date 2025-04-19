@@ -5,12 +5,16 @@ const cors = require("cors");
 const helmet = require("helmet"); // <-- Importar helmet
 const rateLimit = require("express-rate-limit"); // <-- Importar express-rate-limit
 const { connectDB } = require("./config/database");
-// const { syncDatabase } = require('./models'); // sync desactivado
+const { scheduleTrashCleanup } = require("./jobs/trashCleanupJob"); // <-- Importar planificador
+
+// Importar Rutas
 const userRoutes = require("./routes/userRoutes");
 const folderRoutes = require("./routes/folderRoutes");
 const fileRoutes = require("./routes/fileRoutes");
 const searchRoutes = require("./routes/searchRoutes");
+const trashRoutes = require("./routes/trashRoutes"); // Importar rutas de papelera
 
+// Conectar a la Base de Datos (es buena práctica hacerlo antes de definir la app)
 connectDB();
 
 const app = express();
@@ -21,9 +25,9 @@ const PORT = process.env.SERVER_PORT || 3001;
 // Helmet (cabeceras de seguridad) - ¡Importante ponerlo al principio!
 app.use(helmet());
 
-// CORS (ya lo teníamos)
+// CORS (Configuración existente)
 const corsOptions = {
-  origin: "http://localhost:5173",
+  origin: "http://localhost:5173", // Origen del frontend
   optionsSuccessStatus: 200,
 };
 app.use(cors(corsOptions));
@@ -31,25 +35,17 @@ app.use(cors(corsOptions));
 // Rate Limiter Básico (aplicar a todas las rutas API)
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // Limita cada IP a 100 peticiones por ventana
-  message:
-    "Demasiadas peticiones desde esta IP, por favor intenta de nuevo después de 15 minutos",
+  max: 100, // Limita cada IP a 100 peticiones por ventana (ajustar según necesidad)
+  message: {
+    message:
+      "Demasiadas peticiones desde esta IP, por favor intenta de nuevo después de 15 minutos",
+  },
   standardHeaders: true, // Devuelve info del límite en headers `RateLimit-*`
   legacyHeaders: false, // Deshabilita headers `X-RateLimit-*`
 });
 app.use("/api/", apiLimiter); // Aplicar a /api/*
 
-// Rate Limiter Más Estricto para Autenticación
-const authLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000, // 10 minutos
-  max: 10, // Limita cada IP a 10 intentos de login/registro por ventana
-  message:
-    "Demasiados intentos de autenticación desde esta IP, por favor intenta más tarde.",
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-// Aplicar solo a rutas de login/register (se hace en userRoutes.js ahora)
-// Ya no se aplica aquí globalmente a /api/users
+// (El Rate Limiter específico para Auth se aplica dentro de userRoutes.js)
 
 // -----------------------------
 
@@ -63,31 +59,35 @@ app.get("/", (req, res) => {
 });
 
 // Rutas de la API
-app.use("/api/users", userRoutes); // authLimiter se aplicará dentro de este archivo
+app.use("/api/users", userRoutes);
 app.use("/api/folders", folderRoutes);
 app.use("/api/files", fileRoutes);
 app.use("/api/search", searchRoutes);
+app.use("/api/trash", trashRoutes); // <-- Registrar rutas de papelera
 
-// Manejo de ruta no encontrada (404)
+// Manejo de ruta no encontrada (404) - Debe ir después de las rutas de la API
 app.use((req, res, next) => {
   res.status(404).json({ message: "Ruta no encontrada" });
 });
 
-// Manejador de errores global (500)
+// Manejador de errores global (500) - Debe ir al final
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error("Error global:", err); // Loguear el error completo
   // Evitar filtrar detalles del error en producción
   const status = err.status || 500;
   const message =
-    process.env.NODE_ENV === "production"
+    process.env.NODE_ENV === "production" && status === 500 // Solo ocultar si es 500 en prod
       ? "Error interno del servidor."
-      : err.message;
+      : err.message || "Ocurrió un error inesperado."; // Mensaje por defecto
   res.status(status).json({ message });
 });
 
 // Iniciar el servidor
 app.listen(PORT, async () => {
   console.log(`🚀 Servidor backend escuchando en http://localhost:${PORT}`);
-  // Sincronización desactivada
-  /* if (process.env.NODE_ENV !== 'production') { await syncDatabase(); } */
+
+  // --- INICIAR LA TAREA PROGRAMADA ---
+  // Se inicia después de que el servidor esté escuchando
+  scheduleTrashCleanup();
+  // ------------------------------------
 });
