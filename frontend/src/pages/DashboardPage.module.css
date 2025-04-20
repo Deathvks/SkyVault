@@ -173,34 +173,55 @@
 }
 
 .logoutButton {
-  background-color: transparent;
-  color: var(--error-red);
-  border: none;
-  padding: 6px 8px;
-  font-size: 0.95rem;
-  font-weight: 400;
-  border-radius: var(--border-radius-small);
-  transition: background-color 0.2s ease, color 0.2s ease;
+  background: none !important;   /* Asegurar sin fondo por defecto */
+  border: none !important;      /* Asegurar sin borde por defecto */
+  padding: 6px 8px;              /* Mantener padding */
   margin: 0;
+  color: var(--error-red) !important; /* <-- Forzar color rojo */
+  font-size: 0.95rem;
+  font-weight: 400;              /* Volver a 400 como estaba originalmente? O mantener 500? Ajusta si prefieres. */
+  border-radius: var(--border-radius-small); /* Mantener redondeo para el hover */
+  /* Asegurar que color y background-color están en la transición */
+  transition: color 0.2s ease, opacity 0.2s ease, background-color 0.2s ease;
   white-space: nowrap;
   cursor: pointer;
+  outline: none;
+  appearance: none;
+   -webkit-appearance: none;
+  -moz-appearance: none;
 }
+/* Hover: AÑADIR fondo rojo translúcido */
 .logoutButton:hover:not(:disabled) {
-  background-color: rgba(255, 59, 48, 0.1);
-  color: var(--error-red);
+  color: var(--error-red) !important; /* Mantener texto rojo */
+  background-color: rgba(255, 59, 48, 0.1) !important; /* Fondo rojo translúcido claro */
+  text-decoration: none; /* Quitar subrayado si lo habíamos puesto */
 }
+/* Hover en Dark Mode */
 :global(:root[data-theme="dark"]) .logoutButton:hover:not(:disabled) {
-  background-color: rgba(255, 69, 58, 0.15);
-  color: var(--error-red);
+  color: var(--error-red) !important; /* Mantener texto rojo */
+  background-color: rgba(255, 69, 58, 0.15) !important; /* Fondo rojo translúcido oscuro */
 }
 
+/* Focus: sin fondo ni outline */
+.logoutButton:focus,
+.logoutButton:focus-visible {
+    background: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    color: var(--error-red) !important; /* Mantener rojo en focus */
+    text-decoration: none;
+}
+
+/* Disabled: sin fondo, color gris */
 .logoutButton:disabled {
-  color: var(--system-gray-400);
-  background-color: transparent !important;
-  opacity: 0.5;
+  background: none !important;
+  color: var(--system-gray-400) !important;
+  opacity: 0.5 !important;
+  cursor: not-allowed;
+  text-decoration: none;
 }
 :global(:root[data-theme="dark"]) .logoutButton:disabled {
-  color: var(--system-gray-600-dark);
+  color: var(--system-gray-600-dark) !important;
 }
 
 .desktopActionsContainer {
@@ -259,26 +280,47 @@
   position: relative;
 }
 .mobileIconButton {
-  background: none;
-  border: none;
-  padding: 8px;
+  background: none !important; /* Forzar sin fondo */
+  border: none !important; /* Forzar sin borde */
+  padding: 8px; /* Mantenemos padding para área táctil */
   margin: 0;
   cursor: pointer;
   color: var(--primary-blue);
-  border-radius: 50%;
+  border-radius: 0; /* Asegurar sin redondeo */
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.15s ease;
+  transition: color 0.15s ease, transform 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+  appearance: none; /* Reseteo adicional */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  outline: none !important; /* Quitar outline */
+  box-shadow: none !important; /* Quitar cualquier sombra */
 }
+
+.mobileIconButton:hover,
+.mobileIconButton:focus,
+.mobileIconButton:focus-visible,
+.mobileIconButton:active {
+  background: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
 .mobileIconButton:hover {
-  background-color: rgba(0, 122, 255, 0.1);
+  /* background-color: rgba(0, 122, 255, 0.1); */ /* <-- ELIMINADO o COMENTADO */
+  /* Opcional: Cambiar ligeramente el color del icono en hover si quieres feedback */
+  color: var(--hover-blue);
 }
 :global(:root[data-theme="dark"]) .mobileIconButton:hover {
-  background-color: rgba(10, 132, 255, 0.15);
+  /* background-color: rgba(10, 132, 255, 0.15); */ /* <-- ELIMINADO o COMENTADO */
+  color: var(--hover-blue); /* Asegurar que el hover azul funcione en dark */
 }
 .mobileIconButton:active {
-  transform: scale(1);
+  transform: scale(0.95);
+  color: var(--primary-blue);
 }
 .mobileIconButton svg {
   width: 24px;
@@ -741,10 +783,12 @@
 .fabButton {
   width: 56px;
   height: 56px;
-  background-color: var(--primary-blue);
-  color: white;
+  /* --- FORZAR ESTILO AZUL --- */
+  background-color: var(--primary-blue) !important; /* Añadido !important */
+  color: white !important; /* Forzar color icono */
+  /* -------------------------- */
   border: none;
-  border-radius: var(--border-radius-round);
+  border-radius: var(--border-radius-round); /* Completamente redondo */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -760,15 +804,16 @@
   box-shadow: 0 6px 16px rgba(10, 132, 255, 0.4);
 }
 .fabButton:hover:not(:disabled) {
-  background-color: var(--hover-blue);
+  background-color: var(--hover-blue) !important;
 }
 .fabButton:active:not(:disabled) {
   transform: scale(0.95);
 }
 .fabButton:disabled {
-  background-color: var(--primary-blue);
+  background-color: var(--primary-blue) !important; /* Añadido !important */
+  color: white !important; /* Forzar color icono */
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.5 !important; /* Añadido !important */
 }
 .fabButton svg {
   width: 24px;

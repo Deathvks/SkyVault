@@ -1,76 +1,153 @@
 /* frontend/src/components/ContextMenu.module.css */
 
 .contextMenu {
-    position: absolute;
-    z-index: 1050; /* Asegurar que esté sobre otros elementos */
-    background-color: rgba(255, 255, 255, 0.95); /* Fondo ligeramente translúcido */
-    backdrop-filter: saturate(180%) blur(15px);
-    -webkit-backdrop-filter: saturate(180%) blur(15px);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: var(--border-radius-medium);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
-    min-width: 180px;
-    padding: 6px 0;
-    overflow: hidden; /* Para redondear bien */
-    user-select: none; /* Evitar selección de texto */
-    -webkit-user-select: none;
+  position: absolute;
+  z-index: 1050; /* Asegurar que esté sobre otros elementos */
+  /* Estilo Material Translúcido - Light */
+  background-color: rgba(255, 255, 255, 0.97); /* Casi opaco */
+  backdrop-filter: saturate(180%) blur(15px);
+  -webkit-backdrop-filter: saturate(180%) blur(15px);
+  border: 1px solid rgba(0, 0, 0, 0.08); /* Borde muy sutil light */
+  /* --- */
+  border-radius: var(--border-radius-medium);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+  min-width: 180px;
+  padding: 6px 0;
+  overflow: hidden; /* Para redondear bien */
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background-color 0.3s ease, border-color 0.3s ease,
+    box-shadow 0.3s ease; /* Transición */
+}
+
+.contextMenu ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.contextMenu li {
+  padding: 9px 15px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Espacio entre icono y texto */
+  transition: background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease; /* Transición */
+}
+
+/* Hover normal */
+.contextMenu li:not(.separator):not(.disabled):hover {
+  background-color: var(--system-gray-100); /* Hover gris claro light */
+}
+
+/* Active (opcional, para feedback al hacer clic) */
+.contextMenu li:not(.separator):not(.disabled):active {
+  background-color: var(
+    --system-gray-200
+  ); /* Gris un poco más oscuro al clicar */
+}
+
+/* Separador */
+.contextMenu li.separator {
+  height: 1px;
+  background-color: var(--border-color-light); /* Separador claro */
+  margin: 5px 0;
+  padding: 0;
+  cursor: default;
+  transition: background-color 0.3s ease; /* Transición */
+}
+
+/* Opción Peligrosa (rojo) */
+.contextMenu li.dangerOption {
+  color: var(--error-red);
+}
+.contextMenu li.dangerOption:hover:not(.disabled) {
+  background-color: rgba(255, 59, 48, 0.1); /* Fondo rojo translúcido claro */
+}
+.contextMenu li.dangerOption:active:not(.disabled) {
+  background-color: rgba(255, 59, 48, 0.15); /* Rojo un poco más oscuro */
+}
+
+/* Opción Deshabilitada */
+.contextMenu li.disabled {
+  color: var(--system-gray-400); /* Texto gris claro */
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Iconos SVG */
+.contextMenu li svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor; /* Hereda el color del texto (incluido el rojo) */
+  opacity: 0.8; /* Ligeramente atenuado */
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
+}
+/* Ajustar opacidad en hover/danger si se quiere */
+.contextMenu li:hover svg {
+  opacity: 1;
+}
+.contextMenu li.dangerOption svg {
+  opacity: 1;
+}
+.contextMenu li.disabled svg {
+  opacity: 0.5;
+}
+
+/* --- Dark Mode Overrides --- */
+:root[data-theme="dark"] {
+  .contextMenu {
+    /* Fondo translúcido oscuro */
+    background-color: rgba(44, 44, 46, 0.95) !important; /* Casi opaco oscuro */
+    border: 1px solid rgba(84, 84, 88, 0.65) !important; /* Borde oscuro */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4) !important; /* Sombra más pronunciada */
   }
-  
-  .contextMenu ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-  
-  .contextMenu li {
-    padding: 9px 15px;
-    font-size: 0.95rem;
-    color: var(--text-primary);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 10px; /* Espacio entre icono y texto */
-    transition: background-color 0.15s ease;
-  }
-  
+
   .contextMenu li:not(.separator):not(.disabled):hover {
-    background-color: var(--system-gray-100);
+    background-color: var(
+      --system-gray-300-dark
+    ) !important; /* Hover gris oscuro */
   }
-  
+
   .contextMenu li:not(.separator):not(.disabled):active {
-      background-color: var(--system-gray-200);
+    background-color: var(
+      --system-gray-400-dark
+    ) !important; /* Active gris oscuro */
   }
-  
-  
+
   .contextMenu li.separator {
-    height: 1px;
-    background-color: var(--border-color-light);
-    margin: 5px 0;
-    padding: 0;
-    cursor: default;
+    background-color: var(
+      --system-gray-300-dark
+    ) !important; /* Separador oscuro */
   }
-  
-  .contextMenu li.dangerOption {
-    color: var(--error-red);
-  }
+
   .contextMenu li.dangerOption:hover:not(.disabled) {
-    background-color: rgba(255, 59, 48, 0.1);
+    background-color: rgba(
+      255,
+      69,
+      58,
+      0.15
+    ) !important; /* Fondo rojo translúcido oscuro */
   }
-  
+  .contextMenu li.dangerOption:active:not(.disabled) {
+    background-color: rgba(
+      255,
+      69,
+      58,
+      0.2
+    ) !important; /* Rojo oscuro un poco más oscuro */
+  }
+
   .contextMenu li.disabled {
-      color: var(--system-gray-400);
-      cursor: not-allowed;
-      opacity: 0.6;
+    color: var(
+      --system-gray-600-dark
+    ) !important; /* Texto deshabilitado oscuro */
+    opacity: 0.6 !important;
   }
-  
-  /* Estilos para iconos (ajustar tamaño/color si es necesario) */
-  .contextMenu li svg {
-    width: 16px;
-    height: 16px;
-    fill: currentColor;
-    opacity: 0.8;
-    flex-shrink: 0;
+  .contextMenu li.disabled svg {
+    opacity: 0.5 !important;
   }
-  .contextMenu li.dangerOption svg {
-      opacity: 1;
-  }
+}

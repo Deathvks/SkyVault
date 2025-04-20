@@ -1,139 +1,154 @@
 /* frontend/src/pages/ProfilePage.module.css */
 
 .pageContainer {
-    display: flex;
-    justify-content: center;
-    align-items: flex-start; /* Alinear arriba */
-    padding: 40px 20px; /* Más padding superior */
-    background-color: var(--background-page);
-    min-height: calc(100vh - 60px); /* Ajustar si tienes header fijo */
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; /* Alinear arriba */
+  padding: 40px 20px; /* Más padding superior */
+  background-color: var(--background-page);
+  min-height: calc(100vh - 60px); /* Ajustar si tienes header fijo */
+  transition: background-color 0.3s ease; /* Transición */
+}
+
+.profileCard {
+  background-color: var(--background-elevated);
+  padding: 30px;
+  border-radius: var(--border-radius-large);
+  /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); */ /* Sombra opcional */
+  width: 100%;
+  max-width: 600px; /* Ancho máximo */
+  transition: background-color 0.3s ease; /* Transición */
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 30px;
+  color: var(--text-primary);
+  font-size: 1.6rem;
+  font-weight: 600;
+  transition: color 0.3s ease; /* Transición */
+}
+
+.profileInfo {
+  margin-bottom: 25px;
+  line-height: 1.6;
+  font-size: 1rem;
+  color: var(--text-secondary);
+  transition: color 0.3s ease; /* Transición */
+}
+
+.profileInfo p {
+  margin-bottom: 8px;
+  /* Hereda color de .profileInfo */
+}
+
+.profileInfo strong {
+  color: var(--text-primary);
+  font-weight: 500; /* Medium */
+  margin-right: 8px;
+  transition: color 0.3s ease; /* Transición */
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--border-color-light);
+  margin: 30px 0;
+  transition: border-top-color 0.3s ease; /* Transición */
+}
+
+.profileForm {
+  margin-bottom: 20px;
+}
+
+.formTitle {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  transition: color 0.3s ease; /* Transición */
+}
+
+.formGroup {
+  margin-bottom: 20px;
+}
+
+/* Label e Input heredan de index.css */
+.label {
+  /* font-size: 0.9rem; */
+  transition: color 0.3s ease; /* Transición */
+}
+.input {
+  /* Estilos base ya definidos y con transición en index.css */
+}
+
+.button {
+  /* Hereda estilos .button-primary de index.css o define aquí */
+  display: block; /* Hacerlo block para ocupar ancho */
+  width: auto; /* Ancho automático o 100% si prefieres */
+  min-width: 150px; /* Ancho mínimo */
+  margin-top: 10px; /* Espacio sobre el botón */
+  margin-left: auto; /* Alinear a la derecha si width es auto */
+  margin-right: 0;
+  padding: 10px 20px;
+
+  /* --- FORZAR ESTILO AZUL --- */
+  background-color: var(--primary-blue) !important; /* Añadir !important */
+  color: var(--button-text-light) !important; /* Añadir !important */
+  /* --- FIN FORZAR ESTILO AZUL --- */
+  border: none;
+  border-radius: var(--border-radius-medium);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease, transform 0.1s ease,
+    color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.button:hover:not(:disabled) {
+  background-color: var(--hover-blue) !important; /* Añadir !important */
+}
+.button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.button:disabled {
+  background-color: var(--primary-blue) !important; /* Añadir !important */
+  opacity: 0.5 !important; /* Añadir !important */
+  color: var(--button-text-light) !important; /* Añadir !important */
+  cursor: not-allowed;
+}
+
+.backLink {
+  display: block;
+  text-align: center;
+  margin-top: 30px;
+  color: var(--text-link);
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: color 0.3s ease; /* Transición */
+}
+.backLink:hover {
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .pageContainer {
+    padding: 20px 10px;
   }
-  
   .profileCard {
-    background-color: var(--background-elevated);
-    padding: 30px;
-    border-radius: var(--border-radius-large);
-    /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); */ /* Sombra opcional */
-    width: 100%;
-    max-width: 600px; /* Ancho máximo */
+    padding: 20px;
   }
-  
   .title {
-    text-align: center;
-    margin-bottom: 30px;
-    color: var(--text-primary);
-    font-size: 1.6rem;
-    font-weight: 600;
-  }
-  
-  .profileInfo {
+    font-size: 1.4rem;
     margin-bottom: 25px;
-    line-height: 1.6;
-    font-size: 1rem;
-    color: var(--text-secondary);
   }
-  
-  .profileInfo p {
-    margin-bottom: 8px;
-  }
-  
-  .profileInfo strong {
-    color: var(--text-primary);
-    font-weight: 500; /* Medium */
-    margin-right: 8px;
-  }
-  
-  .divider {
-    border: none;
-    border-top: 1px solid var(--border-color-light);
-    margin: 30px 0;
-  }
-  
-  .profileForm {
-    margin-bottom: 20px;
-  }
-  
   .formTitle {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 20px;
+    font-size: 1.1rem;
   }
-  
-  .formGroup {
-    margin-bottom: 20px;
-  }
-  
-  /* Label e Input heredan de index.css */
-  .label {
-    /* font-size: 0.9rem; */
-  }
-  .input {
-    /* Estilos base ya definidos */
-  }
-  
   .button {
-    /* Hereda estilos .button-primary de index.css o define aquí */
-    display: block; /* Hacerlo block para ocupar ancho */
-    width: auto; /* Ancho automático o 100% si prefieres */
-    min-width: 150px; /* Ancho mínimo */
-    margin-top: 10px; /* Espacio sobre el botón */
-    margin-left: auto; /* Alinear a la derecha si width es auto */
+    width: 100%; /* Botones ocupan todo el ancho */
+    padding: 12px;
+    margin-left: 0; /* Centrar si ocupa todo el ancho */
     margin-right: 0;
-    padding: 10px 20px;
-  
-    /* Reutilizar estilos primarios */
-    background-color: var(--primary-blue);
-    color: var(--button-text-light);
-    border: none;
-    border-radius: var(--border-radius-medium);
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s ease, opacity 0.2s ease, transform 0.1s ease;
-    -webkit-tap-highlight-color: transparent;
   }
-  .button:hover:not(:disabled) {
-    background-color: var(--hover-blue);
-  }
-  .button:active:not(:disabled) {
-    transform: scale(0.98);
-  }
-  .button:disabled {
-    background-color: var(--primary-blue);
-    opacity: 0.5;
-     cursor: not-allowed;
-  }
-  
-  .backLink {
-    display: block;
-    text-align: center;
-    margin-top: 30px;
-    color: var(--text-link);
-    text-decoration: none;
-    font-size: 0.95rem;
-  }
-  .backLink:hover {
-    text-decoration: underline;
-  }
-  
-  /* Responsive */
-  @media (max-width: 600px) {
-    .pageContainer {
-      padding: 20px 10px;
-    }
-    .profileCard {
-      padding: 20px;
-    }
-    .title {
-      font-size: 1.4rem;
-      margin-bottom: 25px;
-    }
-    .formTitle {
-       font-size: 1.1rem;
-    }
-    .button {
-       width: 100%; /* Botones ocupan todo el ancho */
-       padding: 12px;
-    }
-  }
+}

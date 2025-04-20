@@ -147,6 +147,8 @@ function DashboardPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState(null);
   const searchTimeoutRef = useRef(null);
+  const desktopSearchInputRef = useRef(null); // <--- NUEVO REF
+  const mobileSearchInputRef = useRef(null); // <--- NUEVO REF
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileSearchVisible, setIsMobileSearchVisible] = useState(false);
   const mobileMenuRef = useRef(null);
@@ -264,54 +266,122 @@ function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentFolderId, searchTerm]); // loadContents ya está en useCallback
 
-  // --- Lógica de Búsqueda ---
   const performSearch = useCallback(
     async (term) => {
-      if (!term.trim()) {
+      // Asegurarse de que el término no esté vacío
+      if (!term) {
+        console.log(
+          "[Search] Término vacío detectado en performSearch (inicio), limpiando."
+        );
         setSearchResults(null);
-        loadContents(currentFolderId); // Cargar contenido actual si la búsqueda está vacía
+        setIsLoading(false);
+        loadContents(currentFolderId); // Recargar carpeta actual si se borra búsqueda
         return;
       }
-      setIsLoading(true); // Indicar carga durante la búsqueda
+
+      // Guardar referencia al input activo ANTES de la llamada API
+      let inputRefToFocus = null;
+      let wasInputFocused = false;
+      if (document.activeElement === desktopSearchInputRef.current) {
+        inputRefToFocus = desktopSearchInputRef;
+        wasInputFocused = true;
+        console.log("[Search] Input Desktop tenía el foco antes.");
+      } else if (document.activeElement === mobileSearchInputRef.current) {
+        inputRefToFocus = mobileSearchInputRef;
+        wasInputFocused = true;
+        console.log("[Search] Input Móvil tenía el foco antes.");
+      }
+
+      // Activar carga y limpiar resultados iniciales
+      console.log(`[Search] Iniciando búsqueda para: "${term}"`);
+      setIsLoading(true);
       setSearchResults(null);
+
       try {
-        const response = await searchItems(term.trim());
-        setSearchResults(response.data || { folders: [], files: [] });
+        const response = await searchItems(term);
+        console.log("[Search] Resultados recibidos. Actualizando estado...");
+        setSearchResults(response.data || { folders: [], files: [] }); // <-- Causa re-render 1
       } catch (err) {
+        console.error("Error en búsqueda:", err);
         const errorMsg =
           err.response?.data?.message || "Error al realizar la búsqueda.";
-        console.error("Error en búsqueda:", err);
         toast.error(errorMsg);
-        setSearchResults({ folders: [], files: [] }); // Mostrar vacío en error
+        setSearchResults({ folders: [], files: [] }); // Causa re-render 1 (en error)
         if (err.response?.status === 401 || err.response?.status === 403) {
           logout();
         }
       } finally {
-        setIsLoading(false); // Finalizar carga
+        // Actualizar isLoading DESPUÉS de tener resultados
+        setIsLoading(false); // <--- Causa re-render 2
+        console.log("[Search] Búsqueda finalizada, isLoading=false.");
+
+        // Intentar devolver el foco DESPUÉS del render final de isLoading
+        if (wasInputFocused && inputRefToFocus?.current) {
+          // Usar setTimeout para asegurar que se ejecuta después del ciclo de render
+          setTimeout(() => {
+            // Comprobar si la ref sigue siendo válida y si el elemento es enfocable
+            if (
+              inputRefToFocus.current &&
+              typeof inputRefToFocus.current.focus === "function"
+            ) {
+              console.log(
+                "[Search] Intentando devolver foco post-render (setTimeout)..."
+              );
+              inputRefToFocus.current.focus();
+              // Verificar si realmente funcionó
+              if (document.activeElement === inputRefToFocus.current) {
+                console.log("[Search] Foco devuelto con éxito (setTimeout).");
+              } else {
+                console.warn(
+                  "[Search] Falló la devolución del foco (setTimeout). Elemento activo ahora:",
+                  document.activeElement
+                );
+              }
+            } else {
+              console.log(
+                "[Search] Referencia al input no válida en setTimeout."
+              );
+            }
+          }, 0); // Ejecutar tan pronto como sea posible después del render actual
+        } else {
+          console.log(
+            "[Search] Input no estaba enfocado o ref no disponible, no se devuelve foco."
+          );
+        }
+        // --- Fin Lógica Refocus ---
       }
     },
-    [logout, currentFolderId, loadContents] // Añadir loadContents y currentFolderId
+    // Asegúrate que todas las dependencias estén aquí
+    [setIsLoading, setSearchResults, loadContents, currentFolderId, logout]
   );
-
   const handleSearchChange = (event) => {
     const newTerm = event.target.value;
-    setSearchTerm(newTerm);
-    setSelectedItems(new Set());
+    setSearchTerm(newTerm); // Actualizar el término en el input (causa re-render del valor)
+    setSelectedItems(new Set()); // Limpiar selección si cambia la búsqueda
     setIsSelectionMode(false);
 
     clearTimeout(searchTimeoutRef.current); // Limpiar timeout anterior
 
-    if (newTerm.trim()) {
-      setIsLoading(true); // Mostrar carga mientras se escribe
-      setSearchResults(null); // Limpiar resultados anteriores
+    const termToSearch = newTerm.trim(); // Guardar término limpio
+
+    if (termToSearch) {
+      // --- QUITAR CAMBIOS DE ESTADO INMEDIATOS ---
+      // setIsLoading(true); // << ELIMINADO DE AQUÍ
+      // setSearchResults(null); // << ELIMINADO DE AQUÍ
+      console.log(`[Search] Debounce iniciado para: "${termToSearch}"`);
+
       searchTimeoutRef.current = setTimeout(() => {
-        performSearch(newTerm); // Ejecutar búsqueda después de pausa
+        // Llamar a performSearch después del retardo
+        performSearch(termToSearch);
       }, 500); // 500ms debounce
     } else {
-      // Si el término está vacío, limpiar búsqueda y cargar contenido actual
-      setIsLoading(false); // Quitar indicador de carga inmediato
-      setSearchResults(null);
-      loadContents(currentFolderId);
+      // Si el input se vacía, limpiar resultados y cargar contenido actual
+      console.log(
+        "[Search] Término vacío, limpiando búsqueda y cargando carpeta actual."
+      );
+      setSearchResults(null); // Limpiar resultados inmediatamente
+      // setIsLoading(false); // No es necesario aquí, lo maneja loadContents o performSearch
+      loadContents(currentFolderId); // Cargar carpeta actual
     }
   };
 
@@ -1547,6 +1617,7 @@ function DashboardPage() {
               className={`${styles.searchContainer} ${styles.desktopOnlySearch}`}
             >
               <input
+                ref={desktopSearchInputRef} // <--- AÑADIR AQUÍ
                 type="search"
                 placeholder="Buscar archivos y carpetas..."
                 className={styles.searchInput}
@@ -1666,16 +1737,11 @@ function DashboardPage() {
 
       {/* Overlay Búsqueda Móvil */}
       {isMobileSearchVisible && (
-        <div
-          className={styles.mobileSearchOverlay}
-          onClick={toggleMobileSearch}
-        >
-          <div
-            className={styles.mobileSearchInputWrapper}
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className={styles.mobileSearchOverlay} /* ... */>
+          <div className={styles.mobileSearchInputWrapper} /* ... */>
             <div className={styles.mobileSearchInner}>
               <input
+                ref={mobileSearchInputRef} // <--- AÑADIR AQUÍ
                 type="search"
                 placeholder="Buscar..."
                 className={styles.searchInput}

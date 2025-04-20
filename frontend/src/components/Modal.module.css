@@ -6,36 +6,39 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.4);
+  background-color: rgba(0, 0, 0, 0.45);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1100;
-  padding: 15px; /* Mantener padding para que no toque bordes */
+  padding: 15px;
 }
 
 .modalContent {
-  /* Estilo Material Translúcido iOS */
-  background-color: rgba(242, 242, 247, 0.85);
+  background-color: rgba(242, 242, 247, 0.9);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  /* --- */
+  border: 1px solid rgba(0, 0, 0, 0.08);
   padding: 20px;
   border-radius: var(--border-radius-large);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   min-width: 280px;
-  /* --- MODIFICACIÓN: Hacerlo más flexible --- */
-  /* Quitar o aumentar mucho max-width y max-height */
-  max-width: 95vw; /* Permitir que sea muy ancho */
-  max-height: 95vh; /* Permitir que sea muy alto */
-  width: auto; /* Ancho basado en contenido */
-  /* --------------------------------------- */
+  max-width: 95vw;
+  max-height: 95vh;
+  width: auto;
   position: relative;
-  display: flex; /* Usar flex para que el contenido interno controle mejor */
+  display: flex;
   flex-direction: column;
-  overflow: hidden; /* El scroll principal estará en previewContainer */
+  overflow: hidden;
   color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease,
+    border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+:root[data-theme="dark"] .modalContent {
+  background-color: rgba(44, 44, 46, 0.9) !important;
+  border: 1px solid rgba(84, 84, 88, 0.65);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
 }
 
 .modalHeader {
@@ -45,9 +48,7 @@
   position: relative;
   padding-bottom: 15px;
   margin-bottom: 15px;
-  flex-shrink: 0; /* Evitar que el header se encoja */
-  /* Separador visual opcional si el fondo del preview es igual al del modal */
-  /* border-bottom: 1px solid var(--border-color-light); */
+  flex-shrink: 0;
 }
 
 .modalTitle {
@@ -56,16 +57,13 @@
   font-weight: 600;
   text-align: center;
   color: var(--text-primary);
-
-  /* *** Truncamiento para títulos largos *** */
-  padding: 0 35px; /* Espacio para botón X */
+  transition: color 0.3s ease;
+  padding: 0 35px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  /* max-width: calc(100% - 70px); */ /* Opcional */
 }
 
-/* Botón de cierre con SVG */
 .modalCloseButton {
   position: absolute;
   top: 10px;
@@ -81,7 +79,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
   -webkit-tap-highlight-color: transparent;
   transform: none !important;
 }
@@ -91,7 +89,7 @@
   transform: none !important;
 }
 .modalCloseButton:active {
-  transform: scale(1) !important;
+  transform: scale(0.95) !important;
   background-color: var(--system-gray-400);
 }
 .modalCloseButton svg {
@@ -100,8 +98,21 @@
   display: block;
   fill: currentColor;
 }
+:root[data-theme="dark"] .modalCloseButton {
+  background-color: var(--system-gray-400-dark);
+  color: var(--system-gray-600-dark);
+}
+:root[data-theme="dark"] .modalCloseButton:hover {
+  background-color: var(--system-gray-500-dark);
+  color: var(--text-primary);
+}
+:root[data-theme="dark"] .modalCloseButton:active {
+  background-color: var(--system-gray-600-dark);
+}
 
 .modalBody {
+  overflow-y: auto;
+  flex-grow: 1;
 }
 
 .modalBody p {
@@ -113,6 +124,7 @@
   font-size: 0.95rem;
   color: var(--text-primary);
   text-align: center;
+  transition: color 0.3s ease;
 }
 .modalBody p strong {
   overflow-wrap: break-word;
@@ -134,7 +146,12 @@
   background-color: var(--background-elevated);
   border-color: var(--system-gray-300);
 }
-.modalBody input:focus {
+:root[data-theme="dark"] .modalBody input {
+  background-color: var(--system-gray-300-dark);
+  border-color: var(--system-gray-400-dark);
+}
+:root[data-theme="dark"] .modalBody input:focus {
+  background-color: var(--system-gray-400-dark);
 }
 
 .modalActions {
@@ -143,50 +160,101 @@
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border-color-light);
+  flex-shrink: 0;
+  transition: border-top-color 0.3s ease;
 }
 .modalActions button {
   padding: 10px 20px;
   font-size: 1rem;
   flex-grow: 1;
   min-width: 100px;
+  border-radius: var(
+    --border-radius-medium
+  ); /* Asegurar redondeo consistente */
+  border: none; /* Asegurar sin borde */
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease,
+    transform 0.1s ease; /* Transición base */
 }
+
+/* --- Botón Cancelar --- */
 .modalActions .cancelButton {
-  background-color: var(--system-gray-200);
-  color: var(--primary-blue);
-  font-weight: 400;
+  background-color: var(--system-gray-200) !important; /* Forzar gris claro */
+  color: var(--primary-blue) !important; /* Forzar texto azul */
+  font-weight: 500;
   order: 1;
 }
 .modalActions .cancelButton:hover:not(:disabled) {
-  background-color: var(--system-gray-300);
+  background-color: var(--system-gray-300) !important; /* Forzar hover gris */
 }
-.modalActions .cancelButton:active {
-  transform: scale(1);
+.modalActions .cancelButton:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.modalActions .cancelButton:disabled {
+  background-color: var(--system-gray-200) !important; /* Forzar gris */
+  color: var(--system-gray-400) !important; /* Forzar color disabled */
+  opacity: 0.7 !important; /* Forzar opacidad */
+  cursor: not-allowed;
+}
+/* Dark Mode Cancelar */
+:root[data-theme="dark"] .modalActions .cancelButton {
+  background-color: var(--system-gray-400-dark) !important;
+  color: var(--primary-blue) !important; /* Mantener azul */
+}
+:root[data-theme="dark"] .modalActions .cancelButton:hover:not(:disabled) {
+  background-color: var(--system-gray-500-dark) !important;
+}
+:root[data-theme="dark"] .modalActions .cancelButton:disabled {
+  background-color: var(--system-gray-400-dark) !important;
+  color: var(--system-gray-600-dark) !important;
+  opacity: 0.6 !important;
 }
 
+/* --- Botón Confirmar (Azul) --- */
 .modalActions .confirmButton {
-  background-color: var(--primary-blue);
-  color: var(--button-text-light);
+  background-color: var(--primary-blue) !important; /* Forzar azul */
+  color: var(--button-text-light) !important; /* Forzar blanco */
   font-weight: 600;
   order: 2;
 }
 .modalActions .confirmButton:hover:not(:disabled) {
-  background-color: var(--hover-blue);
+  background-color: var(--hover-blue) !important; /* Forzar hover azul */
 }
-.modalActions .confirmButton:active {
+.modalActions .confirmButton:active:not(:disabled) {
   transform: scale(0.98);
 }
+.modalActions .confirmButton:disabled {
+  background-color: var(--primary-blue) !important; /* Forzar azul */
+  color: var(--button-text-light) !important; /* Forzar blanco */
+  opacity: 0.5 !important; /* Forzar opacidad */
+  cursor: not-allowed;
+}
 
+/* --- Botón Confirmar Peligro (Rojo) --- */
 .modalActions .confirmButtonDanger {
-  background-color: var(--error-red);
-  color: var(--button-text-light);
+  background-color: var(--error-red) !important; /* Forzar rojo */
+  color: var(--button-text-light) !important; /* Forzar blanco */
   font-weight: 600;
   order: 2;
 }
 .modalActions .confirmButtonDanger:hover:not(:disabled) {
-  background-color: #d9362d;
+  background-color: #d9362d !important; /* Forzar hover rojo */
 }
-.modalActions .confirmButtonDanger:active {
+:root[data-theme="dark"]
+  .modalActions
+  .confirmButtonDanger:hover:not(:disabled) {
+  background-color: #e0342a !important; /* Forzar hover rojo dark */
+}
+.modalActions .confirmButtonDanger:active:not(:disabled) {
   transform: scale(0.98);
+}
+.modalActions .confirmButtonDanger:disabled {
+  background-color: var(--error-red) !important; /* Forzar rojo */
+  color: var(--button-text-light) !important; /* Forzar blanco */
+  opacity: 0.5 !important; /* Forzar opacidad */
+  cursor: not-allowed;
 }
 
 /* Spinner */
@@ -202,11 +270,17 @@
   margin-right: 8px;
   margin-bottom: -2px;
 }
+/* Spinner en botón Cancelar (azul sobre gris) */
 .modalActions .cancelButton .spinner {
-  border-top-color: var(--primary-blue);
-  border-color: rgba(0, 122, 255, 0.2);
-  border-top-color: var(--primary-blue);
+  border-color: rgba(0, 122, 255, 0.2) !important; /* Forzar colores */
+  border-top-color: var(--primary-blue) !important;
 }
+/* Spinner en botón Danger (blanco sobre rojo) */
+.modalActions .confirmButtonDanger .spinner {
+  border-color: rgba(255, 255, 255, 0.3) !important; /* Forzar colores */
+  border-top-color: var(--button-text-light) !important;
+}
+/* Spinner en botón Confirm (blanco sobre azul) - ya debería funcionar */
 
 @keyframes spin {
   to {
@@ -218,13 +292,9 @@
 @media (max-width: 480px) {
   .modalContent {
     padding: 15px;
-    max-width: 98vw; /* Casi todo el ancho en móvil */
+    max-width: 98vw;
     max-height: 90vh;
   }
-  .modalTitle {
-    font-size: 1.05rem;
-    padding: 0 25px;
-  } /* Ajustar padding */
   .modalTitle {
     font-size: 1.05rem;
     padding: 0 25px;
@@ -245,6 +315,9 @@
   .modalActions {
     flex-direction: column;
     gap: 12px;
+    border-top: none;
+    padding-top: 5px;
+    margin-top: 15px;
   }
   .modalActions button {
     width: 100%;
