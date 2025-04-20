@@ -173,43 +173,55 @@
 }
 
 .logoutButton {
-  background: none !important;   /* Asegurar sin fondo por defecto */
-  border: none !important;      /* Asegurar sin borde por defecto */
-  padding: 6px 8px;              /* Mantener padding */
+  background: none !important; /* Asegurar sin fondo por defecto */
+  border: none !important; /* Asegurar sin borde por defecto */
+  padding: 6px 8px; /* Mantener padding */
   margin: 0;
   color: var(--error-red) !important; /* <-- Forzar color rojo */
   font-size: 0.95rem;
-  font-weight: 400;              /* Volver a 400 como estaba originalmente? O mantener 500? Ajusta si prefieres. */
-  border-radius: var(--border-radius-small); /* Mantener redondeo para el hover */
+  font-weight: 400; /* Volver a 400 como estaba originalmente? O mantener 500? Ajusta si prefieres. */
+  border-radius: var(
+    --border-radius-small
+  ); /* Mantener redondeo para el hover */
   /* Asegurar que color y background-color están en la transición */
   transition: color 0.2s ease, opacity 0.2s ease, background-color 0.2s ease;
   white-space: nowrap;
   cursor: pointer;
   outline: none;
   appearance: none;
-   -webkit-appearance: none;
+  -webkit-appearance: none;
   -moz-appearance: none;
 }
 /* Hover: AÑADIR fondo rojo translúcido */
 .logoutButton:hover:not(:disabled) {
   color: var(--error-red) !important; /* Mantener texto rojo */
-  background-color: rgba(255, 59, 48, 0.1) !important; /* Fondo rojo translúcido claro */
+  background-color: rgba(
+    255,
+    59,
+    48,
+    0.1
+  ) !important; /* Fondo rojo translúcido claro */
   text-decoration: none; /* Quitar subrayado si lo habíamos puesto */
 }
 /* Hover en Dark Mode */
 :global(:root[data-theme="dark"]) .logoutButton:hover:not(:disabled) {
   color: var(--error-red) !important; /* Mantener texto rojo */
-  background-color: rgba(255, 69, 58, 0.15) !important; /* Fondo rojo translúcido oscuro */
+  background-color: rgba(
+    255,
+    69,
+    58,
+    0.15
+  ) !important; /* Fondo rojo translúcido oscuro */
 }
 
 /* Focus: sin fondo ni outline */
 .logoutButton:focus,
 .logoutButton:focus-visible {
-    background: none !important;
-    outline: none !important;
-    box-shadow: none !important;
-    color: var(--error-red) !important; /* Mantener rojo en focus */
-    text-decoration: none;
+  background: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  color: var(--error-red) !important; /* Mantener rojo en focus */
+  text-decoration: none;
 }
 
 /* Disabled: sin fondo, color gris */
@@ -1065,6 +1077,38 @@
   display: none;
 }
 
+.quotaInfoDesktop {
+  font-size: 0.8rem; /* Más pequeño */
+  color: var(--text-secondary);
+  margin-right: 10px; /* Espacio antes de los iconos/botones */
+  white-space: nowrap; /* Evitar salto de línea */
+  background-color: var(--system-gray-100); /* Fondo sutil opcional */
+  padding: 4px 8px; /* Padding pequeño */
+  border-radius: var(--border-radius-pill); /* Redondeo píldora */
+  border: 1px solid var(--border-color-light); /* Borde sutil */
+  transition: background-color 0.3s ease, color 0.3s ease,
+    border-color 0.3s ease;
+}
+:root[data-theme="dark"] .quotaInfoDesktop {
+  background-color: var(--system-gray-300-dark);
+  border-color: var(--system-gray-400-dark);
+}
+
+/* Estilo para la información de cuota en el menú móvil */
+.quotaInfoMobile {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  padding: 8px 15px; /* Padding similar a otros items */
+  border-bottom: 1px solid var(--border-color-light); /* Separador opcional */
+  margin-bottom: 5px; /* Espacio antes de los links */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:root[data-theme="dark"] .quotaInfoMobile {
+  border-bottom-color: var(--system-gray-300-dark);
+}
+
 /* --- Media Queries --- */
 @media (min-width: 701px) {
   .desktopOnlySearch,
@@ -1265,6 +1309,13 @@
     opacity: 0 !important;
     pointer-events: none !important;
   }
+
+  .quotaInfoMobile {
+    display: none; /* Ocultar en Desktop */
+  }
+  .quotaInfoDesktop {
+    display: inline-block; /* Mostrar en Desktop */
+  }
 }
 
 @media (max-width: 700px) {
@@ -1459,6 +1510,13 @@
   }
   .selectAllContainer {
     padding-left: 0;
+  }
+
+  .quotaInfoDesktop {
+    display: none; /* Ocultar en Móvil */
+  }
+  .quotaInfoMobile {
+    display: block; /* Mostrar en Móvil (dentro del menú) */
   }
 }
 
