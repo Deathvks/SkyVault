@@ -22,6 +22,7 @@
   position: relative; /* Para menú móvil */
   z-index: 1050;
   border-bottom: 1px solid var(--border-color-light); /* Borde inferior sutil */
+  min-height: 60px; /* Altura mínima para acomodar la barra contextual */
 }
 
 /* Botón que envuelve el título */
@@ -41,7 +42,9 @@
   overflow: hidden; /* Para el ellipsis del título */
 }
 .headerTitleButton:hover:not(:disabled) {
-  /* No es necesario hover visual si el texto cambia */
+  /* Establece explícitamente el fondo como transparente en hover */
+  background-color: transparent !important; /* Puedes probar sin !important primero */
+  /* Comentario anterior eliminado o actualizado */
 }
 .headerTitleButton:disabled {
   cursor: default;
@@ -71,11 +74,16 @@
   flex-grow: 1;
   min-width: 200px;
   max-width: 450px;
-  position: relative;
+  position: relative; /* Mantener por si se añade icono de limpiar */
   order: 2;
 }
+
+/* Estilo del icono eliminado */
+/* .searchIcon { ... } */
+
 .searchInput {
   width: 100%;
+  /* Padding izquierdo normal, ya no hay icono de lupa */
   padding: 8px 35px 8px 15px;
   border: none;
   border-radius: var(--border-radius-medium);
@@ -87,14 +95,24 @@
   -moz-appearance: none;
   appearance: none;
   color: var(--text-primary);
+  text-overflow: ellipsis;
 }
+
+/* Estilo normal del placeholder */
 .searchInput::placeholder {
   color: var(--text-placeholder);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
 }
+
 .searchInput:focus {
   background-color: var(--background-elevated);
   box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
 }
+
+/* Quitar botón 'x' nativo de input search */
 .searchInput::-webkit-search-cancel-button,
 .searchInput::-webkit-search-decoration {
   -webkit-appearance: none;
@@ -108,7 +126,7 @@
 
 .clearSearchButton {
   position: absolute;
-  right: 5px;
+  right: 10px; /* Ajusta según padding-right */
   top: 50%;
   transform: translateY(-50%);
   background: none;
@@ -122,13 +140,14 @@
   line-height: 1;
   border-radius: 50%;
   transition: background-color 0.15s ease, color 0.15s ease;
+  z-index: 1;
 }
 .clearSearchButton:hover {
   color: var(--text-primary);
   background-color: rgba(0, 0, 0, 0.05);
 }
 .clearSearchButton:active {
-  transform: translateY(-50%) scale(1); /* Evitar escalado en active */
+  transform: translateY(-50%) scale(1);
 }
 .clearSearchButton svg {
   width: 16px;
@@ -248,7 +267,6 @@
   min-width: 150px;
   border: 1px solid var(--system-gray-200);
 }
-/* Estilos para Link y botones dentro del dropdown */
 .mobileDropdownLink {
   display: block;
   width: 100%;
@@ -256,7 +274,6 @@
 }
 .mobileDropdownLink button,
 .mobileDropdownMenu button {
-  /* Aplicar a ambos */
   display: block;
   width: 100%;
   padding: 10px 15px;
@@ -266,72 +283,68 @@
   color: var(--text-primary);
   font-size: 0.95rem;
   border-radius: 0;
-  cursor: pointer; /* Asegurar cursor pointer */
+  cursor: pointer;
 }
 .mobileDropdownLink button:hover,
 .mobileDropdownMenu button:not(.mobileDropdownLogout):hover {
-  /* Hover para perfil y otros */
   background-color: var(--system-gray-100);
 }
 .mobileDropdownLogout {
-  /* Estilo específico para logout */
   color: var(--error-red) !important;
 }
 .mobileDropdownLogout:hover {
   background-color: rgba(255, 59, 48, 0.1) !important;
 }
 
-/* --- Superposición de Búsqueda Móvil (Centrada) --- */
+/* --- Superposición de Búsqueda Móvil --- */
 .mobileSearchOverlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.4); /* Fondo oscuro */
+  background-color: rgba(0, 0, 0, 0.4);
   z-index: 1090;
   display: flex;
-  justify-content: center; /* Centrar horizontalmente */
-  align-items: flex-start; /* Alinear arriba para empezar */
+  justify-content: center;
+  align-items: flex-start;
   padding: 20px;
-  padding-top: 15vh; /* Bajar el input desde arriba (ajustar %) */
+  padding-top: 15vh;
   opacity: 1;
   transition: opacity 0.2s ease-in-out;
 }
-
 .mobileSearchInputWrapper {
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
-  max-width: 500px; /* Ancho máximo */
+  max-width: 500px;
   padding: 0;
   background-color: transparent;
   border-radius: 0;
   box-shadow: none;
 }
-
 .mobileSearchInner {
   display: flex;
   align-items: center;
   flex-grow: 1;
   position: relative;
-  background-color: var(--background-elevated); /* Fondo blanco */
-  border-radius: var(--border-radius-medium); /* Redondeo */
+  background-color: var(--background-elevated);
+  border-radius: var(--border-radius-medium);
   padding: 0 8px 0 10px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Sombra sutil */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
+/* Quitar estilos del icono móvil si ya no existe */
 .mobileSearchInner > svg:first-of-type {
-  fill: var(--system-gray-500);
   width: 18px;
   height: 18px;
   margin-right: 6px;
   flex-shrink: 0;
 }
-
 .mobileSearchOverlay .searchInput {
   flex-grow: 1;
-  padding: 10px 25px 10px 0;
+  /* Padding izquierdo normal para móvil */
+  padding: 10px 25px 10px 10px;
   border: none;
   background-color: transparent;
   font-size: 1rem;
@@ -345,7 +358,6 @@
 .mobileSearchOverlay .searchInput::placeholder {
   color: var(--text-placeholder);
 }
-
 .mobileSearchOverlay .clearSearchButton {
   position: absolute;
   right: 5px;
@@ -374,18 +386,17 @@
   height: 16px;
   fill: currentColor;
 }
-
 .mobileSearchCancelButton {
   background-color: transparent !important;
   border: none;
-  color: white; /* Texto blanco/claro */
+  color: white;
   font-size: 1rem;
-  font-weight: 500; /* Medium weight */
+  font-weight: 500;
   padding: 8px 8px;
   margin-left: 8px;
   cursor: pointer;
   flex-shrink: 0;
-  border-radius: var(--border-radius-medium); /* Redondeo iOS */
+  border-radius: var(--border-radius-medium);
   transition: background-color 0.15s ease, color 0.15s ease;
   line-height: 1.2;
   -webkit-tap-highlight-color: transparent;
@@ -405,7 +416,7 @@
   cursor: default;
 }
 
-/* --- Navigation / Toolbar Minimalista --- */
+/* --- Navigation / Toolbar / Breadcrumbs --- */
 .navBar {
   padding: 10px 20px 5px 20px !important;
   background: none !important;
@@ -463,7 +474,7 @@
 
 /* --- Main Content Area --- */
 .mainContent {
-  padding: 10px 20px 90px 20px !important; /* Más padding inferior para FAB */
+  padding: 10px 20px 90px 20px !important;
   background-color: transparent !important;
   margin: 0 !important;
   box-shadow: none !important;
@@ -496,7 +507,7 @@
   color: var(--system-gray-600);
   text-transform: uppercase;
   font-weight: 500;
-  padding-left: 15px; /* Indentación título sección */
+  padding-left: 15px;
 }
 
 /* --- Item List (Estilo Lista iOS por defecto) --- */
@@ -506,7 +517,7 @@
   margin: 0 0 20px 0;
   background-color: var(--background-elevated);
   border-radius: var(--border-radius-large);
-  overflow: hidden; /* Clip de la lista general */
+  overflow: hidden;
 }
 .listItem {
   display: flex;
@@ -515,6 +526,7 @@
   padding: 12px 15px;
   border-bottom: 1px solid var(--border-color-light);
   position: relative;
+  transition: background-color 0.15s ease; /* Transición para selección */
 }
 .itemList > .listItem:last-child {
   border-bottom: none;
@@ -538,7 +550,7 @@
   line-height: 1;
   width: 38px;
   text-align: center;
-  overflow: visible; /* Permitir que el icono se vea completo */
+  overflow: visible;
 }
 .itemThumbnail {
   width: 38px;
@@ -550,7 +562,7 @@
   vertical-align: middle;
   flex-shrink: 0;
   background-color: var(--system-gray-100);
-  overflow: hidden; /* El thumb sí debe recortar la imagen */
+  overflow: hidden;
 }
 .folderLink {
   background: none;
@@ -586,7 +598,6 @@
   overflow: hidden;
 }
 .fileInfo > span:not(.fileSize) {
-  /* Span que contiene el nombre del archivo */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -608,15 +619,13 @@
   display: flex;
   align-items: center;
   white-space: nowrap;
-  opacity: 0; /* OCULTO por defecto en escritorio/grid */
+  opacity: 0;
   transition: opacity 0.15s ease-in-out;
   flex-shrink: 0;
 }
-/* Mostrar acciones al hacer hover/focus EN ESCRITORIO (GRID) */
-/* (La regla para móvil está en la media query) */
 .listItem:hover .itemActions,
 .listItem:focus-within .itemActions {
-  /* Opacidad gestionada en media queries */
+  /* Opacidad gestionada abajo y en media queries */
 }
 .itemActionButton {
   margin-left: 5px;
@@ -638,7 +647,7 @@
   color: var(--primary-blue);
 }
 .itemActionButton:active {
-  transform: scale(1); /* Evitar escalado */
+  transform: scale(1);
 }
 .itemActionButton.deleteButton:hover:not(:disabled) {
   background-color: rgba(255, 59, 48, 0.1);
@@ -660,7 +669,7 @@
   opacity: 0.5;
 }
 .itemActionButton svg {
-  width: 18px; /* Iconos ligeramente más pequeños */
+  width: 18px;
   height: 18px;
   fill: currentColor;
 }
@@ -758,6 +767,164 @@
   margin-right: 10px;
 }
 
+/* --- Estilos Selección Múltiple --- */
+.itemSelection {
+  flex-shrink: 0;
+  margin-right: 15px;
+  display: flex;
+  align-items: center;
+}
+.checkboxButton {
+  background: none;
+  border: none;
+  padding: 5px;
+  margin: -5px;
+  cursor: pointer;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease;
+  color: var(--system-gray-400);
+  line-height: 1;
+}
+.checkboxButton:hover:not(:disabled) {
+  background-color: var(--system-gray-100);
+}
+.checkboxButton:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.checkboxButton svg {
+  display: block;
+}
+.selectedItem {
+  background-color: rgba(0, 122, 255, 0.08) !important;
+}
+.hiddenActions {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.15s ease-out !important;
+}
+.itemActions {
+  transition: opacity 0.15s ease-in-out;
+}
+.listItem:hover .itemActions:not(.hiddenActions) {
+  opacity: 1;
+}
+.navBarContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  min-height: 25px;
+}
+.selectAllContainer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+}
+.selectAllLabel {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px;
+  margin: -5px;
+  border-radius: 50%;
+  transition: background-color 0.15s ease;
+}
+.selectAllLabel:hover {
+  background-color: var(--system-gray-100);
+}
+.selectAllLabel svg {
+  display: block;
+}
+.hiddenCheckbox {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.contextualActionBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 5px 10px;
+  background-color: var(--primary-blue);
+  color: white;
+  border-radius: var(--border-radius-medium);
+  animation: fadeInContextual 0.2s ease-out;
+}
+@keyframes fadeInContextual {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.selectionCount {
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin-right: 15px;
+  white-space: nowrap;
+}
+.contextualButtons {
+  display: flex;
+  gap: 5px;
+  flex-grow: 1;
+  justify-content: flex-start;
+}
+.contextualButton {
+  background: none;
+  border: none;
+  color: white;
+  padding: 8px 10px;
+  border-radius: var(--border-radius-medium);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.15s ease;
+  white-space: nowrap;
+}
+.contextualButton:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+.contextualButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: transparent !important;
+}
+.contextualButton svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+/* Estilo específico para botón mover contextual (opcional) */
+.contextualButton.moveButtonContextual:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+.deleteButtonContextual:hover:not(:disabled) {
+  background-color: rgba(255, 59, 48, 0.6);
+}
+.cancelButtonContextual {
+  margin-left: auto;
+  padding: 8px;
+}
+.cancelButtonContextual svg {
+  width: 20px;
+  height: 20px;
+}
+/* --- Fin Estilos Selección Múltiple --- */
+
 /* --- Clases para ocultar/mostrar --- */
 .desktopOnlySearch,
 .desktopOnlyActions {
@@ -769,7 +936,7 @@
 
 /* --- Media Queries --- */
 @media (min-width: 701px) {
-  /* Estilos para Escritorio / Grid View */
+  /* Estilos Grid View */
   .desktopOnlySearch,
   .desktopOnlyActions {
     display: flex !important;
@@ -780,8 +947,6 @@
   .mobileSearchOverlay {
     display: none !important;
   }
-
-  /* --- Estilos Grid View --- */
   .itemList {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -789,7 +954,6 @@
     background-color: transparent;
     border-radius: 0;
     box-shadow: none;
-    /* overflow: visible; */ /* No necesario aquí */
     margin-bottom: 20px;
   }
   .listItem {
@@ -801,8 +965,9 @@
     border-radius: var(--border-radius-large);
     background-color: var(--background-elevated);
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-    /* overflow: hidden; */ /* <-- Eliminado/Comentado antes */
+    transition: transform 0.15s ease, box-shadow 0.15s ease,
+      background-color 0.15s ease; /* Añadir background-color */
+    position: relative;
   }
   .listItem:hover {
     transform: translateY(-2px);
@@ -822,12 +987,10 @@
     word-break: break-word;
   }
   .itemName > span:first-child:not(.fileSize) {
-    /* Icono o Thumbnail */
     display: block;
     margin-bottom: 15px;
     overflow: visible;
   }
-
   .itemIcon {
     font-size: 3rem;
     width: auto;
@@ -835,6 +998,8 @@
     display: block;
     text-align: center;
     overflow: visible;
+    margin-right: 0; /* Quitar margen icono */
+    margin-bottom: 15px; /* Añadir espacio debajo icono */
   }
   .itemThumbnail {
     width: 70px;
@@ -843,7 +1008,9 @@
     display: block;
     margin-left: auto;
     margin-right: auto;
-    overflow: hidden; /* Thumbnails sí recortan */
+    overflow: hidden;
+    margin-bottom: 15px; /* Añadir espacio debajo miniatura */
+    margin-right: auto; /* Asegurar centrado */
   }
   .folderLink {
     text-align: center;
@@ -852,7 +1019,6 @@
     width: 100%;
     flex-grow: 0;
     display: block;
-    /* Añadir overflow ellipsis para carpetas también si necesario */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -867,41 +1033,35 @@
     width: 100%;
     text-align: center;
     overflow: visible;
+    margin-bottom: 0; /* Ajustar si es necesario */
   }
-  /* Estilos para el SPAN del nombre del archivo en GRID */
   .fileInfo > span:not(.fileSize) {
+    /* El botón/nombre del archivo */
     margin-right: 0;
     text-align: center;
     display: block;
     width: 100%;
-    white-space: nowrap; /* Evitar salto de línea */
-    overflow: hidden; /* Ocultar desbordamiento */
-    text-overflow: ellipsis; /* Mostrar puntos suspensivos */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 5px; /* Espacio entre nombre y tamaño */
   }
-
   .fileSize {
     display: block;
     text-align: center;
     width: 100%;
     margin-left: 0;
-    margin-top: 5px;
+    margin-top: 0px; /* Ajustar si es necesario */
     font-size: 0.8rem;
     padding-left: 0;
   }
-  /* Acciones en Grid (siempre visibles) */
   .itemActions {
-    opacity: 1 !important;
+    opacity: 1 !important; /* Siempre visible en grid desktop */
     margin-top: 15px;
     width: 100%;
     justify-content: center;
     gap: 8px;
   }
-  /* Ya no es necesario hover/focus para opacidad */
-  /* .listItem:hover .itemActions,
-   .listItem:focus-within .itemActions {
-      opacity: 1 !important;
-   } */
-
   .itemActionButton {
     width: 34px;
     height: 34px;
@@ -911,10 +1071,45 @@
     width: 18px;
     height: 18px;
   }
-} /* Fin @media (min-width: 701px) */
+  /* Selección en Grid */
+  .itemSelection {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    margin-right: 0;
+    background-color: rgba(255, 255, 255, 0.7);
+    border-radius: 50%;
+    padding: 2px;
+    z-index: 2;
+  }
+  .checkboxButton {
+    padding: 3px;
+    margin: 0;
+  }
+  .checkboxButton svg {
+    width: 20px;
+    height: 20px;
+  }
+  .selectedItem {
+    background-color: var(
+      --background-elevated
+    ) !important; /* Mantener fondo original */
+    box-shadow: 0 0 0 3px var(--primary-blue), 0 6px 12px rgba(0, 122, 255, 0.3);
+    transform: translateY(0);
+  }
+  .selectedItem:hover {
+    transform: translateY(0); /* No mover al hacer hover si está seleccionado */
+    box-shadow: 0 0 0 3px var(--primary-blue), 0 6px 12px rgba(0, 122, 255, 0.3);
+  }
+  /* Opcional: Ocultar acciones individuales en grid cuando está seleccionado */
+  .selectedItem .itemActions {
+    /* opacity: 0 !important; */
+    /* pointer-events: none !important; */
+  }
+}
 
 @media (max-width: 700px) {
-  /* Estilos para Móvil / Vista Lista */
+  /* Estilos Lista Móvil */
   .mobileHeaderActions {
     display: flex !important;
   }
@@ -929,15 +1124,14 @@
     padding-right: 15px;
   }
   .mainContent {
-    padding-bottom: 80px !important; /* Más espacio inferior para FAB */
+    padding-bottom: 80px !important;
   }
-
-  /* Acciones Siempre Visibles en Móvil (Vista Lista) */
+  /* Acciones visibles en lista móvil */
   .itemActions {
-    opacity: 1 !important; /* Forzar visibilidad */
-    gap: 5px; /* Espacio entre botones */
+    opacity: 1 !important;
+    gap: 5px;
   }
-  /* Quitar estilos grid y restaurar lista */
+  /* Restaurar estilos lista */
   .itemList {
     display: block;
     background-color: var(--background-elevated);
@@ -949,18 +1143,34 @@
     flex-direction: row;
     align-items: center;
     text-align: left;
-    padding: 12px 15px;
+    padding: 12px 10px; /* Menos padding horizontal */
     border-bottom: 1px solid var(--border-color-light);
     border-radius: 0;
     box-shadow: none;
     overflow: visible;
-  } /* Permitir overflow */
+    gap: 5px; /* Añadir gap general */
+  }
   .listItem:last-child {
     border-bottom: none;
   }
   .listItem:hover {
     transform: none;
     box-shadow: none;
+    background-color: var(--system-gray-100); /* Hover sutil en lista */
+  }
+  .selectedItem:hover {
+    background-color: rgba(
+      0,
+      122,
+      255,
+      0.08
+    ) !important; /* Mantener color selección en hover */
+  }
+  .itemSelection {
+    position: static; /* Volver a posición estática */
+    margin-right: 5px; /* Menos margen checkbox */
+    background-color: transparent; /* Sin fondo blanco */
+    padding: 0;
   }
   .itemName {
     flex-direction: row;
@@ -970,21 +1180,22 @@
     font-size: 1rem;
     width: auto;
     overflow: hidden;
-  } /* Overflow hidden para contenedor nombre */
+    margin-right: 5px; /* Margen item name */
+    gap: 10px; /* Espacio interno en .itemName */
+  }
   .itemIcon {
-    margin-bottom: 0;
+    margin-right: 0;
     font-size: 1.5rem;
-    width: 38px;
-    margin-right: 15px;
-    overflow: visible;
+    width: 30px; /* Icono más pequeño */
+    text-align: center;
+    margin-bottom: 0; /* Resetear margen */
   }
   .itemThumbnail {
-    width: 38px;
-    height: 38px;
-    margin-bottom: 0;
-    border-radius: var(--border-radius-small);
-    margin-right: 15px;
-    overflow: hidden;
+    width: 30px;
+    height: 30px;
+    margin-right: 0;
+    margin-bottom: 0; /* Resetear margen */
+    margin-left: 0;
   }
   .folderLink {
     text-align: left;
@@ -996,20 +1207,23 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  } /* Ellipsis para link carpeta */
+  }
   .fileInfo {
     flex-direction: row;
     width: auto;
     text-align: left;
     overflow: hidden;
-  } /* Overflow hidden para fileInfo */
+    gap: 10px;
+    margin-bottom: 0; /* Resetear margen */
+  }
   .fileInfo > span:not(.fileSize) {
-    margin-right: 8px;
+    margin-right: 0;
     display: inline-block;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  } /* Ellipsis para nombre archivo */
+    margin-bottom: 0; /* Resetear margen */
+  }
   .fileSize {
     display: inline-block;
     text-align: left;
@@ -1028,16 +1242,55 @@
   .itemActionButton {
     width: 32px;
     height: 32px;
+    margin-left: 5px; /* Restablecer margen entre botones */
   }
   .itemActionButton svg {
     width: 18px;
     height: 18px;
   }
-} /* Fin @media (max-width: 700px) */
+
+  /* Barra contextual móvil */
+  .contextualActionBar {
+    padding: 5px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 5px;
+  }
+  .selectionCount {
+    width: 100%;
+    text-align: left;
+    margin-bottom: 5px;
+    margin-right: 0;
+    font-size: 0.9rem;
+  }
+  .contextualButtons {
+    flex-grow: 0;
+    gap: 5px;
+  }
+  .contextualButton {
+    padding: 6px 8px;
+    font-size: 0.85rem;
+  }
+  .contextualButton svg {
+    width: 16px;
+    height: 16px;
+  }
+  .cancelButtonContextual {
+    margin-left: auto;
+  }
+  /* Nav bar móvil */
+  .navBarContent {
+    min-height: 30px;
+    gap: 10px;
+  }
+  .selectAllContainer {
+    padding-left: 0;
+  }
+}
 
 @media (max-width: 480px) {
   .headerTitle {
-    max-width: 150px; /* Ajustar si el nombre de usuario es largo */
+    max-width: 150px;
   }
   .mobileHeaderActions {
     gap: 0;
@@ -1045,24 +1298,38 @@
   .mobileIconButton {
     padding: 6px;
   }
-  /* Ajustes para móvil pequeño con acciones visibles */
+  /* Lista móvil pequeña */
   .itemActions {
     gap: 2px;
-  } /* Menos espacio entre botones */
+  }
   .itemActionButton {
     width: 30px;
     height: 30px;
-    margin-left: 2px;
+    margin-left: 2px; /* Menos margen */
   }
   .itemActionButton svg {
     width: 16px;
     height: 16px;
   }
-  /* Ajustar ancho del nombre si choca con los botones siempre visibles */
   .itemName {
-    max-width: calc(100% - 110px);
-  } /* Aproximado: (3btns * 30px) + gaps */
+    /* Limitar ancho para dejar espacio a acciones */
+    /* max-width: calc(100% - 110px); */ /* Ajustar según sea necesario */
+  }
   .fileSize {
-    display: none;
-  } /* Ocultar tamaño si no cabe */
-} /* Fin @media (max-width: 480px) */
+    display: none; /* Ocultar tamaño en pantallas muy pequeñas */
+  }
+  /* Barra contextual móvil pequeña */
+  .contextualButton span {
+    display: none; /* Ocultar texto botones */
+  }
+  .contextualButton svg {
+    margin-right: 0;
+  }
+  .contextualButton {
+    padding: 8px;
+    gap: 0;
+  }
+  .cancelButtonContextual {
+    padding: 8px;
+  }
+}

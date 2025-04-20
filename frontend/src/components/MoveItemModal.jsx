@@ -29,7 +29,17 @@ const FolderTreeItem = ({
         } // Llama a onSelect si no está deshabilitado
         title={folder.name} // Tooltip para nombres largos
       >
-        📁 {folder.name}
+        {/* Icono - podrías mejorarlo con un SVG real */}
+        <span
+          style={{
+            marginRight: "8px",
+            fontSize: "1.1em",
+            opacity: isDisabled ? 0.5 : isSelected ? 1 : 0.8,
+          }}
+        >
+          📁
+        </span>
+        {folder.name}
       </div>
       {/* Renderizar hijos recursivamente solo si no está deshabilitado y tiene hijos */}
       {!isDisabled && folder.children && folder.children.length > 0 && (
@@ -53,9 +63,9 @@ const FolderTreeItem = ({
 function MoveItemModal({
   isOpen,
   onClose,
-  itemToMove,
+  itemsToMove, // Renombrado a plural, siempre será un array
   onConfirmMove,
-  isActionLoading,
+  isActionLoading, // Prop que indica si hay una acción en curso
 }) {
   const [folderTree, setFolderTree] = useState([]);
   const [isLoadingTree, setIsLoadingTree] = useState(false);
@@ -73,38 +83,44 @@ function MoveItemModal({
           if (node.children && node.children.length > 0) {
             node.children.forEach((child) => {
               ids.push(child.id);
-              findChildren(child.id, node.children); // Recursivo
+              // ¡Corrección en recursión! Pasar node.children, no tree
+              findChildren(child.id, node.children);
             });
           }
           return; // Encontrado
         }
+        // ¡Corrección en recursión! Pasar node.children, no tree
         if (node.children && node.children.length > 0) {
           findChildren(targetId, node.children); // Buscar en hijos
         }
       }
     };
-    findChildren(folderId, tree); // Iniciar búsqueda
+    findChildren(folderId, tree); // Iniciar búsqueda desde la raíz del árbol
     ids.push(folderId); // Añadir la propia carpeta a deshabilitar
     return ids;
   }, []); // Sin dependencias
 
   // Efecto para cargar el árbol de carpetas y calcular deshabilitados al abrir el modal
   useEffect(() => {
-    if (isOpen && itemToMove) {
+    // Asegurarse que itemsToMove es un array y tiene al menos un elemento
+    if (isOpen && Array.isArray(itemsToMove) && itemsToMove.length > 0) {
+      const firstItem = itemsToMove[0]; // Usar el primer item para determinar la carpeta actual
       setIsLoadingTree(true);
       setErrorTree("");
+      setDisabledFolderIds([]); // Resetear deshabilitados
 
-      // Establecer selección inicial en la carpeta actual del item
+      // Establecer selección inicial en la carpeta actual del *primer* item
       const initialParentId =
-        (itemToMove.type === "folder"
-          ? itemToMove.parent_folder_id
-          : itemToMove.folder_id) ?? null;
+        (firstItem.type === "folder"
+          ? firstItem.parent_folder_id // Usar parent_folder_id si es carpeta
+          : firstItem.folder_id) ?? // Usar folder_id si es archivo
+        null; // Si no tiene padre (está en raíz), es null
+
       setSelectedFolderId(initialParentId);
+      // Nombre temporal mientras carga el árbol
       setSelectedFolderName(
         initialParentId === null ? "Raíz" : "Cargando nombre..."
-      ); // Nombre temporal
-
-      setDisabledFolderIds([]); // Resetear deshabilitados
+      );
 
       const fetchTree = async () => {
         try {
@@ -112,8 +128,8 @@ function MoveItemModal({
           const treeData = response.data || [];
           setFolderTree(treeData);
 
-          // Encontrar y establecer nombre inicial si no es raíz
-          let initialSelectedName = "Raíz";
+          // Encontrar y establecer nombre inicial correcto si no es raíz
+          let initialSelectedNameFound = "Raíz";
           if (initialParentId !== null) {
             const findName = (id, nodes) => {
               for (const node of nodes) {
@@ -125,34 +141,50 @@ function MoveItemModal({
               }
               return null;
             };
-            initialSelectedName =
+            initialSelectedNameFound =
               findName(initialParentId, treeData) || "Carpeta Desconocida";
           }
           // Solo actualizamos nombre si el ID seleccionado no ha cambiado mientras cargaba
-          setSelectedFolderId((currentId) => {
-            if (currentId === initialParentId) {
-              setSelectedFolderName(initialSelectedName);
+          // Esto evita sobrescribir una selección hecha por el usuario rápidamente
+          setSelectedFolderId((currentSelectedIdDuringLoad) => {
+            if (currentSelectedIdDuringLoad === initialParentId) {
+              setSelectedFolderName(initialSelectedNameFound);
             }
-            return currentId;
+            return currentSelectedIdDuringLoad;
           });
 
-          // Deshabilitar item a mover y descendientes (si es carpeta)
-          if (itemToMove.type === "folder") {
-            const idsToDisable = getDescendantIds(itemToMove.id, treeData);
-            setDisabledFolderIds(idsToDisable);
+          // Deshabilitar carpetas destino inválidas (la propia carpeta y sus hijas)
+          // Solo aplica si movemos UNA carpeta
+          if (itemsToMove.length === 1 && firstItem.type === "folder") {
+            if (firstItem.id) {
+              // Asegurarse que el ID existe
+              const idsToDisable = getDescendantIds(firstItem.id, treeData);
+              setDisabledFolderIds(idsToDisable);
+            }
           } else {
-            setDisabledFolderIds([]); // No deshabilitar nada si es archivo
+            // No deshabilitar nada si movemos archivo(s) o múltiples carpetas
+            // (La validación de mover a subcarpeta se hará en el backend o al confirmar)
+            setDisabledFolderIds([]);
           }
         } catch (err) {
           console.error("Error fetching folder tree:", err);
           setErrorTree("No se pudo cargar la estructura de carpetas.");
+          setSelectedFolderName("Error"); // Indicar error en nombre
         } finally {
           setIsLoadingTree(false);
         }
       };
       fetchTree();
+    } else if (!isOpen) {
+      // Resetear estados al cerrar
+      setFolderTree([]);
+      setIsLoadingTree(false);
+      setSelectedFolderId(null);
+      setSelectedFolderName("Raíz");
+      setErrorTree("");
+      setDisabledFolderIds([]);
     }
-  }, [isOpen, itemToMove, getDescendantIds]); // Dependencias del efecto
+  }, [isOpen, itemsToMove, getDescendantIds]); // Dependencias del efecto
 
   // Manejador para seleccionar una carpeta del árbol
   const handleSelectFolder = (id, name) => {
@@ -163,71 +195,130 @@ function MoveItemModal({
 
   // Manejador para seleccionar la opción "Raíz"
   const handleSelectRoot = () => {
+    // No necesitas verificar disabledFolderIds aquí porque la raíz (null) nunca estará deshabilitada
     setSelectedFolderId(null);
     setSelectedFolderName("Raíz");
   };
 
   // Manejador para confirmar la acción de mover
   const handleConfirm = () => {
-    if (itemToMove && !isActionLoading) {
-      const destinationIdForApi =
-        selectedFolderId === null ? null : selectedFolderId; // null para API si es raíz
+    // Asegurarse que hay items y no está cargando
+    if (
+      !Array.isArray(itemsToMove) ||
+      itemsToMove.length === 0 ||
+      isActionLoading
+    ) {
+      return;
+    }
 
-      // Validaciones finales antes de ejecutar
-      if (
-        itemToMove.type === "folder" &&
-        itemToMove.id === destinationIdForApi
-      ) {
+    const destinationIdForApi =
+      selectedFolderId === null ? null : selectedFolderId;
+
+    // *** Validaciones ANTES de llamar a onConfirmMove ***
+
+    // 1. Validar si se intenta mover una carpeta a sí misma o a una subcarpeta
+    //    (Solo aplica si se mueve UNA carpeta)
+    if (itemsToMove.length === 1 && itemsToMove[0].type === "folder") {
+      const movingFolder = itemsToMove[0];
+      if (movingFolder.id === destinationIdForApi) {
         toast.warn("No se puede mover una carpeta dentro de sí misma.");
         return;
       }
       if (disabledFolderIds.includes(destinationIdForApi)) {
+        // Esta comprobación usa los IDs calculados en useEffect
         toast.warn(
-          "No se puede mover un elemento a una de sus propias subcarpetas."
+          "No se puede mover una carpeta a una de sus propias subcarpetas."
         );
         return;
       }
-      // Comprobar si ya está en el destino para evitar llamada innecesaria
-      const currentParentId =
-        (itemToMove.type === "folder"
-          ? itemToMove.parent_folder_id
-          : itemToMove.folder_id) ?? null;
-      if (currentParentId === destinationIdForApi) {
-        toast.info(
-          `"${itemToMove.name}" ya se encuentra en "${selectedFolderName}".`
-        );
-        onClose(); // Cerrar modal
-        return;
-      }
-
-      // Llamar a la función pasada por props para ejecutar el movimiento
-      onConfirmMove(itemToMove, destinationIdForApi);
     }
+
+    // 2. Comprobar si el destino seleccionado es el mismo que el origen actual
+    //    (Aplica para uno o VARIOS elementos) <-- MODIFICACIÓN
+    let allItemsAlreadyInDestination = false;
+    if (Array.isArray(itemsToMove) && itemsToMove.length > 0) {
+      allItemsAlreadyInDestination = itemsToMove.every((item) => {
+        const currentParentId =
+          (item.type === "folder" ? item.parent_folder_id : item.folder_id) ??
+          null;
+        return currentParentId === destinationIdForApi;
+      });
+    }
+
+    if (allItemsAlreadyInDestination) {
+      const itemText =
+        itemsToMove.length === 1
+          ? `"${itemsToMove[0].name}"`
+          : "Los elementos seleccionados";
+      toast.info(`${itemText} ya se encuentra(n) en "${selectedFolderName}".`);
+      onClose(); // Cerrar modal porque no hay nada que hacer
+      return;
+    }
+
+    // Si pasa las validaciones, llamar a la función externa
+    onConfirmMove(itemsToMove, destinationIdForApi);
   };
 
+  // ==============================================================
   // Calcular si el botón de confirmar debe estar deshabilitado
-  const currentParentIdForCheck =
-    (itemToMove?.type === "folder"
-      ? itemToMove?.parent_folder_id
-      : itemToMove?.folder_id) ?? null;
+  // ==============================================================
+
+  // 1. Está cargando algo? (árbol o acción externa)
   const isDisabledBecauseLoading = isLoadingTree || isActionLoading;
-  const isDisabledBecauseSelection =
-    disabledFolderIds.includes(selectedFolderId);
-  const isDisabledBecauseSameLocation =
-    currentParentIdForCheck === selectedFolderId;
+
+  // 2. El destino seleccionado es inválido (p.ej., mover carpeta a sí misma o subcarpeta)?
+  //    (Solo aplica si se mueve UNA carpeta, la validación para múltiple está en backend)
+  let isDisabledBecauseSelection = false;
+  if (
+    Array.isArray(itemsToMove) &&
+    itemsToMove.length === 1 &&
+    itemsToMove[0].type === "folder"
+  ) {
+    isDisabledBecauseSelection = disabledFolderIds.includes(selectedFolderId);
+    // También verificar si se intenta mover a sí misma explícitamente
+    if (itemsToMove[0].id === selectedFolderId) {
+      isDisabledBecauseSelection = true;
+    }
+  }
+
+  // 3. El destino seleccionado es el mismo que el origen actual PARA TODOS los items?
+  //    (Aplica para uno o VARIOS elementos) <-- LÓGICA ACTUALIZADA
+  let isDisabledBecauseSameLocation = false;
+  if (Array.isArray(itemsToMove) && itemsToMove.length > 0) {
+    // Es true si CADA item ya está en el destino seleccionado
+    isDisabledBecauseSameLocation = itemsToMove.every((item) => {
+      const currentParentId =
+        (item.type === "folder" ? item.parent_folder_id : item.folder_id) ??
+        null; // Origen actual (null si es raíz)
+      return currentParentId === selectedFolderId; // Comparar con destino seleccionado
+    });
+  }
+
+  // Combinar condiciones
+  // El botón se deshabilita si está cargando, O si es una selección inválida (mover carpeta a subcarpeta),
+  // O si TODOS los elementos ya están en el destino.
   const isConfirmDisabled =
     isDisabledBecauseLoading ||
-    isDisabledBecauseSelection ||
+    isDisabledBecauseSelection || // Esta solo aplica realmente para mover 1 carpeta
     isDisabledBecauseSameLocation;
 
-  // Renderizado del modal
+  // ---- Renderizado del Modal ----
+
+  // Determinar el nombre del item a mostrar en el título (tomar el primero si hay varios)
+  const displayItemName = itemsToMove?.[0]?.name || "";
+  const displayItemType =
+    itemsToMove?.[0]?.type === "folder" ? "Carpeta" : "Archivo";
+  const modalTitle =
+    itemsToMove?.length > 1
+      ? `Mover ${itemsToMove.length} elementos`
+      : `Mover ${displayItemType}: "${displayItemName}"`;
+
   return (
     <Modal
       isOpen={isOpen}
-      onClose={!isActionLoading ? onClose : null} // Permitir cerrar si no hay acción en curso
-      title={`Mover ${
-        itemToMove?.type === "folder" ? "Carpeta" : "Archivo"
-      }: "${itemToMove?.name || ""}"`}
+      // Permitir cerrar si no hay acción en curso (API call)
+      onClose={!isActionLoading ? onClose : undefined}
+      title={modalTitle}
     >
       <div className={styles.modalBodyContent}>
         {/* Mostrar carga o error si aplica */}
@@ -249,7 +340,17 @@ function MoveItemModal({
                 style={{ paddingLeft: "10px" }} // Sin indentación extra
                 title="Raíz (Directorio Principal)"
               >
-                G Raíz (Directorio Principal)
+                {/* Icono Raíz */}
+                <span
+                  style={{
+                    marginRight: "8px",
+                    fontSize: "1.1em",
+                    opacity: selectedFolderId === null ? 1 : 0.8,
+                  }}
+                >
+                  🗂️ {/* O un icono más representativo de raíz */}
+                </span>
+                Raíz (Directorio Principal)
               </div>
               {/* Mapeo recursivo del árbol de carpetas */}
               {Array.isArray(folderTree) &&
@@ -275,21 +376,25 @@ function MoveItemModal({
           <button
             onClick={onClose}
             className={modalBaseStyles.cancelButton}
-            disabled={isActionLoading}
+            disabled={isActionLoading} // Deshabilitar si hay acción externa
           >
             Cancelar
           </button>
           <button
             onClick={handleConfirm}
             className={modalBaseStyles.confirmButton}
-            disabled={isConfirmDisabled} // Habilitación dinámica
+            disabled={isConfirmDisabled} // Habilitación dinámica calculada arriba
             title={
               isConfirmDisabled
-                ? "No se puede mover a esta ubicación"
-                : "Mover elemento aquí"
+                ? isDisabledBecauseSameLocation
+                  ? "Los elementos ya están en esta ubicación" // Mensaje actualizado
+                  : isDisabledBecauseSelection
+                  ? "No se puede mover a esta carpeta"
+                  : "Acción no disponible"
+                : "Mover elemento(s) aquí"
             } // Tooltip útil
           >
-            {/* Mostrar spinner si hay acción externa (moviendo) */}
+            {/* Usar isActionLoading para el spinner */}
             {isActionLoading && !isLoadingTree && (
               <span className={modalBaseStyles.spinner}></span>
             )}
