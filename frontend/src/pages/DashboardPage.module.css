@@ -42,9 +42,7 @@
   overflow: hidden; /* Para el ellipsis del título */
 }
 .headerTitleButton:hover:not(:disabled) {
-  /* Establece explícitamente el fondo como transparente en hover */
-  background-color: transparent !important; /* Puedes probar sin !important primero */
-  /* Comentario anterior eliminado o actualizado */
+  background-color: transparent !important;
 }
 .headerTitleButton:disabled {
   cursor: default;
@@ -74,16 +72,12 @@
   flex-grow: 1;
   min-width: 200px;
   max-width: 450px;
-  position: relative; /* Mantener por si se añade icono de limpiar */
+  position: relative;
   order: 2;
 }
 
-/* Estilo del icono eliminado */
-/* .searchIcon { ... } */
-
 .searchInput {
   width: 100%;
-  /* Padding izquierdo normal, ya no hay icono de lupa */
   padding: 8px 35px 8px 15px;
   border: none;
   border-radius: var(--border-radius-medium);
@@ -98,7 +92,6 @@
   text-overflow: ellipsis;
 }
 
-/* Estilo normal del placeholder */
 .searchInput::placeholder {
   color: var(--text-placeholder);
   overflow: hidden;
@@ -112,7 +105,6 @@
   box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
 }
 
-/* Quitar botón 'x' nativo de input search */
 .searchInput::-webkit-search-cancel-button,
 .searchInput::-webkit-search-decoration {
   -webkit-appearance: none;
@@ -126,7 +118,7 @@
 
 .clearSearchButton {
   position: absolute;
-  right: 10px; /* Ajusta según padding-right */
+  right: 10px;
   top: 50%;
   transform: translateY(-50%);
   background: none;
@@ -334,16 +326,8 @@
   padding: 0 8px 0 10px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
-/* Quitar estilos del icono móvil si ya no existe */
-.mobileSearchInner > svg:first-of-type {
-  width: 18px;
-  height: 18px;
-  margin-right: 6px;
-  flex-shrink: 0;
-}
 .mobileSearchOverlay .searchInput {
   flex-grow: 1;
-  /* Padding izquierdo normal para móvil */
   padding: 10px 25px 10px 10px;
   border: none;
   background-color: transparent;
@@ -619,14 +603,12 @@
   display: flex;
   align-items: center;
   white-space: nowrap;
-  opacity: 0;
-  transition: opacity 0.15s ease-in-out;
+  /* Opacidad gestionada en media queries o al hacer hover en desktop */
+  /* opacity: 0; */
+  /* transition: opacity 0.15s ease-in-out; */
   flex-shrink: 0;
 }
-.listItem:hover .itemActions,
-.listItem:focus-within .itemActions {
-  /* Opacidad gestionada abajo y en media queries */
-}
+
 .itemActionButton {
   margin-left: 5px;
   padding: 0;
@@ -658,7 +640,9 @@
   color: var(--primary-blue);
 }
 .itemActionButton.moveButton:hover:not(:disabled),
-.itemActionButton.renameButton:hover:not(:disabled) {
+.itemActionButton.renameButton:hover:not(:disabled),
+.itemActionButton.previewButton:hover:not(:disabled) {
+  /* Añadir preview */
   background-color: var(--system-gray-200);
   color: var(--primary-blue);
 }
@@ -801,17 +785,15 @@
 .selectedItem {
   background-color: rgba(0, 122, 255, 0.08) !important;
 }
-.hiddenActions {
+
+/* Clase para ocultar acciones individuales en modo selección (independiente de breakpoint) */
+.itemActionsHiddenInSelection .actionButtonDesktopOnly,
+.itemActionsHiddenInSelection .mobileItemMenuButton {
+  display: none !important;
   opacity: 0 !important;
   pointer-events: none !important;
-  transition: opacity 0.15s ease-out !important;
 }
-.itemActions {
-  transition: opacity 0.15s ease-in-out;
-}
-.listItem:hover .itemActions:not(.hiddenActions) {
-  opacity: 1;
-}
+
 .navBarContent {
   display: flex;
   justify-content: space-between;
@@ -908,7 +890,6 @@
   height: 18px;
   fill: currentColor;
 }
-/* Estilo específico para botón mover contextual (opcional) */
 .contextualButton.moveButtonContextual:hover:not(:disabled) {
   background-color: rgba(255, 255, 255, 0.2);
 }
@@ -928,15 +909,23 @@
 /* --- Clases para ocultar/mostrar --- */
 .desktopOnlySearch,
 .desktopOnlyActions {
-  display: none;
+  display: none; /* Oculto por defecto, se muestra en media query */
 }
 .mobileHeaderActions {
-  display: none;
+  display: none; /* Oculto por defecto, se muestra en media query */
+}
+/* Clase para ocultar botones individuales en móvil (dentro de lista) */
+.actionButtonDesktopOnly {
+  display: none; /* Oculto por defecto, se muestra en media query desktop */
+}
+/* Clase para mostrar el botón de menú en móvil (dentro de lista) */
+.mobileItemMenuButton {
+  display: none; /* Oculto por defecto, se muestra en media query móvil */
 }
 
 /* --- Media Queries --- */
 @media (min-width: 701px) {
-  /* Estilos Grid View */
+  /* Estilos Grid View y Desktop */
   .desktopOnlySearch,
   .desktopOnlyActions {
     display: flex !important;
@@ -947,6 +936,15 @@
   .mobileSearchOverlay {
     display: none !important;
   }
+  /* Mostrar botones individuales en Desktop */
+  .actionButtonDesktopOnly {
+    display: inline-flex !important;
+  }
+  /* Ocultar botón de menú móvil en Desktop */
+  .mobileItemMenuButton {
+    display: none !important;
+  }
+
   .itemList {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -966,7 +964,7 @@
     background-color: var(--background-elevated);
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
     transition: transform 0.15s ease, box-shadow 0.15s ease,
-      background-color 0.15s ease; /* Añadir background-color */
+      background-color 0.15s ease;
     position: relative;
   }
   .listItem:hover {
@@ -998,8 +996,8 @@
     display: block;
     text-align: center;
     overflow: visible;
-    margin-right: 0; /* Quitar margen icono */
-    margin-bottom: 15px; /* Añadir espacio debajo icono */
+    margin-right: 0;
+    margin-bottom: 15px;
   }
   .itemThumbnail {
     width: 70px;
@@ -1009,8 +1007,8 @@
     margin-left: auto;
     margin-right: auto;
     overflow: hidden;
-    margin-bottom: 15px; /* Añadir espacio debajo miniatura */
-    margin-right: auto; /* Asegurar centrado */
+    margin-bottom: 15px;
+    margin-right: auto;
   }
   .folderLink {
     text-align: center;
@@ -1033,10 +1031,9 @@
     width: 100%;
     text-align: center;
     overflow: visible;
-    margin-bottom: 0; /* Ajustar si es necesario */
+    margin-bottom: 0;
   }
   .fileInfo > span:not(.fileSize) {
-    /* El botón/nombre del archivo */
     margin-right: 0;
     text-align: center;
     display: block;
@@ -1044,19 +1041,20 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    margin-bottom: 5px; /* Espacio entre nombre y tamaño */
+    margin-bottom: 5px;
   }
   .fileSize {
     display: block;
     text-align: center;
     width: 100%;
     margin-left: 0;
-    margin-top: 0px; /* Ajustar si es necesario */
+    margin-top: 0px;
     font-size: 0.8rem;
     padding-left: 0;
   }
   .itemActions {
-    opacity: 1 !important; /* Siempre visible en grid desktop */
+    /* En grid, las acciones son visibles directamente */
+    opacity: 1 !important;
     margin-top: 15px;
     width: 100%;
     justify-content: center;
@@ -1091,20 +1089,18 @@
     height: 20px;
   }
   .selectedItem {
-    background-color: var(
-      --background-elevated
-    ) !important; /* Mantener fondo original */
+    background-color: var(--background-elevated) !important;
     box-shadow: 0 0 0 3px var(--primary-blue), 0 6px 12px rgba(0, 122, 255, 0.3);
     transform: translateY(0);
   }
   .selectedItem:hover {
-    transform: translateY(0); /* No mover al hacer hover si está seleccionado */
+    transform: translateY(0);
     box-shadow: 0 0 0 3px var(--primary-blue), 0 6px 12px rgba(0, 122, 255, 0.3);
   }
-  /* Opcional: Ocultar acciones individuales en grid cuando está seleccionado */
-  .selectedItem .itemActions {
-    /* opacity: 0 !important; */
-    /* pointer-events: none !important; */
+  /* Ocultar acciones individuales en Grid cuando está seleccionado (opcional pero recomendado) */
+  .selectedItem .actionButtonDesktopOnly {
+    opacity: 0 !important;
+    pointer-events: none !important;
   }
 }
 
@@ -1126,11 +1122,22 @@
   .mainContent {
     padding-bottom: 80px !important;
   }
-  /* Acciones visibles en lista móvil */
-  .itemActions {
-    opacity: 1 !important;
-    gap: 5px;
+  /* Ocultar botones individuales */
+  .actionButtonDesktopOnly {
+    display: none !important;
   }
+  /* Mostrar botón de menú */
+  .mobileItemMenuButton {
+    display: inline-flex !important;
+  }
+  /* Ajustar contenedor acciones para el único botón */
+  .itemActions {
+    opacity: 1 !important; /* Asegurar visibilidad base */
+    justify-content: flex-end; /* Alinear el botón ... a la derecha */
+    margin-left: auto; /* Empujar a la derecha */
+    gap: 0; /* Quitar gap si solo hay un botón */
+  }
+
   /* Restaurar estilos lista */
   .itemList {
     display: block;
@@ -1156,20 +1163,16 @@
   .listItem:hover {
     transform: none;
     box-shadow: none;
-    background-color: var(--system-gray-100); /* Hover sutil en lista */
+    background-color: var(--system-gray-100);
   }
   .selectedItem:hover {
-    background-color: rgba(
-      0,
-      122,
-      255,
-      0.08
-    ) !important; /* Mantener color selección en hover */
+    background-color: rgba(0, 122, 255, 0.08) !important;
   }
+
   .itemSelection {
-    position: static; /* Volver a posición estática */
-    margin-right: 5px; /* Menos margen checkbox */
-    background-color: transparent; /* Sin fondo blanco */
+    position: static;
+    margin-right: 5px;
+    background-color: transparent;
     padding: 0;
   }
   .itemName {
@@ -1180,21 +1183,21 @@
     font-size: 1rem;
     width: auto;
     overflow: hidden;
-    margin-right: 5px; /* Margen item name */
-    gap: 10px; /* Espacio interno en .itemName */
+    margin-right: 5px;
+    gap: 10px;
   }
   .itemIcon {
     margin-right: 0;
     font-size: 1.5rem;
-    width: 30px; /* Icono más pequeño */
+    width: 30px;
     text-align: center;
-    margin-bottom: 0; /* Resetear margen */
+    margin-bottom: 0;
   }
   .itemThumbnail {
     width: 30px;
     height: 30px;
     margin-right: 0;
-    margin-bottom: 0; /* Resetear margen */
+    margin-bottom: 0;
     margin-left: 0;
   }
   .folderLink {
@@ -1214,7 +1217,7 @@
     text-align: left;
     overflow: hidden;
     gap: 10px;
-    margin-bottom: 0; /* Resetear margen */
+    margin-bottom: 0;
   }
   .fileInfo > span:not(.fileSize) {
     margin-right: 0;
@@ -1222,7 +1225,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    margin-bottom: 0; /* Resetear margen */
+    margin-bottom: 0;
   }
   .fileSize {
     display: inline-block;
@@ -1233,20 +1236,20 @@
     font-size: 0.85rem;
     padding-left: 0;
   }
-  .itemActions {
-    margin-top: 0;
-    width: auto;
-    justify-content: flex-end;
-    gap: 5px;
-  }
-  .itemActionButton {
+
+  /* Ajustar botón de menú móvil */
+  .mobileItemMenuButton {
     width: 32px;
     height: 32px;
-    margin-left: 5px; /* Restablecer margen entre botones */
+    margin-left: 5px; /* Espacio a la izquierda del botón ... */
   }
-  .itemActionButton svg {
+  .mobileItemMenuButton svg {
     width: 18px;
     height: 18px;
+  }
+  /* Ocultar botón de menú si estamos en modo selección */
+  .itemActionsHiddenInSelection .mobileItemMenuButton {
+    display: none !important;
   }
 
   /* Barra contextual móvil */
@@ -1300,27 +1303,23 @@
   }
   /* Lista móvil pequeña */
   .itemActions {
-    gap: 2px;
+    gap: 0px; /* Reset gap for the single button */
   }
-  .itemActionButton {
+  .mobileItemMenuButton {
     width: 30px;
     height: 30px;
     margin-left: 2px; /* Menos margen */
   }
-  .itemActionButton svg {
+  .mobileItemMenuButton svg {
     width: 16px;
     height: 16px;
   }
-  .itemName {
-    /* Limitar ancho para dejar espacio a acciones */
-    /* max-width: calc(100% - 110px); */ /* Ajustar según sea necesario */
-  }
   .fileSize {
-    display: none; /* Ocultar tamaño en pantallas muy pequeñas */
+    display: none;
   }
   /* Barra contextual móvil pequeña */
   .contextualButton span {
-    display: none; /* Ocultar texto botones */
+    display: none;
   }
   .contextualButton svg {
     margin-right: 0;
