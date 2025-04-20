@@ -7,6 +7,7 @@
   min-height: 100vh;
   padding: 20px;
   background-color: var(--background-page); /* Fondo grisáceo */
+  transition: background-color 0.3s ease; /* Añadir transición */
 }
 
 .formContainer {
@@ -17,6 +18,7 @@
   width: 100%;
   max-width: 400px; /* Ancho ajustado */
   text-align: center;
+  transition: background-color 0.3s ease; /* Añadir transición */
 }
 
 .title {
@@ -24,6 +26,7 @@
   color: var(--text-primary);
   font-size: 1.8rem; /* Tamaño título grande */
   font-weight: 700; /* Bold */
+  transition: color 0.3s ease; /* Añadir transición */
 }
 
 .formGroup {
@@ -32,30 +35,37 @@
 }
 
 /* Label hereda de index.css */
-/* .label { ... } */
+.label {
+  /* Estilos base ya definidos en index.css */
+  /* color: var(--text-secondary); */
+  transition: color 0.3s ease; /* Añadir transición */
+}
 
 /* Input hereda de index.css */
 /* .input { ... } */
+/* Ya tiene transición base en index.css */
 
-/* Botón - Usar estilo primario 'filled' */
 .button {
   /* Hereda estilos base de button en index.css */
   width: 100%;
   padding: 12px;
-  background-color: var(--primary-blue); /* Azul */
-  color: var(--button-text-light); /* Blanco */
+  /* --- FORZAR ESTILO AZUL --- */
+  background-color: var(--primary-blue) !important; /* Añadir !important */
+  color: var(--button-text-light) !important; /* Añadir !important */
+  /* --- FIN FORZAR ESTILO AZUL --- */
   border: none;
   border-radius: var(--border-radius-medium);
   font-size: 1rem;
   font-weight: 600; /* Semibold */
   cursor: pointer;
-  transition: background-color 0.2s ease, opacity 0.2s ease, transform 0.1s ease;
+  transition: background-color 0.2s ease, opacity 0.2s ease, transform 0.1s ease,
+    color 0.2s ease;
   margin-top: 10px;
   -webkit-tap-highlight-color: transparent;
 }
 /* Hover state */
 .button:hover:not(:disabled) {
-  background-color: var(--hover-blue);
+  background-color: var(--hover-blue) !important; /* Añadir !important */
 }
 /* Active state (presionado) */
 .button:active:not(:disabled) {
@@ -63,8 +73,12 @@
 }
 /* Disabled state hereda opacidad de index.css */
 .button:disabled {
-  background-color: var(--primary-blue);
-  opacity: 0.5;
+  background-color: var(--primary-blue) !important; /* Añadir !important */
+  opacity: 0.5 !important; /* Añadir !important si la opacidad no funciona */
+  color: var(
+    --button-text-light
+  ) !important; /* Añadir !important si el color no funciona */
+  /* El color del texto deshabilitado se define en index.css, pero forzamos blanco aquí */
 }
 
 /* Mensajes de Error/Éxito */
@@ -76,6 +90,7 @@
   margin-bottom: 0;
   font-size: 0.9rem;
   text-align: center;
+  transition: color 0.3s ease;
 }
 
 .success {
@@ -86,6 +101,7 @@
   margin-bottom: 0;
   font-size: 0.9rem;
   text-align: center;
+  transition: color 0.3s ease;
   /* Si necesitas el fondo y borde como en index.css: */
   /* background-color: var(--success-bg-light); */
   /* border: 1px solid var(--success-border); */
@@ -98,16 +114,22 @@
   margin-top: 30px;
   font-size: 0.95rem;
   color: var(--text-secondary);
+  transition: color 0.3s ease;
 }
 
 .link {
   color: var(--text-link);
   text-decoration: none;
   font-weight: 500; /* Medium */
+  transition: color 0.3s ease;
 }
 .link:hover {
   text-decoration: underline;
 }
+
+/* --- Overrides Dark Mode --- */
+/* No se necesitan selectores específicos aquí porque
+   las variables CSS ya cambian en index.css */
 
 /* --- Responsive --- */
 @media (max-width: 480px) {
@@ -121,7 +143,9 @@
     border-radius: 0;
     width: 100%;
     max-width: none;
-    margin: 0 -20px;
+    margin: 0 -20px; /* Ajustar para que ocupe bien */
+    /* En modo oscuro, asegurar que el fondo sea el correcto si es diferente */
+    background-color: var(--background-elevated);
   }
   .title {
     font-size: 1.6rem;
@@ -135,3 +159,12 @@
     font-size: 0.9rem;
   }
 }
+
+/* Añadir estilo explícito para body en modo oscuro si no lo cubre index.css */
+/* Si --background-page ya se define en :root[data-theme="dark"] en index.css,
+   no necesitas lo siguiente: */
+/*
+:global(:root[data-theme="dark"]) body {
+    background-color: var(--background-page);
+}
+*/

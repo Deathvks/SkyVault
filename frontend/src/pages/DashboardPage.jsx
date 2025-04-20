@@ -1,5 +1,6 @@
 // frontend/src/pages/DashboardPage.jsx
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Link } from "react-router-dom"; // Asegúrate que Link está importado
 import { useAuth } from "../context/AuthContext";
 import {
   getFolderContents,
@@ -24,7 +25,6 @@ import ContextMenu from "../components/ContextMenu";
 import { toast } from "react-toastify";
 import styles from "./DashboardPage.module.css";
 import modalStyles from "../components/Modal.module.css";
-import { Link } from "react-router-dom";
 
 // --- Iconos SVG ---
 const MoreVertIcon = () => (
@@ -119,6 +119,19 @@ const DeleteSelectedIcon = () => (
     <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z" />
   </svg>
 );
+// Icono de Ajustes (ejemplo)
+const SettingsIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    height="20px"
+    viewBox="0 0 24 24"
+    width="20px"
+    fill="currentColor"
+  >
+    <path d="M0 0h24v24H0V0z" fill="none" />
+    <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.08-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
+  </svg>
+);
 // --- Fin Iconos ---
 
 function DashboardPage() {
@@ -134,6 +147,8 @@ function DashboardPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState(null);
   const searchTimeoutRef = useRef(null);
+  const desktopSearchInputRef = useRef(null); // <--- NUEVO REF
+  const mobileSearchInputRef = useRef(null); // <--- NUEVO REF
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileSearchVisible, setIsMobileSearchVisible] = useState(false);
   const mobileMenuRef = useRef(null);
@@ -170,7 +185,6 @@ function DashboardPage() {
   // --- Funciones de Carga y Navegación ---
   const loadContents = useCallback(
     async (folderIdToLoad) => {
-      // ... (contenido loadContents sin cambios respecto a la versión anterior) ...
       setSelectedItems(new Set());
       setIsSelectionMode(false);
       setIsLoading(true);
@@ -179,36 +193,46 @@ function DashboardPage() {
         setFolders(response.data.subFolders || []);
         setFiles(response.data.files || []);
 
+        // Actualizar path (lógica sin cambios)
         if (folderIdToLoad === "root") {
           if (path.length > 1 || path[0]?.id !== "root") {
             setPath([{ id: "root", name: "Raíz" }]);
           }
         } else {
           let currentPathEntry = null;
+          let existingIndex = -1;
           for (let i = path.length - 1; i >= 0; i--) {
             if (path[i].id === folderIdToLoad) {
               currentPathEntry = path[i];
-              if (i < path.length - 1) {
-                setPath((prevPath) => prevPath.slice(0, i + 1));
-              }
+              existingIndex = i;
               break;
             }
           }
-          if (!currentPathEntry) {
+
+          if (currentPathEntry) {
+            // Si la carpeta ya existe en el path, cortar hasta ella
+            if (existingIndex < path.length - 1) {
+              setPath((prevPath) => prevPath.slice(0, existingIndex + 1));
+            }
+          } else {
+            // Si no existe, intentar obtener su nombre y añadirla
             let folderName = "Carpeta Desconocida";
-            const foundFolder = (response.data.subFolders || []).find(
-              (f) => f.id === folderIdToLoad
-            );
-            if (foundFolder) folderName = foundFolder.name;
-            else {
-              const foundInPrevious = folders.find(
-                (f) => f.id === folderIdToLoad
+            // Primero buscar en la respuesta actual (si el padre ya cargó hijos)
+            const parentFolder = folders.find((f) => f.id === folderIdToLoad); // Check folders state *before* update
+            if (parentFolder) {
+              folderName = parentFolder.name;
+            } else {
+              // Si no está en la lista actual de carpetas (puede ser la carpeta que se acaba de cargar)
+              // Necesitaríamos una forma de obtener el nombre de la carpeta actual (quizás desde la API de getFolderContents?)
+              // O, si es seguro asumir que el último elemento del path es el padre:
+              // const parent = path[path.length - 1];
+              // Buscar en la respuesta actual si contiene la carpeta padre con la carpeta actual como subcarpeta?
+              // -> Esta lógica es compleja. Una solución simple pero no ideal es obtener el nombre después
+              console.warn(
+                `Could not determine name for folder ${folderIdToLoad} immediately.`
               );
-              if (foundInPrevious) folderName = foundInPrevious.name;
-              else
-                console.warn(
-                  `Could not determine name for folder ${folderIdToLoad}`
-                );
+              // Podríamos llamar a una API getFolderDetails(folderIdToLoad) aquí, pero sería ineficiente.
+              // Por ahora, usamos un placeholder y actualizamos si la información llega después.
             }
             setPath((prevPath) => [
               ...prevPath,
@@ -223,6 +247,7 @@ function DashboardPage() {
         );
         if (err.response?.status === 401 || err.response?.status === 403)
           logout();
+        // Si falla al cargar una carpeta específica, volver a la raíz
         if (folderIdToLoad !== "root") {
           setCurrentFolderId("root");
           setPath([{ id: "root", name: "Raíz" }]);
@@ -231,7 +256,7 @@ function DashboardPage() {
         setIsLoading(false);
       }
     },
-    [path, folders, logout]
+    [path, folders, logout] // folders debe estar aquí si se usa para buscar nombres
   );
 
   useEffect(() => {
@@ -239,44 +264,124 @@ function DashboardPage() {
       loadContents(currentFolderId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentFolderId, searchTerm]);
+  }, [currentFolderId, searchTerm]); // loadContents ya está en useCallback
 
-  // --- Lógica de Búsqueda ---
-  // ... (contenido búsqueda sin cambios) ...
   const performSearch = useCallback(
     async (term) => {
+      // Asegurarse de que el término no esté vacío
+      if (!term) {
+        console.log(
+          "[Search] Término vacío detectado en performSearch (inicio), limpiando."
+        );
+        setSearchResults(null);
+        setIsLoading(false);
+        loadContents(currentFolderId); // Recargar carpeta actual si se borra búsqueda
+        return;
+      }
+
+      // Guardar referencia al input activo ANTES de la llamada API
+      let inputRefToFocus = null;
+      let wasInputFocused = false;
+      if (document.activeElement === desktopSearchInputRef.current) {
+        inputRefToFocus = desktopSearchInputRef;
+        wasInputFocused = true;
+        console.log("[Search] Input Desktop tenía el foco antes.");
+      } else if (document.activeElement === mobileSearchInputRef.current) {
+        inputRefToFocus = mobileSearchInputRef;
+        wasInputFocused = true;
+        console.log("[Search] Input Móvil tenía el foco antes.");
+      }
+
+      // Activar carga y limpiar resultados iniciales
+      console.log(`[Search] Iniciando búsqueda para: "${term}"`);
+      setIsLoading(true);
       setSearchResults(null);
+
       try {
-        const response = await searchItems(term.trim());
-        setSearchResults(response.data || { folders: [], files: [] });
+        const response = await searchItems(term);
+        console.log("[Search] Resultados recibidos. Actualizando estado...");
+        setSearchResults(response.data || { folders: [], files: [] }); // <-- Causa re-render 1
       } catch (err) {
+        console.error("Error en búsqueda:", err);
         const errorMsg =
           err.response?.data?.message || "Error al realizar la búsqueda.";
-        console.error("Error en búsqueda:", err);
         toast.error(errorMsg);
-        setSearchResults({ folders: [], files: [] });
+        setSearchResults({ folders: [], files: [] }); // Causa re-render 1 (en error)
         if (err.response?.status === 401 || err.response?.status === 403) {
           logout();
         }
+      } finally {
+        // Actualizar isLoading DESPUÉS de tener resultados
+        setIsLoading(false); // <--- Causa re-render 2
+        console.log("[Search] Búsqueda finalizada, isLoading=false.");
+
+        // Intentar devolver el foco DESPUÉS del render final de isLoading
+        if (wasInputFocused && inputRefToFocus?.current) {
+          // Usar setTimeout para asegurar que se ejecuta después del ciclo de render
+          setTimeout(() => {
+            // Comprobar si la ref sigue siendo válida y si el elemento es enfocable
+            if (
+              inputRefToFocus.current &&
+              typeof inputRefToFocus.current.focus === "function"
+            ) {
+              console.log(
+                "[Search] Intentando devolver foco post-render (setTimeout)..."
+              );
+              inputRefToFocus.current.focus();
+              // Verificar si realmente funcionó
+              if (document.activeElement === inputRefToFocus.current) {
+                console.log("[Search] Foco devuelto con éxito (setTimeout).");
+              } else {
+                console.warn(
+                  "[Search] Falló la devolución del foco (setTimeout). Elemento activo ahora:",
+                  document.activeElement
+                );
+              }
+            } else {
+              console.log(
+                "[Search] Referencia al input no válida en setTimeout."
+              );
+            }
+          }, 0); // Ejecutar tan pronto como sea posible después del render actual
+        } else {
+          console.log(
+            "[Search] Input no estaba enfocado o ref no disponible, no se devuelve foco."
+          );
+        }
+        // --- Fin Lógica Refocus ---
       }
     },
-    [logout]
+    // Asegúrate que todas las dependencias estén aquí
+    [setIsLoading, setSearchResults, loadContents, currentFolderId, logout]
   );
-
   const handleSearchChange = (event) => {
     const newTerm = event.target.value;
-    setSearchTerm(newTerm);
-    setSelectedItems(new Set());
+    setSearchTerm(newTerm); // Actualizar el término en el input (causa re-render del valor)
+    setSelectedItems(new Set()); // Limpiar selección si cambia la búsqueda
     setIsSelectionMode(false);
-    clearTimeout(searchTimeoutRef.current);
-    if (newTerm.trim()) {
-      setSearchResults(null);
+
+    clearTimeout(searchTimeoutRef.current); // Limpiar timeout anterior
+
+    const termToSearch = newTerm.trim(); // Guardar término limpio
+
+    if (termToSearch) {
+      // --- QUITAR CAMBIOS DE ESTADO INMEDIATOS ---
+      // setIsLoading(true); // << ELIMINADO DE AQUÍ
+      // setSearchResults(null); // << ELIMINADO DE AQUÍ
+      console.log(`[Search] Debounce iniciado para: "${termToSearch}"`);
+
       searchTimeoutRef.current = setTimeout(() => {
-        performSearch(newTerm);
-      }, 500);
+        // Llamar a performSearch después del retardo
+        performSearch(termToSearch);
+      }, 500); // 500ms debounce
     } else {
-      setSearchResults(null);
-      loadContents(currentFolderId);
+      // Si el input se vacía, limpiar resultados y cargar contenido actual
+      console.log(
+        "[Search] Término vacío, limpiando búsqueda y cargando carpeta actual."
+      );
+      setSearchResults(null); // Limpiar resultados inmediatamente
+      // setIsLoading(false); // No es necesario aquí, lo maneja loadContents o performSearch
+      loadContents(currentFolderId); // Cargar carpeta actual
     }
   };
 
@@ -289,13 +394,11 @@ function DashboardPage() {
     if (isMobileSearchVisible) {
       setIsMobileSearchVisible(false);
     }
-    setTimeout(() => {
-      loadContents(currentFolderId);
-    }, 0);
+    // Cargar contenido de la carpeta actual inmediatamente
+    loadContents(currentFolderId);
   };
 
   // --- Lógica UI Móvil ---
-  // ... (lógica UI móvil sin cambios) ...
   useEffect(() => {
     const handleClickOutside = (event) => {
       const menuButton = document.querySelector(
@@ -304,7 +407,7 @@ function DashboardPage() {
       if (
         mobileMenuRef.current &&
         !mobileMenuRef.current.contains(event.target) &&
-        !menuButton?.contains(event.target)
+        !menuButton?.contains(event.target) // No cerrar si se clickea el botón de menú
       ) {
         setIsMobileMenuOpen(false);
       }
@@ -322,68 +425,91 @@ function DashboardPage() {
   const toggleMobileSearch = () => {
     setIsMobileSearchVisible((prev) => !prev);
     if (!isMobileSearchVisible) {
+      // Si se está abriendo la búsqueda, cerrar el menú de opciones
       setIsMobileMenuOpen(false);
     }
   };
 
   // --- Acciones de Usuario y Elementos ---
-  // ... (handleLogout, handleFolderClick, handleBreadcrumbClick, handleDownloadFile, etc. sin cambios) ...
   const handleLogout = () => {
     logout();
     toast.info("Sesión cerrada correctamente.");
+    // La navegación al login se manejará por ProtectedRoute
   };
 
   const handleFolderClick = (folder) => {
     if (isActionLoading || folder.id === currentFolderId) return;
+
+    // Si estamos en modo búsqueda, NO navegar, quizás mostrar un mensaje o limpiar búsqueda?
     if (searchTerm) {
-      toast.info("Limpia la búsqueda para navegar entre carpetas.");
+      toast.info("Limpia la búsqueda para navegar a la carpeta.");
+      // Opcionalmente: clearSearch(); y luego navegar? Depende de la UX deseada.
       return;
     }
+
+    // Lógica de navegación y actualización de path (sin cambios)
     let newPath = [...path];
     const existingIndex = path.findIndex((p) => p.id === folder.id);
+
     if (existingIndex !== -1) {
+      // Si la carpeta ya está en el path (navegando hacia atrás), cortar el path
       newPath = path.slice(0, existingIndex + 1);
     } else {
+      // Si es una carpeta nueva, añadirla al path
       newPath = [...path, { id: folder.id, name: folder.name }];
     }
+
     setPath(newPath);
-    setCurrentFolderId(folder.id);
-    setShowFabMenu(false);
-    if (isMobileSearchVisible) setIsMobileSearchVisible(false);
+    setCurrentFolderId(folder.id); // Actualiza la carpeta actual
+    setShowFabMenu(false); // Ocultar menú FAB al navegar
+    if (isMobileSearchVisible) setIsMobileSearchVisible(false); // Ocultar búsqueda móvil si está abierta
   };
 
   const handleBreadcrumbClick = (folderId, index) => {
     if (isActionLoading || folderId === currentFolderId) return;
+
+    // Si estamos en búsqueda, limpiarla ANTES de navegar
     if (searchTerm) {
-      clearSearch();
+      clearSearch(); // Limpia término y resultados, carga contenido de carpeta actual
+      // Esperar un ciclo para que se actualice el estado antes de navegar
       setTimeout(() => {
         const newPath = path.slice(0, index + 1);
         setPath(newPath);
-        setCurrentFolderId(folderId);
-      }, 100);
+        setCurrentFolderId(folderId); // Navegar a la carpeta del breadcrumb
+      }, 50); // Pequeño delay
     } else {
+      // Si no hay búsqueda, navegar directamente
       const newPath = path.slice(0, index + 1);
       setPath(newPath);
       setCurrentFolderId(folderId);
     }
-    setShowFabMenu(false);
-    if (isMobileSearchVisible) setIsMobileSearchVisible(false);
+    setShowFabMenu(false); // Ocultar FAB
+    if (isMobileSearchVisible) setIsMobileSearchVisible(false); // Ocultar búsqueda móvil
   };
 
   const handleDownloadFile = async (fileId, fileName) => {
     if (isActionLoading) return;
     let toastId = null;
     try {
+      // Mostrar loading toast inmediatamente
       toastId = toast.loading(`Preparando descarga de "${fileName}"...`);
+
       const response = await downloadFile(fileId);
+
+      // Crear URL y link para descarga
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", fileName || "descarga");
+      // Usar el nombre original del archivo para la descarga
+      link.setAttribute("download", fileName || "descarga"); // Usa fileName o un fallback
       document.body.appendChild(link);
       link.click();
+
+      // Limpiar
       link.parentNode.removeChild(link);
       window.URL.revokeObjectURL(url);
+
+      // Actualizar toast a éxito
       toast.update(toastId, {
         render: `"${fileName}" descargado correctamente.`,
         type: "success",
@@ -395,6 +521,8 @@ function DashboardPage() {
     } catch (err) {
       console.error("Error descargando archivo:", err);
       let errorMsg = "Error al descargar el archivo.";
+
+      // Intentar leer el mensaje de error si la respuesta es un JSON Blob
       if (
         err.response?.data instanceof Blob &&
         err.response.data.type === "application/json"
@@ -402,15 +530,18 @@ function DashboardPage() {
         try {
           const errorJson = JSON.parse(await err.response.data.text());
           errorMsg = errorJson.message || errorMsg;
-        } catch (parseErr) {
+        } catch (parseError) {
           console.error(
             "No se pudo parsear el error Blob como JSON:",
-            parseErr
+            parseError
           );
         }
       } else {
+        // Usar mensaje de error de Axios si existe
         errorMsg = err.response?.data?.message || errorMsg;
       }
+
+      // Actualizar toast a error (si se creó) o mostrar uno nuevo
       if (toastId) {
         toast.update(toastId, {
           render: errorMsg,
@@ -421,6 +552,8 @@ function DashboardPage() {
       } else {
         toast.error(errorMsg);
       }
+
+      // Manejar error de autenticación
       if (err.response?.status === 401 || err.response?.status === 403) {
         logout();
       }
@@ -431,33 +564,45 @@ function DashboardPage() {
 
   const triggerFileInput = () => {
     if (isActionLoading) return;
-    fileInputRef.current?.click();
-    setShowFabMenu(false);
+    fileInputRef.current?.click(); // Abre el selector de archivos
+    setShowFabMenu(false); // Oculta el menú FAB si estaba abierto
   };
 
   const handleFileUpload = async (event) => {
-    // ... (sin cambios) ...
     const file = event.target.files[0];
     if (!file || isActionLoading) return;
+
+    // Guardar referencia al input para limpiarlo después
     const originalInput = event.target;
-    setIsUploading(true);
+
+    setIsUploading(true); // Iniciar estado de carga específico
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", file); // 'file' debe coincidir con el esperado en backend (Multer)
+
+    // Añadir folderId si no estamos en la raíz
     if (currentFolderId !== "root") {
       formData.append("folderId", currentFolderId);
     }
+
     let toastId = toast.loading(`Subiendo "${file.name}"...`);
+
     try {
-      await uploadFile(formData);
+      await uploadFile(formData); // Llamar a la función API
+
+      // Éxito
       toast.update(toastId, {
         render: `Archivo "${file.name}" subido con éxito.`,
         type: "success",
         isLoading: false,
         autoClose: 3000,
       });
+
+      // Recargar contenido si no estamos en modo búsqueda
       if (!searchTerm) {
         loadContents(currentFolderId);
       }
+      // Si estamos en búsqueda, podríamos decidir no recargar o limpiar la búsqueda.
+      // Por ahora, no hacemos nada extra en modo búsqueda.
     } catch (err) {
       const errorMsg =
         err.response?.data?.message || "Error al subir el archivo.";
@@ -472,7 +617,8 @@ function DashboardPage() {
         logout();
       }
     } finally {
-      setIsUploading(false);
+      setIsUploading(false); // Finalizar estado de carga específico
+      // Limpiar el valor del input para permitir subir el mismo archivo de nuevo
       if (originalInput) {
         originalInput.value = null;
       }
@@ -480,20 +626,21 @@ function DashboardPage() {
   };
 
   // --- Funciones para Modales ---
-  // ... (open/confirm CreateFolder, Delete, Rename, Move, Preview sin cambios) ...
   const openCreateFolderModal = () => {
     if (isActionLoading) return;
     setNewFolderName("");
     setIsCreateFolderModalOpen(true);
-    setShowFabMenu(false);
-    setIsMobileMenuOpen(false);
+    setShowFabMenu(false); // Ocultar FAB
+    setIsMobileMenuOpen(false); // Ocultar menú móvil
   };
 
   const handleConfirmCreateFolder = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Prevenir envío de formulario
     if (!newFolderName.trim() || isActionLoading) return;
+
     setIsCreatingFolder(true);
-    setIsCreateFolderModalOpen(false);
+    setIsCreateFolderModalOpen(false); // Cerrar modal
+
     try {
       const parentId = currentFolderId === "root" ? null : currentFolderId;
       await createFolder({
@@ -501,9 +648,12 @@ function DashboardPage() {
         parentFolderId: parentId,
       });
       toast.success(`Carpeta "${newFolderName.trim()}" creada con éxito.`);
+
+      // Recargar contenido si no estamos buscando
       if (!searchTerm) {
         loadContents(currentFolderId);
       }
+      // Si estamos buscando, la nueva carpeta no aparecerá hasta limpiar la búsqueda
     } catch (err) {
       const errorMsg =
         err.response?.data?.message || "Error al crear la carpeta.";
@@ -512,7 +662,7 @@ function DashboardPage() {
         logout();
     } finally {
       setIsCreatingFolder(false);
-      setNewFolderName("");
+      setNewFolderName(""); // Limpiar input
     }
   };
 
@@ -520,20 +670,25 @@ function DashboardPage() {
     if (isActionLoading) return;
     setItemToDelete({ type, id, name });
     setIsConfirmDeleteModalOpen(true);
-    setIsMobileMenuOpen(false);
+    setIsMobileMenuOpen(false); // Cerrar menú móvil si estaba abierto
   };
 
   const handleConfirmDelete = async () => {
     if (!itemToDelete || isActionLoading) return;
+
     setIsDeletingItem(true);
-    setIsConfirmDeleteModalOpen(false);
+    setIsConfirmDeleteModalOpen(false); // Cerrar modal
     const { type, id, name } = itemToDelete;
     const action = type === "folder" ? deleteFolder : deleteFile;
     const typeText = type === "folder" ? "La carpeta" : "El archivo";
+
     try {
-      await action(id);
+      await action(id); // Llama a la API (soft delete)
       toast.success(`${typeText} "${name}" se movió a la papelera.`);
+
+      // Actualizar UI: quitar el item de la lista actual
       if (searchTerm && searchResults) {
+        // Si estamos en búsqueda, quitar de los resultados
         setSearchResults((prevResults) => {
           if (!prevResults) return null;
           const key = type === "folder" ? "folders" : "files";
@@ -543,12 +698,16 @@ function DashboardPage() {
           };
         });
       } else {
+        // Si no estamos en búsqueda, quitar de la lista normal
         const stateUpdater = type === "folder" ? setFolders : setFiles;
         stateUpdater((prevItems) => prevItems.filter((item) => item.id !== id));
       }
+
+      // Si el item estaba seleccionado, quitarlo de la selección
       setSelectedItems((prevSelected) => {
         const newSelected = new Set(prevSelected);
         newSelected.delete(getItemId(type, id));
+        // Desactivar modo selección si ya no hay nada seleccionado
         if (newSelected.size === 0) setIsSelectionMode(false);
         return newSelected;
       });
@@ -561,39 +720,44 @@ function DashboardPage() {
         logout();
     } finally {
       setIsDeletingItem(false);
-      setItemToDelete(null);
+      setItemToDelete(null); // Limpiar item a borrar
     }
   };
 
+  // Wrapper para usar en botones/context menu
   const handleDeleteItem = (type, id, name) =>
     openConfirmDeleteModal(type, id, name);
 
   const openRenameModal = (type, id, currentName) => {
     if (isActionLoading) return;
     setItemToRename({ type, id, currentName });
-    setRenameInputValue(currentName);
+    setRenameInputValue(currentName); // Pre-rellenar input
     setIsRenameModalOpen(true);
-    setShowFabMenu(false);
+    setShowFabMenu(false); // Ocultar otros menús
     setIsMobileMenuOpen(false);
   };
 
   const handleConfirmRename = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Prevenir envío de formulario
     const trimmedNewName = renameInputValue.trim();
+
     if (!itemToRename || !trimmedNewName || isActionLoading) {
       setIsRenameModalOpen(false);
-      return;
+      return; // No hacer nada si no hay nombre o ya está renombrando
     }
+    // Evitar llamada API si el nombre no cambió
     if (trimmedNewName === itemToRename.currentName) {
       toast.info("No se realizaron cambios en el nombre.");
       setIsRenameModalOpen(false);
       setItemToRename(null);
       return;
     }
+
     setIsRenamingItem(true);
-    setIsRenameModalOpen(false);
+    setIsRenameModalOpen(false); // Cerrar modal
     const { type, id } = itemToRename;
     const typeText = type === "folder" ? "Carpeta" : "Archivo";
+
     try {
       let response;
       if (type === "folder") {
@@ -601,12 +765,18 @@ function DashboardPage() {
       } else {
         response = await renameFile(id, { newName: trimmedNewName });
       }
+
+      // Obtener el nombre final (puede incluir extensión preservada por backend)
       const finalName =
         response.data.file?.name ||
         response.data.folder?.name ||
         trimmedNewName;
+
       toast.success(`${typeText} renombrado a "${finalName}".`);
+
+      // Actualizar UI
       if (searchTerm && searchResults) {
+        // Actualizar resultados de búsqueda
         setSearchResults((prevResults) => {
           if (!prevResults) return null;
           const key = type === "folder" ? "folders" : "files";
@@ -618,12 +788,14 @@ function DashboardPage() {
           };
         });
       } else {
+        // Actualizar lista normal
         const stateUpdater = type === "folder" ? setFolders : setFiles;
         stateUpdater((prevItems) =>
           prevItems.map((item) =>
             item.id === id ? { ...item, name: finalName } : item
           )
         );
+        // Si es carpeta, actualizar también el path si está en él
         if (type === "folder") {
           setPath((currentPath) =>
             currentPath.map((p) =>
@@ -641,13 +813,15 @@ function DashboardPage() {
         logout();
     } finally {
       setIsRenamingItem(false);
-      setItemToRename(null);
-      setRenameInputValue("");
+      setItemToRename(null); // Limpiar item
+      setRenameInputValue(""); // Limpiar input
     }
   };
 
   const openMoveModal = (type, id, name) => {
     if (isActionLoading) return;
+
+    // Encontrar los datos completos del item (incluyendo su padre actual)
     const itemsSource =
       type === "folder"
         ? searchTerm && searchResults
@@ -656,21 +830,26 @@ function DashboardPage() {
         : searchTerm && searchResults
         ? searchResults.files
         : files;
+
     const itemData = itemsSource?.find((i) => i.id === id);
+
     if (!itemData) {
       console.error("No se encontraron datos para el item a mover:", type, id);
       toast.error("Error al preparar la acción de mover.");
       return;
     }
+
+    // Crear payload para el modal (siempre un array)
     const itemPayload = [
       {
         type,
         id,
         name,
-        folder_id: itemData.folder_id ?? null,
-        parent_folder_id: itemData.parent_folder_id ?? null,
+        folder_id: itemData.folder_id ?? null, // folder_id para archivos
+        parent_folder_id: itemData.parent_folder_id ?? null, // parent_folder_id para carpetas
       },
     ];
+
     setItemsToMove(itemPayload);
     setIsMoveModalOpen(true);
     setShowFabMenu(false);
@@ -678,12 +857,15 @@ function DashboardPage() {
   };
 
   const handleConfirmMove = async (itemsToProcess, destinationId) => {
-    // ... (sin cambios) ...
     if (!itemsToProcess || itemsToProcess.length === 0 || isActionLoading)
       return;
+
+    // El ID `null` representa la raíz en la API
     const destinationIdForApi = destinationId === null ? null : destinationId;
+
     setIsMovingItem(true);
-    setIsMoveModalOpen(false);
+    setIsMoveModalOpen(false); // Cerrar modal
+
     const toastId = toast.loading(
       `Moviendo ${
         itemsToProcess.length === 1
@@ -691,8 +873,10 @@ function DashboardPage() {
           : `${itemsToProcess.length} elementos`
       }...`
     );
+
     try {
       let response;
+      // Decidir si usar API individual o bulk
       if (itemsToProcess.length === 1) {
         const item = itemsToProcess[0];
         try {
@@ -700,6 +884,7 @@ function DashboardPage() {
           response = await action(item.id, {
             destinationFolderId: destinationIdForApi,
           });
+          // Mensaje de éxito para movimiento individual
           toast.update(toastId, {
             render: response.data.message || `"${item.name}" movido con éxito.`,
             type: "success",
@@ -707,15 +892,19 @@ function DashboardPage() {
             autoClose: 3000,
           });
         } catch (itemError) {
+          // Si falla el individual, relanzar para el catch general
           console.error(`Error moviendo ${item.type} ${item.id}:`, itemError);
-          throw itemError;
+          throw itemError; // Asegura que el catch exterior lo maneje
         }
       } else {
+        // Llamada a API Bulk
         const itemsPayload = itemsToProcess.map((item) => ({
           type: item.type,
           id: item.id,
         }));
         response = await bulkMoveItems(itemsPayload, destinationIdForApi);
+
+        // Manejar respuesta 207 (Multi-Status) para bulk
         if (response.status === 207 && response.data?.errors?.length > 0) {
           toast.update(toastId, {
             render: `Movimiento parcial: ${
@@ -733,6 +922,7 @@ function DashboardPage() {
             response.data.errors
           );
         } else {
+          // Éxito total en bulk (o mensaje genérico si no hay detalles)
           toast.update(toastId, {
             render:
               response.data.message ||
@@ -743,14 +933,18 @@ function DashboardPage() {
           });
         }
       }
+
+      // Limpiar selección y recargar vista actual (o limpiar búsqueda)
       setSelectedItems(new Set());
       setIsSelectionMode(false);
       if (!searchTerm) {
         loadContents(currentFolderId);
       } else {
+        // Si estábamos buscando, limpiamos la búsqueda para ver el estado actualizado
         clearSearch();
       }
     } catch (err) {
+      // Captura errores tanto de llamadas individuales como bulk
       const errorMsg =
         err.response?.data?.message || `Error al mover elementos.`;
       toast.update(toastId, {
@@ -763,12 +957,14 @@ function DashboardPage() {
         logout();
     } finally {
       setIsMovingItem(false);
-      setItemsToMove(null);
+      setItemsToMove(null); // Limpiar items a mover
     }
   };
 
   const handlePreview = (file) => {
     if (isActionLoading || !file) return;
+
+    // Comprobar si el tipo MIME es soportado para previsualización
     const mime = file.mime_type || "";
     const supportedTypes = [
       "image/",
@@ -784,20 +980,23 @@ function DashboardPage() {
     const isPreviewable = supportedTypes.some(
       (typePrefix) => mime.startsWith(typePrefix) || mime === typePrefix
     );
+
     if (isPreviewable) {
       setFileToPreview(file);
       setIsPreviewModalOpen(true);
-      setShowFabMenu(false);
+      setShowFabMenu(false); // Ocultar otros menús
       setIsMobileMenuOpen(false);
     } else {
+      // Si no es previsualizable, informar al usuario
       toast.info(
         `La previsualización no está disponible para '${file.name}'. Puedes descargarlo.`
       );
+      // Opcional: Podrías intentar descargarlo directamente aquí si prefieres esa UX
+      // handleDownloadFile(file.id, file.name);
     }
   };
 
   // --- Funciones para Selección Múltiple ---
-  // ... (getItemId, handleSelectItem, handleSelectAll, openBulkDeleteModal, handleConfirmBulkDelete, openBulkMoveModal sin cambios) ...
   const getItemId = (type, id) => `${type}-${id}`;
 
   const handleSelectItem = (type, id) => {
@@ -805,10 +1004,11 @@ function DashboardPage() {
     setSelectedItems((prevSelected) => {
       const newSelected = new Set(prevSelected);
       if (newSelected.has(uniqueItemId)) {
-        newSelected.delete(uniqueItemId);
+        newSelected.delete(uniqueItemId); // Deseleccionar
       } else {
-        newSelected.add(uniqueItemId);
+        newSelected.add(uniqueItemId); // Seleccionar
       }
+      // Activar/desactivar modo selección basado en si hay elementos seleccionados
       setIsSelectionMode(newSelected.size > 0);
       return newSelected;
     });
@@ -817,6 +1017,7 @@ function DashboardPage() {
   const handleSelectAll = (event) => {
     const isChecked = event.target.checked;
     if (isChecked) {
+      // Seleccionar todos los items visibles actualmente
       const allItemIds = new Set();
       const currentItems =
         searchTerm && searchResults ? searchResults : { folders, files };
@@ -827,13 +1028,15 @@ function DashboardPage() {
         allItemIds.add(getItemId("file", f.id))
       );
       setSelectedItems(allItemIds);
-      setIsSelectionMode(allItemIds.size > 0);
+      setIsSelectionMode(allItemIds.size > 0); // Activar modo selección si hay items
     } else {
+      // Deseleccionar todo
       setSelectedItems(new Set());
-      setIsSelectionMode(false);
+      setIsSelectionMode(false); // Desactivar modo selección
     }
   };
 
+  // Calcular si todos los items visibles están seleccionados (para el checkbox "Seleccionar todo")
   const allVisibleItemsCount =
     (searchTerm && searchResults
       ? searchResults.folders?.length ?? 0
@@ -851,18 +1054,26 @@ function DashboardPage() {
 
   const handleConfirmBulkDelete = async () => {
     if (selectedItems.size === 0 || isActionLoading) return;
-    setIsDeletingItem(true);
+
+    setIsDeletingItem(true); // Usar estado de carga general o uno específico
     setIsBulkDeleteModalOpen(false);
+
+    // Convertir Set de IDs string a array de objetos {type, id} para la API
     const itemsToProcess = Array.from(selectedItems).map((itemId) => {
       const [type, idStr] = itemId.split("-");
       return { type, id: parseInt(idStr, 10) };
     });
+
     const toastId = toast.loading(
       `Moviendo ${itemsToProcess.length} elementos a la papelera...`
     );
+
     try {
-      const response = await bulkMoveItemsToTrash(itemsToProcess);
+      const response = await bulkMoveItemsToTrash(itemsToProcess); // Llamar API bulk
+
+      // Manejar respuesta (puede ser 200 OK o 207 Multi-Status)
       if (response.status === 207 && response.data?.errors?.length > 0) {
+        // Hubo errores parciales
         toast.update(toastId, {
           render: `Borrado parcial: ${
             response.data.message ||
@@ -879,6 +1090,7 @@ function DashboardPage() {
           response.data.errors
         );
       } else {
+        // Éxito total o sin errores reportados
         toast.update(toastId, {
           render:
             response.data.message ||
@@ -888,12 +1100,14 @@ function DashboardPage() {
           autoClose: 3000,
         });
       }
+
+      // Limpiar selección y recargar/limpiar vista
       setSelectedItems(new Set());
       setIsSelectionMode(false);
       if (!searchTerm) {
         loadContents(currentFolderId);
       } else {
-        clearSearch();
+        clearSearch(); // Limpiar búsqueda para reflejar cambios
       }
     } catch (err) {
       const errorMsg =
@@ -914,6 +1128,8 @@ function DashboardPage() {
 
   const openBulkMoveModal = () => {
     if (selectedItems.size === 0 || isActionLoading) return;
+
+    // Recopilar datos completos de los items seleccionados para pasarlos al modal
     const itemsDataToMove = [];
     const currentFoldersSource =
       searchTerm && searchResults ? searchResults.folders || [] : folders;
@@ -931,13 +1147,14 @@ function DashboardPage() {
           type,
           id,
           name: itemFound.name,
-          folder_id: itemFound.folder_id ?? null,
-          parent_folder_id: itemFound.parent_folder_id ?? null,
+          folder_id: itemFound.folder_id ?? null, // Necesario para saber origen
+          parent_folder_id: itemFound.parent_folder_id ?? null, // Necesario para saber origen
         });
       }
     });
+
     if (itemsDataToMove.length > 0) {
-      setItemsToMove(itemsDataToMove);
+      setItemsToMove(itemsDataToMove); // Pasar array de items al estado
       setIsMoveModalOpen(true);
       setShowFabMenu(false);
       setIsMobileMenuOpen(false);
@@ -945,6 +1162,7 @@ function DashboardPage() {
       toast.error(
         "No se pudieron obtener los detalles de los elementos seleccionados para mover."
       );
+      // Podría pasar si los datos locales están desincronizados
     }
   };
 
@@ -956,6 +1174,7 @@ function DashboardPage() {
       isRenamingItem ||
       isMovingItem ||
       isUploading;
+    //isLoading es la carga de contenido, anyUserActionInProgress son las acciones POST/PUT/DELETE
     setIsActionLoading(anyUserActionInProgress || isLoading);
   }, [
     isLoading,
@@ -967,55 +1186,75 @@ function DashboardPage() {
   ]);
 
   // --- Manejadores para Context Menu y Long Press ---
-  // Definición de openActionMenu (incluye lógica de posicionamiento y visibilidad)
   const openActionMenu = (event, type, item) => {
+    // Prevenir menú contextual nativo si es un evento de contextmenu
     if (event.type === "contextmenu") event.preventDefault();
+
+    // No mostrar menú si estamos en modo selección o hay una acción en curso
     if (isSelectionMode || isActionLoading) return;
+
+    // Guardar la información del item sobre el que se abrió el menú
     setContextMenuItem({ type, ...item });
+
+    // Calcular posición del menú
     let posX = 0,
       posY = 0;
+
     if (event.clientX && event.clientY) {
-      // Click derecho o touchend de longpress
+      // Click derecho o evento de long press (que simula clientX/Y)
       posX = event.clientX;
       posY = event.clientY;
     } else if (event.target?.getBoundingClientRect) {
-      // Click en botón ...
+      // Click en un botón (ej. los tres puntos en móvil)
       const rect = event.target.getBoundingClientRect();
-      posX = rect.left;
-      posY = rect.bottom + 5; // Ajustar para que aparezca debajo
+      posX = rect.left; // Alinear a la izquierda del botón
+      posY = rect.bottom + 5; // Aparecer debajo del botón
     } else {
-      // Fallback
+      // Fallback si no se pueden obtener coordenadas
       posX = window.innerWidth / 2;
       posY = window.innerHeight / 2;
     }
-    const menuWidth = 180;
-    const menuHeight = 220;
+
+    // Ajustar posición para que no se salga de la pantalla
+    const menuWidth = 180; // Ancho estimado del menú
+    const menuHeight = 220; // Altura estimada del menú
     if (posX + menuWidth > window.innerWidth)
       posX = window.innerWidth - menuWidth - 10;
     if (posY + menuHeight > window.innerHeight)
       posY = window.innerHeight - menuHeight - 10;
-    setContextMenuPosition({ x: Math.max(10, posX), y: Math.max(10, posY) });
+
+    setContextMenuPosition({ x: Math.max(10, posX), y: Math.max(10, posY) }); // Asegurar un margen mínimo
     setIsContextMenuVisible(true);
+
+    // Cerrar otros menús flotantes
     setShowFabMenu(false);
     setIsMobileMenuOpen(false);
   };
 
   const handleCloseContextMenu = useCallback(() => {
     setIsContextMenuVisible(false);
-    setContextMenuItem(null);
+    setContextMenuItem(null); // Limpiar item al cerrar
   }, []);
 
+  // Efecto para cerrar el menú contextual al hacer clic fuera o presionar Escape
   useEffect(() => {
-    // Efecto para cerrar menú con click fuera o Escape
     if (isContextMenuVisible) {
       const handleGlobalClick = (e) => {
-        if (e.button !== 2) handleCloseContextMenu();
+        // No cerrar si el clic es derecho (podría ser para abrir otro menú)
+        if (e.button !== 2) {
+          handleCloseContextMenu();
+        }
       };
       const handleKeyDown = (e) => {
-        if (e.key === "Escape") handleCloseContextMenu();
+        if (e.key === "Escape") {
+          handleCloseContextMenu();
+        }
       };
+
       document.addEventListener("click", handleGlobalClick);
       document.addEventListener("keydown", handleKeyDown);
+
+      // Limpieza del efecto
       return () => {
         document.removeEventListener("click", handleGlobalClick);
         document.removeEventListener("keydown", handleKeyDown);
@@ -1025,30 +1264,36 @@ function DashboardPage() {
 
   // --- Manejadores para Long Press ---
   const handleTouchStart = (event, type, item) => {
+    // No iniciar long press si ya hay un menú, modo selección, o acción en curso
     if (isSelectionMode || isContextMenuVisible || isActionLoading) return;
+
+    // Guardar posición inicial del toque
     touchStartPositionRef.current = {
       x: event.targetTouches[0].clientX,
       y: event.targetTouches[0].clientY,
     };
+
+    // Iniciar temporizador para el long press
     longPressTimerRef.current = setTimeout(() => {
-      // Usar coordenadas guardadas al inicio del toque para posicionar
+      // Crear un objeto evento simulado con las coordenadas iniciales
       const positionEvent = {
         clientX: touchStartPositionRef.current.x,
         clientY: touchStartPositionRef.current.y,
-        type: "longpress",
+        type: "longpress", // Identificador opcional
       };
-      openActionMenu(positionEvent, type, item);
-      longPressTimerRef.current = null;
-    }, 700); // Tiempo para long press
+      openActionMenu(positionEvent, type, item); // Abrir menú contextual
+      longPressTimerRef.current = null; // Limpiar referencia al timer
+    }, 700); // 700ms para considerar long press
   };
 
   const handleTouchMove = (event) => {
+    // Si el temporizador está activo y el dedo se mueve significativamente, cancelar el long press
     if (longPressTimerRef.current) {
       const touch = event.targetTouches[0];
       const deltaX = Math.abs(touch.clientX - touchStartPositionRef.current.x);
       const deltaY = Math.abs(touch.clientY - touchStartPositionRef.current.y);
+      // Umbral de movimiento para cancelar (evita cancelar por pequeños temblores)
       if (deltaX > 10 || deltaY > 10) {
-        // Cancelar si hay scroll
         clearTimeout(longPressTimerRef.current);
         longPressTimerRef.current = null;
       }
@@ -1056,25 +1301,37 @@ function DashboardPage() {
   };
 
   const handleTouchEnd = () => {
+    // Si el dedo se levanta antes de que se complete el tiempo, cancelar el temporizador
     if (longPressTimerRef.current) {
-      // Cancelar si se levanta el dedo antes
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
   };
   // --- Fin Manejadores Long Press ---
 
-  // Wrappers para pasar las acciones al ContextMenu
+  // --- Wrappers para Acciones del Menú Contextual ---
+  // Estas funciones se pasarán como props al componente ContextMenu
   const triggerRename = (type, id, name) => openRenameModal(type, id, name);
   const triggerMove = (type, id, name) => openMoveModal(type, id, name);
-  const triggerDelete = (type, id, name) => handleDeleteItem(type, id, name);
-  const triggerDownload = (type, id, name) => handleDownloadFile(id, name);
+  const triggerDelete = (type, id, name) => handleDeleteItem(type, id, name); // Reutiliza la función existente
+  const triggerDownload = (type, id, name) => {
+    // Asegurarse que solo se llame para archivos
+    if (type === "file") {
+      handleDownloadFile(id, name);
+    }
+  };
   const triggerPreview = (type, id) => {
-    const sourceFiles =
-      searchTerm && searchResults ? searchResults.files || [] : files;
-    const fileData = sourceFiles.find((f) => f.id === id);
-    if (fileData) handlePreview(fileData);
-    else toast.error("No se pudo encontrar el archivo para previsualizar.");
+    // Encontrar los datos del archivo para pasarlos al modal de preview
+    if (type === "file") {
+      const sourceFiles =
+        searchTerm && searchResults ? searchResults.files || [] : files;
+      const fileData = sourceFiles.find((f) => f.id === id);
+      if (fileData) {
+        handlePreview(fileData); // Llama a la función existente
+      } else {
+        toast.error("No se pudo encontrar el archivo para previsualizar.");
+      }
+    }
   };
   // --- Fin Wrappers Context Menu ---
 
@@ -1085,6 +1342,8 @@ function DashboardPage() {
     const isSelected = selectedItems.has(uniqueItemId);
     const mime = item.mime_type || "";
     const isImage = !isFolder && mime.startsWith("image/");
+
+    // Determinar si el archivo es previsualizable
     const isPreviewable =
       !isFolder &&
       (mime.startsWith("image/") ||
@@ -1098,6 +1357,8 @@ function DashboardPage() {
           "application/xml",
           "application/xhtml+xml",
         ].includes(mime));
+
+    // Formatear tamaño
     const fileSizeMB = item.size ? item.size / (1024 * 1024) : 0;
     const fileSizeKB = item.size ? item.size / 1024 : 0;
     const displaySize = item.size
@@ -1112,11 +1373,13 @@ function DashboardPage() {
         className={`${styles.listItem} ${
           isSelected ? styles.selectedItem : ""
         }`}
-        onContextMenu={(e) => openActionMenu(e, type, item)} // Trigger menú contextual (desktop)
-        onTouchStart={(e) => handleTouchStart(e, type, item)} // Trigger long press (mobile)
+        // Eventos para menú contextual y long press
+        onContextMenu={(e) => openActionMenu(e, type, item)}
+        onTouchStart={(e) => handleTouchStart(e, type, item)}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ WebkitTouchCallout: "none", userSelect: "none" }} // Prevenir menú nativo y selección
+        // Estilos para prevenir selección de texto y menú nativo en móvil
+        style={{ WebkitTouchCallout: "none", userSelect: "none" }}
       >
         {/* Checkbox Selección */}
         <div className={styles.itemSelection}>
@@ -1136,7 +1399,6 @@ function DashboardPage() {
         <span
           className={`${styles.itemName} ${isFolder ? "" : styles.fileInfo}`}
         >
-          {/* ... (contenido nombre/icono sin cambios) ... */}
           {isFolder ? (
             <>
               <span className={styles.itemIcon}>📁</span>
@@ -1144,7 +1406,7 @@ function DashboardPage() {
                 onClick={() => handleFolderClick(item)}
                 className={styles.folderLink}
                 disabled={isActionLoading}
-                title={item.name}
+                title={item.name} // Tooltip con nombre completo
               >
                 {item.name}
               </button>
@@ -1154,20 +1416,24 @@ function DashboardPage() {
               {isImage ? (
                 <ImageThumbnail fileId={item.id} alt={item.name} />
               ) : (
+                // Icono genérico de archivo si no es imagen
                 <span className={styles.itemIcon}>📄</span>
               )}
+              {/* Botón para previsualizar (si es posible) o solo texto */}
               <button
-                onClick={() => handlePreview(item)}
-                className={styles.folderLink}
+                onClick={() => (isPreviewable ? handlePreview(item) : null)}
+                className={styles.folderLink} // Reutilizar estilo de link
                 disabled={isActionLoading || !isPreviewable}
                 title={
                   isPreviewable
                     ? `Previsualizar ${item.name}`
-                    : `Previsualización no disponible`
+                    : `Previsualización no disponible para ${item.name}`
                 }
+                style={{ cursor: isPreviewable ? "pointer" : "default" }} // Cambiar cursor si no es previsualizable
               >
                 {item.name}
               </button>
+              {/* Mostrar tamaño */}
               {displaySize && (
                 <span className={styles.fileSize}>({displaySize})</span>
               )}
@@ -1175,13 +1441,14 @@ function DashboardPage() {
           )}
         </span>
 
-        {/* Contenedor de Acciones (con botones individuales y botón móvil) */}
+        {/* Contenedor de Acciones (botones individuales y botón móvil) */}
         <div
           className={`${styles.itemActions} ${
             isSelectionMode ? styles.itemActionsHiddenInSelection : ""
           }`}
         >
-          {/* Botones individuales (ocultos en móvil con CSS) */}
+          {/* Botones individuales (ocultos en móvil por defecto con CSS) */}
+          {/* --- Previsualizar --- */}
           {isPreviewable && (
             <button
               onClick={() => handlePreview(item)}
@@ -1192,6 +1459,7 @@ function DashboardPage() {
               <PreviewIcon />
             </button>
           )}
+          {/* --- Renombrar --- */}
           <button
             onClick={() => openRenameModal(type, item.id, item.name)}
             className={`${styles.itemActionButton} ${styles.actionButtonDesktopOnly} ${styles.renameButton}`}
@@ -1205,6 +1473,7 @@ function DashboardPage() {
               />
             </svg>
           </button>
+          {/* --- Mover --- */}
           <button
             onClick={() => openMoveModal(type, item.id, item.name)}
             className={`${styles.itemActionButton} ${styles.actionButtonDesktopOnly} ${styles.moveButton}`}
@@ -1221,6 +1490,7 @@ function DashboardPage() {
               <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8-8-8z" />
             </svg>
           </button>
+          {/* --- Descargar (solo archivos) --- */}
           {!isFolder && (
             <button
               onClick={() => handleDownloadFile(item.id, item.name)}
@@ -1236,6 +1506,7 @@ function DashboardPage() {
               </svg>
             </button>
           )}
+          {/* --- Eliminar (Mover a Papelera) --- */}
           <button
             onClick={() => handleDeleteItem(type, item.id, item.name)}
             className={`${styles.itemActionButton} ${styles.actionButtonDesktopOnly} ${styles.deleteButton}`}
@@ -1250,10 +1521,10 @@ function DashboardPage() {
             </svg>
           </button>
 
-          {/* Botón de tres puntos para móvil */}
+          {/* Botón de tres puntos para móvil (se muestra/oculta con CSS) */}
           <button
             onClick={(e) => {
-              e.stopPropagation(); // *** IMPORTANTE: Detener propagación aquí ***
+              e.stopPropagation(); // Evitar que el click en el botón cierre el menú inmediatamente
               openActionMenu(e, type, item);
             }}
             className={`${styles.itemActionButton} ${styles.mobileItemMenuButton}`}
@@ -1271,22 +1542,21 @@ function DashboardPage() {
   return (
     <div className={styles.pageWrapper}>
       {/* Header */}
-      {/* ... (resto del JSX sin cambios) ... */}
       <header className={styles.header}>
+        {/* --- Barra Contextual (Modo Selección) --- */}
         {isSelectionMode ? (
           <div className={styles.contextualActionBar}>
             <span className={styles.selectionCount}>
-              {" "}
-              {selectedItems.size} seleccionado(s){" "}
+              {selectedItems.size} seleccionado(s)
             </span>
             <div className={styles.contextualButtons}>
+              {/* Botón Mover Seleccionados */}
               <button
                 onClick={openBulkMoveModal}
                 className={`${styles.contextualButton} ${styles.moveButtonContextual}`}
                 disabled={isActionLoading || selectedItems.size === 0}
                 title="Mover elementos seleccionados"
               >
-                {" "}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   height="20px"
@@ -1296,19 +1566,21 @@ function DashboardPage() {
                 >
                   <path d="M0 0h24v24H0V0z" fill="none" />
                   <path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z" />
-                </svg>{" "}
-                <span>Mover</span>{" "}
+                </svg>
+                <span>Mover</span>
               </button>
+              {/* Botón Eliminar Seleccionados */}
               <button
                 onClick={openBulkDeleteModal}
                 className={`${styles.contextualButton} ${styles.deleteButtonContextual}`}
                 disabled={isActionLoading || selectedItems.size === 0}
                 title="Mover seleccionados a Papelera"
               >
-                {" "}
-                <DeleteSelectedIcon /> <span>Eliminar</span>{" "}
+                <DeleteSelectedIcon />
+                <span>Eliminar</span>
               </button>
             </div>
+            {/* Botón Cancelar Selección */}
             <button
               onClick={() => {
                 setSelectedItems(new Set());
@@ -1318,12 +1590,13 @@ function DashboardPage() {
               disabled={isActionLoading}
               title="Cancelar Selección"
             >
-              {" "}
-              <CloseIcon />{" "}
+              <CloseIcon />
             </button>
           </div>
         ) : (
+          // --- Header Normal (No Selección) ---
           <>
+            {/* Título */}
             <button
               className={styles.headerTitleButton}
               onClick={() => handleBreadcrumbClick("root", 0)}
@@ -1331,14 +1604,16 @@ function DashboardPage() {
               title={currentFolderId !== "root" ? "Ir a Raíz" : ""}
             >
               <h1 className={styles.headerTitle}>
-                {" "}
-                SkyVault {user?.username ? `- ${user.username}` : ""}{" "}
+                SkyVault {user?.username ? `- ${user.username}` : ""}
               </h1>
             </button>
+
+            {/* Búsqueda Desktop */}
             <div
               className={`${styles.searchContainer} ${styles.desktopOnlySearch}`}
             >
               <input
+                ref={desktopSearchInputRef} // <--- AÑADIR AQUÍ
                 type="search"
                 placeholder="Buscar archivos y carpetas..."
                 className={styles.searchInput}
@@ -1353,44 +1628,56 @@ function DashboardPage() {
                   title="Limpiar búsqueda"
                   disabled={isActionLoading}
                 >
-                  {" "}
-                  <CloseIcon />{" "}
+                  <CloseIcon />
                 </button>
               )}
             </div>
+
+            {/* Acciones Desktop */}
             <div
               className={`${styles.desktopActionsContainer} ${styles.desktopOnlyActions}`}
             >
+              {/* Icono Ajustes Desktop (Opcional) */}
+              <Link
+                to="/settings"
+                className={styles.trashLinkDesktop}
+                title="Ajustes"
+              >
+                <SettingsIcon />
+              </Link>
+              {/* Icono Papelera Desktop */}
               <Link
                 to="/trash"
                 className={styles.trashLinkDesktop}
                 title="Papelera"
               >
-                {" "}
-                <TrashIcon />{" "}
+                <TrashIcon />
               </Link>
+              {/* Link Perfil Desktop */}
               <Link to="/profile" className={styles.profileLinkDesktop}>
-                {" "}
-                Mi Perfil{" "}
+                Mi Perfil
               </Link>
+              {/* Botón Logout Desktop */}
               <button
                 onClick={handleLogout}
                 className={styles.logoutButton}
                 disabled={isActionLoading}
               >
-                {" "}
-                Logout{" "}
+                Logout
               </button>
             </div>
+
+            {/* Acciones Móvil */}
             <div className={styles.mobileHeaderActions}>
+              {/* Botón Búsqueda Móvil */}
               <button
                 onClick={toggleMobileSearch}
                 className={styles.mobileIconButton}
                 title="Buscar"
               >
-                {" "}
-                <SearchIcon />{" "}
+                <SearchIcon />
               </button>
+              {/* Botón Más Opciones Móvil */}
               <button
                 onClick={() => setIsMobileMenuOpen((prev) => !prev)}
                 className={styles.mobileIconButton}
@@ -1398,27 +1685,36 @@ function DashboardPage() {
                 aria-haspopup="true"
                 aria-expanded={isMobileMenuOpen}
               >
-                {" "}
-                <MoreVertIcon />{" "}
+                <MoreVertIcon />
               </button>
+              {/* Menú Desplegable Móvil */}
               {isMobileMenuOpen && (
                 <div className={styles.mobileDropdownMenu} ref={mobileMenuRef}>
+                  {/* Link Ajustes Móvil */}
+                  <Link
+                    to="/settings"
+                    className={styles.mobileDropdownLink}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <button>Ajustes</button>
+                  </Link>
+                  {/* Link Perfil Móvil */}
                   <Link
                     to="/profile"
                     className={styles.mobileDropdownLink}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    {" "}
-                    <button>Mi Perfil</button>{" "}
+                    <button>Mi Perfil</button>
                   </Link>
+                  {/* Link Papelera Móvil */}
                   <Link
                     to="/trash"
                     className={styles.mobileDropdownLink}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    {" "}
-                    <button>Papelera</button>{" "}
+                    <button>Papelera</button>
                   </Link>
+                  {/* Botón Logout Móvil */}
                   <button
                     onClick={() => {
                       handleLogout();
@@ -1426,8 +1722,7 @@ function DashboardPage() {
                     }}
                     className={styles.mobileDropdownLogout}
                   >
-                    {" "}
-                    Logout{" "}
+                    Logout
                   </button>
                 </div>
               )}
@@ -1438,16 +1733,11 @@ function DashboardPage() {
 
       {/* Overlay Búsqueda Móvil */}
       {isMobileSearchVisible && (
-        <div
-          className={styles.mobileSearchOverlay}
-          onClick={toggleMobileSearch}
-        >
-          <div
-            className={styles.mobileSearchInputWrapper}
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className={styles.mobileSearchOverlay} /* ... */>
+          <div className={styles.mobileSearchInputWrapper} /* ... */>
             <div className={styles.mobileSearchInner}>
               <input
+                ref={mobileSearchInputRef} // <--- AÑADIR AQUÍ
                 type="search"
                 placeholder="Buscar..."
                 className={styles.searchInput}
@@ -1463,8 +1753,7 @@ function DashboardPage() {
                   title="Limpiar búsqueda"
                   disabled={isActionLoading}
                 >
-                  {" "}
-                  <CloseIcon />{" "}
+                  <CloseIcon />
                 </button>
               )}
             </div>
@@ -1473,27 +1762,27 @@ function DashboardPage() {
               className={styles.mobileSearchCancelButton}
               disabled={isActionLoading}
             >
-              {" "}
-              Cancelar{" "}
+              Cancelar
             </button>
           </div>
         </div>
       )}
 
-      {/* Barra de Navegación */}
+      {/* Barra de Navegación (Breadcrumbs y Seleccionar Todo) */}
+      {/* No mostrar NavBar si estamos en modo selección */}
       {!isSelectionMode && (
         <nav className={styles.navBar}>
           <div className={styles.navBarContent}>
+            {/* Breadcrumbs */}
             <div className={styles.breadcrumbsContainer}>
               {path.map((folder, index) => (
                 <span key={folder.id} className={styles.breadcrumbItem}>
                   <button
                     onClick={() => handleBreadcrumbClick(folder.id, index)}
                     className={styles.breadcrumbLink}
-                    disabled={isActionLoading || index === path.length - 1}
+                    disabled={isActionLoading || index === path.length - 1} // Deshabilitar último elemento
                   >
-                    {" "}
-                    {folder.name}{" "}
+                    {folder.name}
                   </button>
                   {index < path.length - 1 && (
                     <span className={styles.breadcrumbSeparator}>/</span>
@@ -1501,6 +1790,7 @@ function DashboardPage() {
                 </span>
               ))}
             </div>
+            {/* Checkbox Seleccionar Todo (solo si hay items visibles) */}
             {allVisibleItemsCount > 0 && (
               <div className={styles.selectAllContainer}>
                 <label
@@ -1522,7 +1812,7 @@ function DashboardPage() {
                     id="select-all-checkbox"
                     checked={isAllCurrentlySelected}
                     onChange={handleSelectAll}
-                    className={styles.hiddenCheckbox}
+                    className={styles.hiddenCheckbox} // Ocultar checkbox nativo
                     disabled={isActionLoading}
                   />
                 </label>
@@ -1532,21 +1822,21 @@ function DashboardPage() {
         </nav>
       )}
 
-      {/* Contenido Principal */}
+      {/* Contenido Principal (Listas o Resultados Búsqueda) */}
       <main className={styles.mainContent}>
+        {/* --- Renderizado Condicional: Búsqueda vs Navegación --- */}
         {searchTerm && searchResults !== null ? (
+          // --- MODO BÚSQUEDA ACTIVA ---
           <>
             <h3 className={styles.contentHeader}>
-              {" "}
-              Resultados de Búsqueda para "{searchTerm}"{" "}
+              Resultados de Búsqueda para "{searchTerm}"
             </h3>
-            {searchResults === null ? (
+            {isLoading ? ( // Mostrar carga si isLoading es true durante búsqueda
               <p className={styles.loadingMessage}>Buscando...</p>
             ) : !searchResults.folders?.length &&
               !searchResults.files?.length ? (
               <p className={styles.emptyMessage}>
-                {" "}
-                No se encontraron resultados.{" "}
+                No se encontraron resultados.
               </p>
             ) : (
               <>
@@ -1578,14 +1868,15 @@ function DashboardPage() {
             )}
           </>
         ) : searchTerm && searchResults === null ? (
+          // --- MODO BÚSQUEDA INICIADA (Esperando resultados) ---
           <>
             <h3 className={styles.contentHeader}>
-              {" "}
-              Resultados de Búsqueda para "{searchTerm}"{" "}
+              Resultados de Búsqueda para "{searchTerm}"
             </h3>
             <p className={styles.loadingMessage}>Buscando...</p>
           </>
         ) : (
+          // --- MODO NAVEGACIÓN NORMAL ---
           <>
             {isLoading ? (
               <p className={styles.loadingMessage}>Cargando...</p>
@@ -1622,7 +1913,6 @@ function DashboardPage() {
       </main>
 
       {/* Modales */}
-      {/* ... (modales sin cambios) ... */}
       <Modal
         isOpen={isCreateFolderModalOpen}
         onClose={
@@ -1631,46 +1921,42 @@ function DashboardPage() {
         title="Crear Nueva Carpeta"
       >
         <form onSubmit={handleConfirmCreateFolder}>
-          {" "}
           <div className={modalStyles.formGroup}>
-            {" "}
-            <label htmlFor="newFolderName">Nombre de la Carpeta:</label>{" "}
+            <label htmlFor="newFolderName">Nombre de la Carpeta:</label>
             <input
               type="text"
               id="newFolderName"
-              className={modalStyles.input}
+              className={modalStyles.input} // Usar clase global o específica de modal
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
               required
               autoFocus
               disabled={isCreatingFolder}
-            />{" "}
-          </div>{" "}
+            />
+          </div>
           <div className={modalStyles.modalActions}>
-            {" "}
             <button
               type="button"
               onClick={() => setIsCreateFolderModalOpen(false)}
-              className={modalStyles.cancelButton}
+              className={modalStyles.cancelButton} // Clase específica o global
               disabled={isCreatingFolder}
             >
-              {" "}
-              Cancelar{" "}
-            </button>{" "}
+              Cancelar
+            </button>
             <button
               type="submit"
-              className={modalStyles.confirmButton}
+              className={modalStyles.confirmButton} // Clase específica o global
               disabled={!newFolderName.trim() || isCreatingFolder}
             >
-              {" "}
               {isCreatingFolder && (
                 <span className={modalStyles.spinner}></span>
-              )}{" "}
-              {isCreatingFolder ? "Creando..." : "Crear Carpeta"}{" "}
-            </button>{" "}
-          </div>{" "}
+              )}
+              {isCreatingFolder ? "Creando..." : "Crear Carpeta"}
+            </button>
+          </div>
         </form>
       </Modal>
+
       <Modal
         isOpen={isConfirmDeleteModalOpen}
         onClose={
@@ -1680,45 +1966,38 @@ function DashboardPage() {
       >
         {itemToDelete && (
           <>
-            {" "}
             <p>
-              {" "}
               ¿Estás seguro de que quieres mover{" "}
-              {itemToDelete.type === "folder"
-                ? " la carpeta"
-                : " el archivo"}{" "}
-              <strong> "{itemToDelete.name}" </strong> a la papelera?{" "}
-            </p>{" "}
+              {itemToDelete.type === "folder" ? " la carpeta" : " el archivo"}{" "}
+              <strong> "{itemToDelete.name}" </strong> a la papelera?
+            </p>
             <p style={{ fontSize: "0.9em", color: "var(--text-secondary)" }}>
-              {" "}
-              Podrás restaurarlo o eliminarlo permanentemente desde allí.{" "}
-            </p>{" "}
+              Podrás restaurarlo o eliminarlo permanentemente desde allí.
+            </p>
             <div className={modalStyles.modalActions}>
-              {" "}
               <button
                 type="button"
                 onClick={() => setIsConfirmDeleteModalOpen(false)}
                 className={modalStyles.cancelButton}
                 disabled={isDeletingItem}
               >
-                {" "}
-                Cancelar{" "}
-              </button>{" "}
+                Cancelar
+              </button>
               <button
                 onClick={handleConfirmDelete}
                 className={modalStyles.confirmButtonDanger}
                 disabled={isDeletingItem}
               >
-                {" "}
                 {isDeletingItem && (
                   <span className={modalStyles.spinner}></span>
-                )}{" "}
-                {isDeletingItem ? "Moviendo..." : "Mover a Papelera"}{" "}
-              </button>{" "}
-            </div>{" "}
+                )}
+                {isDeletingItem ? "Moviendo..." : "Mover a Papelera"}
+              </button>
+            </div>
           </>
         )}
       </Modal>
+
       <Modal
         isOpen={isRenameModalOpen}
         onClose={!isRenamingItem ? () => setIsRenameModalOpen(false) : null}
@@ -1728,10 +2007,8 @@ function DashboardPage() {
       >
         {itemToRename && (
           <form onSubmit={handleConfirmRename}>
-            {" "}
             <div className={modalStyles.formGroup}>
-              {" "}
-              <label htmlFor="renameInput">Nuevo nombre:</label>{" "}
+              <label htmlFor="renameInput">Nuevo nombre:</label>
               <input
                 type="text"
                 id="renameInput"
@@ -1740,21 +2017,19 @@ function DashboardPage() {
                 onChange={(e) => setRenameInputValue(e.target.value)}
                 required
                 autoFocus
-                onFocus={(e) => e.target.select()}
+                onFocus={(e) => e.target.select()} // Seleccionar texto al enfocar
                 disabled={isRenamingItem}
-              />{" "}
-            </div>{" "}
+              />
+            </div>
             <div className={modalStyles.modalActions}>
-              {" "}
               <button
                 type="button"
                 onClick={() => setIsRenameModalOpen(false)}
                 className={modalStyles.cancelButton}
                 disabled={isRenamingItem}
               >
-                {" "}
-                Cancelar{" "}
-              </button>{" "}
+                Cancelar
+              </button>
               <button
                 type="submit"
                 className={modalStyles.confirmButton}
@@ -1764,23 +2039,24 @@ function DashboardPage() {
                   renameInputValue.trim() === itemToRename.currentName
                 }
               >
-                {" "}
                 {isRenamingItem && (
                   <span className={modalStyles.spinner}></span>
-                )}{" "}
-                {isRenamingItem ? "Renombrando..." : "Renombrar"}{" "}
-              </button>{" "}
-            </div>{" "}
+                )}
+                {isRenamingItem ? "Renombrando..." : "Renombrar"}
+              </button>
+            </div>
           </form>
         )}
       </Modal>
+
       <MoveItemModal
         isOpen={isMoveModalOpen}
         onClose={!isMovingItem ? () => setIsMoveModalOpen(false) : null}
-        itemsToMove={itemsToMove}
+        itemsToMove={itemsToMove} // Pasar el array de items
         onConfirmMove={handleConfirmMove}
-        isActionLoading={isMovingItem}
+        isActionLoading={isMovingItem} // Pasar estado de carga
       />
+
       <FilePreviewModal
         isOpen={isPreviewModalOpen}
         onClose={() => setIsPreviewModalOpen(false)}
@@ -1792,52 +2068,48 @@ function DashboardPage() {
         title="Mover Elementos a Papelera"
       >
         <>
-          {" "}
           <p>
-            {" "}
             ¿Estás seguro de que quieres mover los{" "}
             <strong> {selectedItems.size} </strong> elementos seleccionados a la
-            papelera?{" "}
-          </p>{" "}
+            papelera?
+          </p>
           <div className={modalStyles.modalActions}>
-            {" "}
             <button
               type="button"
               onClick={() => setIsBulkDeleteModalOpen(false)}
               className={modalStyles.cancelButton}
               disabled={isDeletingItem}
             >
-              {" "}
-              Cancelar{" "}
-            </button>{" "}
+              Cancelar
+            </button>
             <button
               onClick={handleConfirmBulkDelete}
               className={modalStyles.confirmButtonDanger}
               disabled={isDeletingItem || selectedItems.size === 0}
             >
-              {" "}
-              {isDeletingItem && (
-                <span className={modalStyles.spinner}></span>
-              )}{" "}
+              {isDeletingItem && <span className={modalStyles.spinner}></span>}
               {isDeletingItem
                 ? "Moviendo..."
-                : `Mover ${selectedItems.size} a Papelera`}{" "}
-            </button>{" "}
-          </div>{" "}
+                : `Mover ${selectedItems.size} a Papelera`}
+            </button>
+          </div>
         </>
       </Modal>
 
-      {/* Input Oculto y FAB */}
+      {/* Input Oculto para Subida */}
       <input
         id="file-upload-input"
         type="file"
         ref={fileInputRef}
         style={{ display: "none" }}
         onChange={handleFileUpload}
-        disabled={isActionLoading}
+        disabled={isActionLoading} // Deshabilitar si hay acción en curso
       />
+
+      {/* Botón Flotante (FAB) y Menú (solo si no está en modo selección) */}
       {!isSelectionMode && (
         <div className={styles.fabContainer}>
+          {/* Menú del FAB */}
           <div
             className={`${styles.fabMenu} ${
               showFabMenu ? styles.fabMenuVisible : ""
@@ -1848,25 +2120,24 @@ function DashboardPage() {
               className={styles.fabMenuItem}
               disabled={isActionLoading}
             >
-              {" "}
-              Crear Carpeta{" "}
+              Crear Carpeta
             </button>
             <button
               onClick={triggerFileInput}
               className={styles.fabMenuItem}
               disabled={isActionLoading}
             >
-              {" "}
-              Subir Archivo{" "}
+              Subir Archivo
             </button>
           </div>
+          {/* Botón Principal del FAB */}
           <button
             className={styles.fabButton}
             onClick={toggleFabMenu}
             title="Añadir"
             disabled={isActionLoading}
-            aria-haspopup="true"
-            aria-expanded={showFabMenu}
+            aria-haspopup="true" // Indica que abre un menú
+            aria-expanded={showFabMenu} // Estado del menú
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -1882,21 +2153,21 @@ function DashboardPage() {
         </div>
       )}
 
-      {/* --- Context Menu --- */}
+      {/* --- Menú Contextual --- */}
       {isContextMenuVisible && contextMenuItem && (
         <ContextMenu
           position={contextMenuPosition}
-          item={contextMenuItem}
+          item={contextMenuItem} // Pasar el item completo
           onClose={handleCloseContextMenu}
           onRename={triggerRename}
           onMove={triggerMove}
           onDelete={triggerDelete}
           onDownload={triggerDownload}
           onPreview={triggerPreview}
-          isActionLoading={isActionLoading}
+          isActionLoading={isActionLoading} // Para deshabilitar acciones
         />
       )}
-      {/* --- Fin Context Menu --- */}
+      {/* --- Fin Menú Contextual --- */}
     </div> // Cierre de pageWrapper
   );
 }

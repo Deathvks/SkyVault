@@ -7,6 +7,7 @@
   padding: 40px 20px;
   background-color: var(--background-page);
   min-height: 100vh; /* Ocupar al menos toda la altura de la ventana */
+  transition: background-color 0.3s ease; /* Transición */
 }
 
 .trashCard {
@@ -16,6 +17,7 @@
   width: 100%;
   max-width: 900px; /* Ancho máximo para la tarjeta principal */
   /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); */ /* Sombra suave opcional */
+  transition: background-color 0.3s ease; /* Transición */
 }
 
 .header {
@@ -27,6 +29,7 @@
   border-bottom: 1px solid var(--border-color-light);
   flex-wrap: wrap; /* Permitir wrap */
   gap: 15px; /* Espacio entre elementos si hacen wrap */
+  transition: border-bottom-color 0.3s ease; /* Transición */
 }
 
 .title {
@@ -35,9 +38,10 @@
   font-size: 1.6rem;
   font-weight: 600;
   flex-grow: 1; /* Ocupar espacio */
+  transition: color 0.3s ease; /* Transición */
 }
 
-/* --- NUEVO ESTILO BOTÓN VACIAR --- */
+/* --- ESTILO BOTÓN VACIAR --- */
 .emptyTrashButton {
   /* Hereda estilos base de botón */
   padding: 8px 14px;
@@ -50,11 +54,14 @@
   align-items: center;
   gap: 6px; /* Espacio entre icono y texto */
   white-space: nowrap; /* Evitar salto de línea */
+  transition: background-color 0.2s ease, color 0.2s ease,
+    border-color 0.2s ease, opacity 0.2s ease; /* Transición completa */
 }
 .emptyTrashButton svg {
   width: 18px;
   height: 18px;
   fill: currentColor;
+  transition: opacity 0.2s ease;
 }
 
 .emptyTrashButton:hover:not(:disabled) {
@@ -80,7 +87,7 @@
   font-weight: 500;
   padding: 6px 10px;
   border-radius: var(--border-radius-medium);
-  transition: background-color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.3s ease; /* Transición */
   white-space: nowrap; /* Evitar que el link se parta */
   flex-shrink: 0; /* Evitar que se encoja */
 }
@@ -99,6 +106,8 @@
   background-color: var(--system-gray-100); /* Fondo sutil */
   border-radius: var(--border-radius-medium);
   border: 1px solid var(--border-color-light);
+  transition: background-color 0.3s ease, color 0.3s ease,
+    border-color 0.3s ease; /* Transición */
 }
 
 /* Mensaje de Carga o Papelera Vacía */
@@ -107,6 +116,7 @@
   padding: 40px 20px;
   color: var(--system-gray-600);
   font-size: 1rem;
+  transition: color 0.3s ease; /* Transición */
 }
 
 /* Lista de Items */
@@ -123,6 +133,7 @@
   padding: 12px 15px;
   border-bottom: 1px solid var(--border-color-light);
   gap: 10px; /* Espacio entre info y acciones */
+  transition: border-bottom-color 0.3s ease; /* Transición */
 }
 .itemList > .trashItem:last-child {
   border-bottom: none;
@@ -140,6 +151,7 @@
   color: var(--system-gray-600); /* Icono gris en papelera */
   font-size: 1.3rem;
   flex-shrink: 0; /* Evita que el icono se encoja */
+  transition: color 0.3s ease; /* Transición */
 }
 
 .itemName {
@@ -149,6 +161,7 @@
   white-space: nowrap;
   flex-shrink: 1; /* Permitir que el nombre se encoja si es necesario */
   flex-grow: 1; /* Intentar ocupar espacio */
+  transition: color 0.3s ease; /* Transición */
 }
 
 .itemSize {
@@ -156,6 +169,7 @@
   color: var(--system-gray-500);
   white-space: nowrap;
   flex-shrink: 0;
+  transition: color 0.3s ease; /* Transición */
 }
 
 .deletedDate {
@@ -165,6 +179,7 @@
   white-space: nowrap;
   flex-shrink: 0;
   padding-left: 10px; /* Espacio a la izquierda */
+  transition: color 0.3s ease; /* Transición */
 }
 
 /* Contenedor de Acciones */
@@ -188,7 +203,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, opacity 0.2s ease; /* Transición completa */
 }
 .actionButton:hover:not(:disabled) {
   background-color: var(--system-gray-200);
@@ -208,12 +223,59 @@
 /* Estilos específicos para botones de acción */
 .restoreButton:hover:not(:disabled) {
   color: var(--system-green); /* Verde para restaurar */
-  background-color: rgba(52, 199, 89, 0.1); /* Fondo verde sutil */
+  background-color: rgba(52, 199, 89, 0.1); /* Fondo verde sutil claro */
 }
 
 .deleteButton:hover:not(:disabled) {
   color: var(--error-red); /* Rojo para eliminar */
-  background-color: rgba(255, 59, 48, 0.1); /* Fondo rojo sutil */
+  background-color: rgba(255, 59, 48, 0.1); /* Fondo rojo sutil claro */
+}
+
+/* --- Overrides Dark Mode Específicos --- */
+:root[data-theme="dark"] {
+  .emptyTrashButton {
+    background-color: var(--system-gray-400-dark);
+    border-color: var(--system-gray-500-dark);
+    color: var(--error-red); /* Mantenemos rojo */
+  }
+  .emptyTrashButton:hover:not(:disabled) {
+    background-color: var(--system-gray-500-dark);
+    border-color: var(--system-gray-600-dark);
+  }
+  .emptyTrashButton:disabled {
+    color: var(--system-gray-600-dark); /* Texto deshabilitado oscuro */
+    background-color: var(--system-gray-300-dark);
+    border-color: var(--system-gray-400-dark);
+  }
+
+  .backLink:hover {
+    background-color: var(--system-gray-300-dark);
+  }
+
+  .infoMessage {
+    background-color: var(--system-gray-200-dark);
+    border-color: var(--system-gray-300-dark);
+  }
+
+  .actionButton {
+    color: var(--system-gray-600-dark);
+  }
+  .actionButton:hover:not(:disabled) {
+    background-color: var(--system-gray-300-dark); /* Fondo hover oscuro */
+  }
+  .actionButton:disabled {
+    color: var(--system-gray-500-dark); /* Ajuste color disabled oscuro */
+  }
+
+  .restoreButton:hover:not(:disabled) {
+    color: var(--system-green-dark); /* Verde oscuro */
+    background-color: rgba(48, 209, 88, 0.15); /* Fondo verde oscuro sutil */
+  }
+
+  .deleteButton:hover:not(:disabled) {
+    color: var(--system-red-dark); /* Rojo oscuro */
+    background-color: rgba(255, 69, 58, 0.15); /* Fondo rojo oscuro sutil */
+  }
 }
 
 /* Responsive */
@@ -222,21 +284,13 @@
     padding: 20px 15px;
   }
   .header {
-    /* Ajustar para que el botón quede bien */
-    flex-direction: row; /* Mantener en fila si cabe */
-    align-items: center; /* Centrar verticalmente */
-    /* O volver a column si prefieres:
-    flex-direction: column;
-    align-items: flex-start;
-    */
-  }
-  .title {
-    /* Puede necesitar ajustar tamaño/orden si el botón es muy grande */
+    flex-direction: row;
+    align-items: center;
   }
   .emptyTrashButton {
-    order: 2; /* Ponerlo después del título */
-    margin-left: auto; /* Empujar a la derecha si hay espacio */
-    font-size: 0.85rem; /* Ligeramente más pequeño */
+    order: 2;
+    margin-left: auto;
+    font-size: 0.85rem;
     padding: 6px 10px;
   }
   .emptyTrashButton svg {
@@ -244,8 +298,7 @@
     height: 16px;
   }
   .backLink {
-    order: 3; /* El link al final */
-    /* align-self: flex-start; si está en columna */
+    order: 3;
   }
 
   .infoMessage {
@@ -254,23 +307,22 @@
   }
   .itemInfo {
     margin-right: 10px;
-    gap: 8px; /* Menos espacio interno */
+    gap: 8px;
   }
   .deletedDate {
-    display: none; /* Ocultar fecha en móvil si falta espacio */
+    display: none;
   }
 }
 
 @media (max-width: 480px) {
   .trashItem {
-    padding: 10px; /* Menos padding */
+    padding: 10px;
   }
   .itemName {
-    /* Podríamos limitar el ancho máximo si es necesario */
     /* max-width: 150px; */
   }
   .itemSize {
-    display: none; /* Ocultar tamaño en pantallas muy pequeñas */
+    display: none;
   }
   .actionButton {
     width: 30px;
@@ -283,17 +335,6 @@
   }
   /* Ajustes botón vaciar en móvil muy pequeño */
   .header {
-    gap: 10px; /* Ajustar gap si es necesario */
-  }
-  .emptyTrashButton {
-    /* Puede necesitar ocupar todo el ancho si no cabe bien */
-    /* width: 100%; */
-    /* order: 3; */ /* Cambiar orden si ocupa todo el ancho */
-    /* margin-left: 0; */
-  }
-  .backLink {
-    /* Ajustar orden/margen si el botón vaciar ocupa todo */
-    /* order: 4; */
-    /* margin-top: 10px; */
+    gap: 10px;
   }
 }

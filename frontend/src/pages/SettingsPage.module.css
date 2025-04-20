@@ -1,0 +1,161 @@
+/* frontend/src/pages/SettingsPage.module.css */
+
+.pageContainer {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; /* Alinear arriba */
+  padding: 40px 20px;
+  background-color: var(--background-page);
+  min-height: calc(100vh - 60px); /* Ajustar si tienes header fijo */
+}
+
+.settingsCard {
+  background-color: var(--background-elevated);
+  padding: 30px;
+  border-radius: var(--border-radius-large);
+  width: 100%;
+  max-width: 600px; /* Ancho máximo */
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 30px;
+  color: var(--text-primary);
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+.settingSection {
+  margin-bottom: 30px;
+  padding-bottom: 25px;
+  border-bottom: 1px solid var(--border-color-light);
+}
+.settingsCard > .settingSection:last-of-type {
+  border-bottom: none;
+  margin-bottom: 20px;
+  padding-bottom: 0;
+}
+
+.sectionTitle {
+  font-size: 1.1rem; /* Más pequeño que el título principal */
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+}
+
+/* Estilos para grupo de radio buttons */
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* Espacio entre opciones */
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+/* Ocultar el radio button nativo */
+.radioInput {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* Crear un radio button personalizado */
+.radioInput + .radioText::before {
+  content: "";
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--system-gray-400);
+  margin-right: 12px;
+  background-color: var(--background-elevated);
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+  flex-shrink: 0;
+  position: relative; /* Para el punto interior */
+  top: -1px; /* Alineación vertical fina */
+}
+
+/* Estado hover */
+.radioLabel:hover .radioInput + .radioText::before {
+  border-color: var(--system-gray-500);
+}
+
+/* Estado seleccionado */
+.radioInput:checked + .radioText::before {
+  border-color: var(--primary-blue);
+  background-color: var(--primary-blue);
+}
+
+/* Punto interior del radio button seleccionado */
+.radioInput:checked + .radioText::after {
+  content: "";
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(
+    --button-text-light
+  ); /* O --background-elevated si prefieres anillo */
+  position: absolute;
+  top: 5px; /* Centrar el punto */
+  left: 5px; /* Centrar el punto */
+  transform: translate(1px, 0px); /* Ajuste fino posición punto */
+}
+
+/* Ajustar estilos para modo oscuro si es necesario */
+:root[data-theme="dark"] .radioInput + .radioText::before {
+  border-color: var(--system-gray-500-dark);
+  background-color: var(--background-elevated);
+}
+:root[data-theme="dark"] .radioLabel:hover .radioInput + .radioText::before {
+  border-color: var(--system-gray-300-dark);
+}
+:root[data-theme="dark"] .radioInput:checked + .radioText::before {
+  border-color: var(--primary-blue);
+  background-color: var(--primary-blue);
+}
+:root[data-theme="dark"] .radioInput:checked + .radioText::after {
+  background-color: var(
+    --button-text-light
+  ); /* O --background-elevated si prefieres anillo */
+}
+
+.backLink {
+  display: block;
+  text-align: center;
+  margin-top: 30px;
+  color: var(--text-link);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+.backLink:hover {
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .pageContainer {
+    padding: 20px 10px;
+  }
+  .settingsCard {
+    padding: 20px;
+  }
+  .title {
+    font-size: 1.4rem;
+    margin-bottom: 25px;
+  }
+  .sectionTitle {
+    font-size: 1rem;
+    margin-bottom: 15px;
+  }
+  .radioLabel {
+    font-size: 0.95rem;
+  }
+}

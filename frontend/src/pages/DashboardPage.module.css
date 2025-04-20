@@ -1,48 +1,57 @@
 /* frontend/src/pages/DashboardPage.module.css */
 
 .pageWrapper {
-  position: relative; /* Necesario para posicionar overlay móvil */
+  position: relative;
   background-color: var(--background-page);
   display: flex;
   flex-direction: column;
   flex-grow: 1;
-  min-height: 100vh; /* Asegurar altura mínima */
+  min-height: 100vh;
 }
 
-/* --- Header (Estilo iOS Refinado) --- */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 10px 20px;
   background-color: var(--background-elevated);
-  flex-wrap: wrap; /* Permitir wrap en móvil */
+  flex-wrap: wrap;
   gap: 10px;
   flex-shrink: 0;
-  position: relative; /* Para menú móvil */
+  position: relative;
   z-index: 1050;
-  border-bottom: 1px solid var(--border-color-light); /* Borde inferior sutil */
-  min-height: 60px; /* Altura mínima para acomodar la barra contextual */
+  border-bottom: 1px solid var(--border-color-light);
+  min-height: 60px;
 }
 
-/* Botón que envuelve el título */
+/* Botón que envuelve el título - CON RESET AGRESIVO */
 .headerTitleButton {
-  background: none;
-  border: none;
-  padding: 0;
+  /* --- Reset de estilos de botón --- */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background: none !important; /* Forzar sin fondo */
+  border: none !important; /* Forzar sin borde */
+  padding: 0 !important; /* Forzar sin padding */
   margin: 0;
+  font-family: inherit; /* Heredar fuente */
+  font-size: inherit; /* Heredar tamaño */
+  font-weight: inherit; /* Heredar peso */
+  line-height: inherit; /* Heredar altura línea */
+  color: inherit; /* Heredar color */
   cursor: pointer;
-  color: inherit;
   text-align: left;
+  /* --- Fin Reset --- */
+
   order: 1;
-  border-radius: var(--border-radius-small);
+  /* border-radius: var(--border-radius-small); */ /* Mantener comentado o quitar */
   transition: background-color 0.15s ease;
   -webkit-tap-highlight-color: transparent;
   flex-shrink: 1;
-  overflow: hidden; /* Para el ellipsis del título */
+  overflow: hidden; /* Para el ellipsis del título hijo */
 }
 .headerTitleButton:hover:not(:disabled) {
-  background-color: transparent !important;
+  background-color: transparent !important; /* Asegurar sin fondo en hover */
 }
 .headerTitleButton:disabled {
   cursor: default;
@@ -50,22 +59,31 @@
   opacity: 1;
 }
 
+/* Título H1 - Mantener correcciones anteriores */
 .headerTitle {
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
-  color: var(--text-primary);
+  /* color: var(--text-primary); */ /* Quitar color primario por defecto */
+  color: var(
+    --text-link
+  ); /* <<< --- Poner color de enlace (azul) por defecto */
   white-space: nowrap;
   transition: color 0.2s ease;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 250px; /* Limitar ancho si es necesario */
+  max-width: 250px;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  display: inline-block;
+  vertical-align: middle;
 }
 .headerTitleButton:disabled .headerTitle {
-  color: var(--system-gray-500);
+  /* color: var(--system-gray-500); */ /* Ya no usamos gris */
+  color: var(--text-primary); /* <<< --- Usar color de texto principal */
 }
 
-/* --- Search (Escritorio) --- */
 .searchContainer {
   display: flex;
   align-items: center;
@@ -102,7 +120,7 @@
 
 .searchInput:focus {
   background-color: var(--background-elevated);
-  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+  box-shadow: 0 0 0 2px rgba(var(--primary-blue), 0.2);
 }
 
 .searchInput::-webkit-search-cancel-button,
@@ -138,6 +156,13 @@
   color: var(--text-primary);
   background-color: rgba(0, 0, 0, 0.05);
 }
+:global(:root[data-theme="dark"]) .clearSearchButton {
+  color: var(--text-secondary);
+}
+:global(:root[data-theme="dark"]) .clearSearchButton:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
 .clearSearchButton:active {
   transform: translateY(-50%) scale(1);
 }
@@ -147,45 +172,71 @@
   fill: currentColor;
 }
 
-/* --- Logout Button (Estilo Texto iOS) --- */
 .logoutButton {
-  background-color: transparent;
-  color: var(--error-red);
-  border: none;
-  padding: 6px 8px;
-  font-size: 0.95rem;
-  font-weight: 400;
-  border-radius: var(--border-radius-small);
-  transition: background-color 0.2s ease, color 0.2s ease;
+  background: none !important;   /* Asegurar sin fondo por defecto */
+  border: none !important;      /* Asegurar sin borde por defecto */
+  padding: 6px 8px;              /* Mantener padding */
   margin: 0;
+  color: var(--error-red) !important; /* <-- Forzar color rojo */
+  font-size: 0.95rem;
+  font-weight: 400;              /* Volver a 400 como estaba originalmente? O mantener 500? Ajusta si prefieres. */
+  border-radius: var(--border-radius-small); /* Mantener redondeo para el hover */
+  /* Asegurar que color y background-color están en la transición */
+  transition: color 0.2s ease, opacity 0.2s ease, background-color 0.2s ease;
   white-space: nowrap;
   cursor: pointer;
+  outline: none;
+  appearance: none;
+   -webkit-appearance: none;
+  -moz-appearance: none;
 }
+/* Hover: AÑADIR fondo rojo translúcido */
 .logoutButton:hover:not(:disabled) {
-  background-color: rgba(255, 59, 48, 0.1);
-  color: var(--error-red);
+  color: var(--error-red) !important; /* Mantener texto rojo */
+  background-color: rgba(255, 59, 48, 0.1) !important; /* Fondo rojo translúcido claro */
+  text-decoration: none; /* Quitar subrayado si lo habíamos puesto */
 }
-.logoutButton:disabled {
-  color: var(--system-gray-400);
-  background-color: transparent !important;
-  opacity: 0.5;
+/* Hover en Dark Mode */
+:global(:root[data-theme="dark"]) .logoutButton:hover:not(:disabled) {
+  color: var(--error-red) !important; /* Mantener texto rojo */
+  background-color: rgba(255, 69, 58, 0.15) !important; /* Fondo rojo translúcido oscuro */
 }
 
-/* --- Contenedor Acciones Desktop --- */
+/* Focus: sin fondo ni outline */
+.logoutButton:focus,
+.logoutButton:focus-visible {
+    background: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    color: var(--error-red) !important; /* Mantener rojo en focus */
+    text-decoration: none;
+}
+
+/* Disabled: sin fondo, color gris */
+.logoutButton:disabled {
+  background: none !important;
+  color: var(--system-gray-400) !important;
+  opacity: 0.5 !important;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+:global(:root[data-theme="dark"]) .logoutButton:disabled {
+  color: var(--system-gray-600-dark) !important;
+}
+
 .desktopActionsContainer {
   display: flex;
   align-items: center;
-  gap: 10px; /* Espacio entre iconos/links/botones */
-  order: 3; /* Asegurar que esté a la derecha */
+  gap: 10px;
+  order: 3;
 }
 
-/* --- Link Papelera Desktop (Icono) --- */
 .trashLinkDesktop {
-  display: inline-flex; /* Para alinear icono */
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px; /* Padding para hacerlo clickeable */
-  color: var(--system-gray-600); /* Color icono */
+  padding: 8px;
+  color: var(--text-secondary);
   border-radius: 50%;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
@@ -194,11 +245,15 @@
   color: var(--text-primary);
   text-decoration: none;
 }
-.trashLinkDesktop svg {
-  display: block; /* Asegurar que SVG se muestre */
+:global(:root[data-theme="dark"]) .trashLinkDesktop:hover {
+  background-color: var(--system-gray-300-dark);
+  color: var(--text-primary);
 }
 
-/* --- Link Perfil Desktop --- */
+.trashLinkDesktop svg {
+  display: block;
+}
+
 .profileLinkDesktop {
   color: var(--primary-blue);
   text-decoration: none;
@@ -213,33 +268,59 @@
   background-color: rgba(0, 122, 255, 0.1);
   text-decoration: none;
 }
+:global(:root[data-theme="dark"]) .profileLinkDesktop:hover {
+  background-color: rgba(10, 132, 255, 0.15);
+}
 
-/* --- Iconos y Menú Móvil --- */
 .mobileHeaderActions {
-  display: none; /* Oculto por defecto */
+  display: none;
   align-items: center;
   gap: 5px;
-  order: 3; /* A la derecha en móvil */
+  order: 3;
   position: relative;
 }
 .mobileIconButton {
-  background: none;
-  border: none;
-  padding: 8px;
+  background: none !important; /* Forzar sin fondo */
+  border: none !important; /* Forzar sin borde */
+  padding: 8px; /* Mantenemos padding para área táctil */
   margin: 0;
   cursor: pointer;
   color: var(--primary-blue);
-  border-radius: 50%;
+  border-radius: 0; /* Asegurar sin redondeo */
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.15s ease;
+  transition: color 0.15s ease, transform 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+  appearance: none; /* Reseteo adicional */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  outline: none !important; /* Quitar outline */
+  box-shadow: none !important; /* Quitar cualquier sombra */
 }
+
+.mobileIconButton:hover,
+.mobileIconButton:focus,
+.mobileIconButton:focus-visible,
+.mobileIconButton:active {
+  background: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
 .mobileIconButton:hover {
-  background-color: rgba(0, 122, 255, 0.1);
+  /* background-color: rgba(0, 122, 255, 0.1); */ /* <-- ELIMINADO o COMENTADO */
+  /* Opcional: Cambiar ligeramente el color del icono en hover si quieres feedback */
+  color: var(--hover-blue);
+}
+:global(:root[data-theme="dark"]) .mobileIconButton:hover {
+  /* background-color: rgba(10, 132, 255, 0.15); */ /* <-- ELIMINADO o COMENTADO */
+  color: var(--hover-blue); /* Asegurar que el hover azul funcione en dark */
 }
 .mobileIconButton:active {
-  transform: scale(1); /* Evitar escalado en active */
+  transform: scale(0.95);
+  color: var(--primary-blue);
 }
 .mobileIconButton svg {
   width: 24px;
@@ -251,14 +332,21 @@
   position: absolute;
   top: calc(100% + 5px);
   right: 0;
-  background-color: var(--background-elevated);
+  background-color: rgba(242, 242, 247, 0.85);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: var(--border-radius-medium);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   padding: 8px 0;
   z-index: 1100;
   min-width: 150px;
-  border: 1px solid var(--system-gray-200);
 }
+:global(:root[data-theme="dark"]) .mobileDropdownMenu {
+  background-color: rgba(44, 44, 46, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .mobileDropdownLink {
   display: block;
   width: 100%;
@@ -276,19 +364,29 @@
   font-size: 0.95rem;
   border-radius: 0;
   cursor: pointer;
+  transition: background-color 0.15s ease;
 }
 .mobileDropdownLink button:hover,
 .mobileDropdownMenu button:not(.mobileDropdownLogout):hover {
   background-color: var(--system-gray-100);
 }
+:global(:root[data-theme="dark"]) .mobileDropdownLink button:hover,
+:global(:root[data-theme="dark"])
+  .mobileDropdownMenu
+  button:not(.mobileDropdownLogout):hover {
+  background-color: var(--system-gray-300-dark);
+}
+
 .mobileDropdownLogout {
   color: var(--error-red) !important;
 }
 .mobileDropdownLogout:hover {
   background-color: rgba(255, 59, 48, 0.1) !important;
 }
+:global(:root[data-theme="dark"]) .mobileDropdownLogout:hover {
+  background-color: rgba(255, 69, 58, 0.15) !important;
+}
 
-/* --- Superposición de Búsqueda Móvil --- */
 .mobileSearchOverlay {
   position: fixed;
   top: 0;
@@ -330,7 +428,7 @@
   flex-grow: 1;
   padding: 10px 25px 10px 10px;
   border: none;
-  background-color: transparent;
+  background-color: transparent !important;
   font-size: 1rem;
   outline: none;
   border-radius: 0;
@@ -343,32 +441,7 @@
   color: var(--text-placeholder);
 }
 .mobileSearchOverlay .clearSearchButton {
-  position: absolute;
-  right: 5px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--system-gray-500);
-  padding: 4px;
-  cursor: pointer;
-  background: none;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  border-radius: 50%;
-  transition: background-color 0.15s ease;
-}
-.mobileSearchOverlay .clearSearchButton:hover {
-  background-color: rgba(0, 0, 0, 0.1);
-}
-.mobileSearchOverlay .clearSearchButton:active {
-  transform: translateY(-50%) scale(1);
-}
-.mobileSearchOverlay .clearSearchButton svg {
-  width: 16px;
-  height: 16px;
-  fill: currentColor;
+  /* Estilos ya definidos */
 }
 .mobileSearchCancelButton {
   background-color: transparent !important;
@@ -400,7 +473,6 @@
   cursor: default;
 }
 
-/* --- Navigation / Toolbar / Breadcrumbs --- */
 .navBar {
   padding: 10px 20px 5px 20px !important;
   background: none !important;
@@ -413,50 +485,80 @@
 .breadcrumbsContainer {
   margin-bottom: 5px;
   font-size: 0.9rem;
-  color: var(--system-gray-600);
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow-x: auto;
-  scrollbar-width: none; /* Firefox */
+  scrollbar-width: none;
 }
 .breadcrumbsContainer::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Edge */
+  display: none;
 }
 .breadcrumbItem {
   display: inline-block;
 }
 .breadcrumbLink {
-  background: none;
-  border: none;
-  color: var(--text-link);
+  background: none !important;
+  border: none !important;
+  color: var(--text-link); /* Azul por defecto (cuando está habilitado) */
   text-decoration: none;
   cursor: pointer;
-  padding: 1px 3px;
-  margin: 0 1px;
+  padding: 0 !important;
+  margin: 0 1px !important;
   font-size: 0.9rem;
   font-weight: 400;
-  border-radius: var(--border-radius-small);
-  transition: background-color 0.15s ease, color 0.15s ease;
+  border-radius: 0 !important;
+  transition: color 0.15s ease;
 }
+
+.breadcrumbLink:not(:disabled) {
+  color: var(--text-link) !important; /* Forzar color de enlace */
+  cursor: pointer; /* Asegurar cursor pointer */
+  font-weight: 400; /* Asegurar peso normal */
+  text-decoration: none; /* Asegurar sin decoración inicial */
+  background: none !important; /* Asegurar sin fondo */
+  border: none !important; /* Asegurar sin borde */
+  padding: 0 !important; /* Sin padding */
+  margin: 0 1px !important; /* Margen horizontal mínimo */
+  font-size: 0.9rem;
+  border-radius: 0 !important; /* Sin borde redondeado */
+  transition: color 0.15s ease;
+}
+
 .breadcrumbLink:hover:not(:disabled) {
   text-decoration: underline;
   background-color: transparent !important;
+  color: var(--text-link) !important; /* Mantener color link en hover */
 }
 .breadcrumbLink:active {
-  transform: scale(1); /* Evitar escalado */
+  transform: scale(1);
 }
+/* Cuando está deshabilitado (es la carpeta actual), usa el color primario */
 .breadcrumbLink:disabled {
-  color: var(--text-primary);
+  color: var(
+    --text-primary
+  ) !important; /* Forzar color primario (blanco en dark) */
   font-weight: 600;
   cursor: default;
-  text-decoration: none;
+  text-decoration: none !important; /* Asegurar sin decoración */
   background-color: transparent !important;
+  /* Quitar padding y border-radius aquí también por consistencia */
+  padding: 0 !important;
+  margin: 0 1px !important;
+  border-radius: 0 !important;
+  border: none !important;
+  font-size: 0.9rem; /* Asegurar mismo tamaño */
 }
 .breadcrumbSeparator {
   margin: 0 5px;
   color: var(--system-gray-400);
 }
+:global(:root[data-theme="dark"]) .breadcrumbSeparator {
+  color: var(--system-gray-500-dark);
+}
+:global(:root[data-theme="dark"]) .breadcrumbSeparator {
+  color: var(--system-gray-500-dark);
+}
 
-/* --- Main Content Area --- */
 .mainContent {
   padding: 10px 20px 90px 20px !important;
   background-color: transparent !important;
@@ -481,20 +583,23 @@
 .emptyMessage {
   text-align: center;
   padding: 40px 20px;
-  color: var(--system-gray-600);
+  color: var(--text-secondary);
   font-size: 1rem;
 }
 .sectionTitle {
   font-size: 0.8rem;
   margin-top: 25px;
   margin-bottom: 8px;
-  color: var(--system-gray-600);
+  color: var(--text-secondary);
   text-transform: uppercase;
   font-weight: 500;
   padding-left: 15px;
 }
+:global(:root[data-theme="dark"]) .sectionTitle {
+  color: var(--system-gray-600-dark);
+}
 
-/* --- Item List (Estilo Lista iOS por defecto) --- */
+/* --- Item List --- */
 .itemList {
   list-style: none;
   padding: 0;
@@ -510,7 +615,7 @@
   padding: 12px 15px;
   border-bottom: 1px solid var(--border-color-light);
   position: relative;
-  transition: background-color 0.15s ease; /* Transición para selección */
+  transition: background-color 0.15s ease;
 }
 .itemList > .listItem:last-child {
   border-bottom: none;
@@ -525,6 +630,7 @@
   align-items: center;
   font-size: 1rem;
   color: var(--text-primary);
+  background-color: transparent !important;
 }
 .itemIcon {
   margin-right: 15px;
@@ -535,6 +641,10 @@
   width: 38px;
   text-align: center;
   overflow: visible;
+  background-color: transparent !important;
+}
+:global(:root[data-theme="dark"]) .itemIcon {
+  background-color: transparent !important;
 }
 .itemThumbnail {
   width: 38px;
@@ -547,6 +657,10 @@
   flex-shrink: 0;
   background-color: var(--system-gray-100);
   overflow: hidden;
+}
+:global(:root[data-theme="dark"]) .itemThumbnail {
+  border: 1px solid var(--system-gray-300-dark);
+  background-color: transparent !important;
 }
 .folderLink {
   background: none;
@@ -565,21 +679,21 @@
   transition: color 0.15s ease;
   display: inline-block;
   vertical-align: middle;
+  background-color: transparent !important;
 }
 .folderLink:hover:not(:disabled) {
   background-color: transparent !important;
+  color: var(--primary-blue);
 }
 .folderLink:active {
   transform: scale(1);
-}
-.listItem:hover .folderLink:not(:disabled) {
-  color: var(--primary-blue);
 }
 .fileInfo {
   display: flex;
   align-items: center;
   flex-grow: 1;
   overflow: hidden;
+  background-color: transparent !important;
 }
 .fileInfo > span:not(.fileSize) {
   overflow: hidden;
@@ -588,33 +702,31 @@
   flex-grow: 1;
   margin-right: 8px;
   display: inline-block;
+  background-color: transparent !important;
 }
 .fileSize {
   font-size: 0.85rem;
-  color: var(--system-gray-600);
+  color: var(--text-secondary);
   margin-left: auto;
   white-space: nowrap;
   flex-shrink: 0;
   padding-left: 8px;
+  background-color: transparent !important;
 }
 
-/* --- Item Actions (Refinado) --- */
+/* --- Item Actions --- */
 .itemActions {
   display: flex;
   align-items: center;
   white-space: nowrap;
-  /* Opacidad gestionada en media queries o al hacer hover en desktop */
-  /* opacity: 0; */
-  /* transition: opacity 0.15s ease-in-out; */
   flex-shrink: 0;
 }
-
 .itemActionButton {
   margin-left: 5px;
   padding: 0;
   border: none;
-  background-color: transparent;
-  color: var(--system-gray-600);
+  background-color: transparent !important;
+  color: var(--text-secondary);
   border-radius: 50%;
   width: 32px;
   height: 32px;
@@ -622,35 +734,35 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: color 0.15s ease;
+}
+:global(:root[data-theme="dark"]) .itemActionButton {
+  color: var(--system-gray-600-dark);
+  background-color: transparent !important;
 }
 .itemActionButton:hover:not(:disabled) {
-  background-color: var(--system-gray-200);
+  background-color: transparent !important;
   color: var(--primary-blue);
+}
+.itemActionButton.deleteButton:hover:not(:disabled) {
+  background-color: transparent !important;
+  color: var(--error-red);
 }
 .itemActionButton:active {
   transform: scale(1);
+  color: var(--primary-blue);
 }
-.itemActionButton.deleteButton:hover:not(:disabled) {
-  background-color: rgba(255, 59, 48, 0.1);
+.itemActionButton.deleteButton:active {
   color: var(--error-red);
-}
-.itemActionButton.downloadButton:hover:not(:disabled) {
-  background-color: rgba(0, 122, 255, 0.1);
-  color: var(--primary-blue);
-}
-.itemActionButton.moveButton:hover:not(:disabled),
-.itemActionButton.renameButton:hover:not(:disabled),
-.itemActionButton.previewButton:hover:not(:disabled) {
-  /* Añadir preview */
-  background-color: var(--system-gray-200);
-  color: var(--primary-blue);
 }
 .itemActionButton:disabled {
   color: var(--system-gray-400);
   cursor: not-allowed;
   background-color: transparent !important;
   opacity: 0.5;
+}
+:global(:root[data-theme="dark"]) .itemActionButton:disabled {
+  color: var(--system-gray-500-dark);
 }
 .itemActionButton svg {
   width: 18px;
@@ -671,10 +783,12 @@
 .fabButton {
   width: 56px;
   height: 56px;
-  background-color: var(--primary-blue);
-  color: white;
+  /* --- FORZAR ESTILO AZUL --- */
+  background-color: var(--primary-blue) !important; /* Añadido !important */
+  color: white !important; /* Forzar color icono */
+  /* -------------------------- */
   border: none;
-  border-radius: var(--border-radius-round);
+  border-radius: var(--border-radius-round); /* Completamente redondo */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -682,20 +796,24 @@
   cursor: pointer;
   z-index: 1001;
   transition: background-color 0.2s ease, transform 0.15s ease,
-    opacity 0.2s ease;
+    box-shadow 0.2s ease, opacity 0.2s ease;
   margin: 0;
   padding: 0;
 }
+:global(:root[data-theme="dark"]) .fabButton {
+  box-shadow: 0 6px 16px rgba(10, 132, 255, 0.4);
+}
 .fabButton:hover:not(:disabled) {
-  background-color: var(--hover-blue);
+  background-color: var(--hover-blue) !important;
 }
 .fabButton:active:not(:disabled) {
   transform: scale(0.95);
 }
 .fabButton:disabled {
-  background-color: var(--primary-blue);
+  background-color: var(--primary-blue) !important; /* Añadido !important */
+  color: white !important; /* Forzar color icono */
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.5 !important; /* Añadido !important */
 }
 .fabButton svg {
   width: 24px;
@@ -719,9 +837,9 @@
   pointer-events: auto;
 }
 .fabMenuItem {
-  background-color: rgba(242, 242, 247, 0.85);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  background-color: rgba(242, 242, 247, 0.9);
+  backdrop-filter: saturate(180%) blur(15px);
+  -webkit-backdrop-filter: saturate(180%) blur(15px);
   color: var(--text-link);
   border-radius: var(--border-radius-medium);
   padding: 10px 18px;
@@ -735,17 +853,27 @@
   text-align: right;
   border: 1px solid rgba(0, 0, 0, 0.04);
 }
+:global(:root[data-theme="dark"]) .fabMenuItem {
+  background-color: rgba(60, 60, 62, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
 .fabMenuItem:hover:not(:disabled) {
-  background-color: rgba(229, 229, 234, 0.85);
+  background-color: rgba(229, 229, 234, 0.9);
+}
+:global(:root[data-theme="dark"]) .fabMenuItem:hover:not(:disabled) {
+  background-color: rgba(80, 80, 82, 0.9);
 }
 .fabMenuItem:active {
-  transform: scale(1); /* Evitar escalado */
+  transform: scale(1);
 }
 .fabMenuItem:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   background-color: rgba(242, 242, 247, 0.8);
   transform: none;
+}
+:global(:root[data-theme="dark"]) .fabMenuItem:disabled {
+  background-color: rgba(60, 60, 62, 0.8);
 }
 .fabMenuItem svg {
   margin-right: 10px;
@@ -754,26 +882,36 @@
 /* --- Estilos Selección Múltiple --- */
 .itemSelection {
   flex-shrink: 0;
-  margin-right: 15px;
   display: flex;
   align-items: center;
+  background-color: transparent !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
 }
 .checkboxButton {
   background: none;
   border: none;
-  padding: 5px;
-  margin: -5px;
+  margin: 0;
   cursor: pointer;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.15s ease;
+  transition: color 0.15s ease;
   color: var(--system-gray-400);
   line-height: 1;
 }
+:global(:root[data-theme="dark"]) .checkboxButton {
+  color: var(--system-gray-500-dark);
+  background-color: transparent !important;
+}
 .checkboxButton:hover:not(:disabled) {
-  background-color: var(--system-gray-100);
+  /* background-color: var(--system-gray-100); */
+  color: var(--system-gray-500);
+}
+:global(:root[data-theme="dark"]) .checkboxButton:hover:not(:disabled) {
+  /* background-color: rgba(255, 255, 255, 0.1); */
+  color: var(--system-gray-300-dark);
 }
 .checkboxButton:disabled {
   cursor: default;
@@ -782,18 +920,21 @@
 .checkboxButton svg {
   display: block;
 }
+.selectedItem .checkboxButton svg {
+  color: var(--primary-blue);
+}
 .selectedItem {
   background-color: rgba(0, 122, 255, 0.08) !important;
 }
-
-/* Clase para ocultar acciones individuales en modo selección (independiente de breakpoint) */
+:global(:root[data-theme="dark"]) .selectedItem {
+  background-color: rgba(10, 132, 255, 0.15) !important;
+}
 .itemActionsHiddenInSelection .actionButtonDesktopOnly,
 .itemActionsHiddenInSelection .mobileItemMenuButton {
   display: none !important;
   opacity: 0 !important;
   pointer-events: none !important;
 }
-
 .navBarContent {
   display: flex;
   justify-content: space-between;
@@ -818,6 +959,9 @@
 }
 .selectAllLabel:hover {
   background-color: var(--system-gray-100);
+}
+:global(:root[data-theme="dark"]) .selectAllLabel:hover {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 .selectAllLabel svg {
   display: block;
@@ -890,11 +1034,11 @@
   height: 18px;
   fill: currentColor;
 }
-.contextualButton.moveButtonContextual:hover:not(:disabled) {
-  background-color: rgba(255, 255, 255, 0.2);
-}
 .deleteButtonContextual:hover:not(:disabled) {
   background-color: rgba(255, 59, 48, 0.6);
+}
+:global(:root[data-theme="dark"]) .deleteButtonContextual:hover:not(:disabled) {
+  background-color: rgba(255, 69, 58, 0.7);
 }
 .cancelButtonContextual {
   margin-left: auto;
@@ -909,23 +1053,20 @@
 /* --- Clases para ocultar/mostrar --- */
 .desktopOnlySearch,
 .desktopOnlyActions {
-  display: none; /* Oculto por defecto, se muestra en media query */
+  display: none;
 }
 .mobileHeaderActions {
-  display: none; /* Oculto por defecto, se muestra en media query */
+  display: none;
 }
-/* Clase para ocultar botones individuales en móvil (dentro de lista) */
 .actionButtonDesktopOnly {
-  display: none; /* Oculto por defecto, se muestra en media query desktop */
+  display: none;
 }
-/* Clase para mostrar el botón de menú en móvil (dentro de lista) */
 .mobileItemMenuButton {
-  display: none; /* Oculto por defecto, se muestra en media query móvil */
+  display: none;
 }
 
 /* --- Media Queries --- */
 @media (min-width: 701px) {
-  /* Estilos Grid View y Desktop */
   .desktopOnlySearch,
   .desktopOnlyActions {
     display: flex !important;
@@ -936,11 +1077,9 @@
   .mobileSearchOverlay {
     display: none !important;
   }
-  /* Mostrar botones individuales en Desktop */
   .actionButtonDesktopOnly {
     display: inline-flex !important;
   }
-  /* Ocultar botón de menú móvil en Desktop */
   .mobileItemMenuButton {
     display: none !important;
   }
@@ -962,31 +1101,47 @@
     border-bottom: none;
     border-radius: var(--border-radius-large);
     background-color: var(--background-elevated);
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid transparent;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
     transition: transform 0.15s ease, box-shadow 0.15s ease,
-      background-color 0.15s ease;
+      background-color 0.15s ease, border-color 0.15s ease;
     position: relative;
+  }
+  :global(:root[data-theme="dark"]) .listItem {
+    background-color: var(--background-elevated);
+    box-shadow: none;
+    border: 1px solid var(--system-gray-300-dark);
   }
   .listItem:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+    background-color: var(--background-elevated);
   }
+  :global(:root[data-theme="dark"]) .listItem:hover {
+    background-color: var(--system-gray-300-dark);
+    box-shadow: none;
+    border-color: var(--system-gray-400-dark);
+    transform: translateY(0);
+  }
+
   .itemName {
     flex-direction: column;
     white-space: normal;
     text-align: center;
     margin-right: 0;
-    margin-bottom: 10px;
+    margin-bottom: 0;
     width: 100%;
     font-size: 0.9rem;
     line-height: 1.3;
     flex-grow: 0;
     overflow: visible;
     word-break: break-word;
+    background-color: transparent !important;
+    padding-top: 15px;
   }
   .itemName > span:first-child:not(.fileSize) {
     display: block;
-    margin-bottom: 15px;
+    margin-bottom: 0;
     overflow: visible;
   }
   .itemIcon {
@@ -997,7 +1152,8 @@
     text-align: center;
     overflow: visible;
     margin-right: 0;
-    margin-bottom: 15px;
+    margin-bottom: 0;
+    background-color: transparent !important;
   }
   .itemThumbnail {
     width: 70px;
@@ -1007,7 +1163,7 @@
     margin-left: auto;
     margin-right: auto;
     overflow: hidden;
-    margin-bottom: 15px;
+    margin-bottom: 0;
     margin-right: auto;
   }
   .folderLink {
@@ -1020,9 +1176,10 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    background-color: transparent !important;
+    padding: 5px 0;
   }
   .listItem:hover .folderLink:not(:disabled) {
-    color: var(--primary-blue);
     text-decoration: none;
   }
   .fileInfo {
@@ -1032,6 +1189,7 @@
     text-align: center;
     overflow: visible;
     margin-bottom: 0;
+    background-color: transparent !important;
   }
   .fileInfo > span:not(.fileSize) {
     margin-right: 0;
@@ -1041,7 +1199,9 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    margin-bottom: 5px;
+    margin-bottom: 0;
+    background-color: transparent !important;
+    padding: 5px 0;
   }
   .fileSize {
     display: block;
@@ -1051,9 +1211,11 @@
     margin-top: 0px;
     font-size: 0.8rem;
     padding-left: 0;
+    background-color: transparent !important;
+    padding-bottom: 5px;
   }
+
   .itemActions {
-    /* En grid, las acciones son visibles directamente */
     opacity: 1 !important;
     margin-top: 15px;
     width: 100%;
@@ -1074,15 +1236,11 @@
     position: absolute;
     top: 10px;
     left: 10px;
-    margin-right: 0;
-    background-color: rgba(255, 255, 255, 0.7);
-    border-radius: 50%;
-    padding: 2px;
     z-index: 2;
+    margin-right: 0;
   }
   .checkboxButton {
-    padding: 3px;
-    margin: 0;
+    padding: 3px; /* Padding grid */
   }
   .checkboxButton svg {
     width: 20px;
@@ -1090,14 +1248,19 @@
   }
   .selectedItem {
     background-color: var(--background-elevated) !important;
-    box-shadow: 0 0 0 3px var(--primary-blue), 0 6px 12px rgba(0, 122, 255, 0.3);
+    box-shadow: none;
+    border: 2px solid var(--primary-blue);
     transform: translateY(0);
+  }
+  :global(:root[data-theme="dark"]) .selectedItem {
+    border-color: var(--primary-blue);
+    background-color: var(--background-elevated) !important;
   }
   .selectedItem:hover {
     transform: translateY(0);
-    box-shadow: 0 0 0 3px var(--primary-blue), 0 6px 12px rgba(0, 122, 255, 0.3);
+    box-shadow: none;
+    border-color: var(--primary-blue);
   }
-  /* Ocultar acciones individuales en Grid cuando está seleccionado (opcional pero recomendado) */
   .selectedItem .actionButtonDesktopOnly {
     opacity: 0 !important;
     pointer-events: none !important;
@@ -1122,23 +1285,19 @@
   .mainContent {
     padding-bottom: 80px !important;
   }
-  /* Ocultar botones individuales */
   .actionButtonDesktopOnly {
     display: none !important;
   }
-  /* Mostrar botón de menú */
   .mobileItemMenuButton {
     display: inline-flex !important;
   }
-  /* Ajustar contenedor acciones para el único botón */
   .itemActions {
-    opacity: 1 !important; /* Asegurar visibilidad base */
-    justify-content: flex-end; /* Alinear el botón ... a la derecha */
-    margin-left: auto; /* Empujar a la derecha */
-    gap: 0; /* Quitar gap si solo hay un botón */
+    opacity: 1 !important;
+    justify-content: flex-end;
+    margin-left: auto;
+    gap: 0;
   }
 
-  /* Restaurar estilos lista */
   .itemList {
     display: block;
     background-color: var(--background-elevated);
@@ -1150,12 +1309,12 @@
     flex-direction: row;
     align-items: center;
     text-align: left;
-    padding: 12px 10px; /* Menos padding horizontal */
+    padding: 12px 10px;
     border-bottom: 1px solid var(--border-color-light);
     border-radius: 0;
     box-shadow: none;
     overflow: visible;
-    gap: 5px; /* Añadir gap general */
+    gap: 5px;
   }
   .listItem:last-child {
     border-bottom: none;
@@ -1165,15 +1324,25 @@
     box-shadow: none;
     background-color: var(--system-gray-100);
   }
+  :global(:root[data-theme="dark"]) .listItem:hover {
+    background-color: var(--system-gray-300-dark);
+  }
   .selectedItem:hover {
     background-color: rgba(0, 122, 255, 0.08) !important;
+  }
+  :global(:root[data-theme="dark"]) .selectedItem:hover {
+    background-color: rgba(10, 132, 255, 0.15) !important;
   }
 
   .itemSelection {
     position: static;
     margin-right: 5px;
-    background-color: transparent;
-    padding: 0;
+    top: auto;
+    left: auto;
+    z-index: auto;
+  }
+  .checkboxButton {
+    padding: 5px; /* Padding lista */
   }
   .itemName {
     flex-direction: row;
@@ -1185,6 +1354,7 @@
     overflow: hidden;
     margin-right: 5px;
     gap: 10px;
+    background-color: transparent !important;
   }
   .itemIcon {
     margin-right: 0;
@@ -1192,6 +1362,7 @@
     width: 30px;
     text-align: center;
     margin-bottom: 0;
+    background-color: transparent !important;
   }
   .itemThumbnail {
     width: 30px;
@@ -1210,6 +1381,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    background-color: transparent !important;
   }
   .fileInfo {
     flex-direction: row;
@@ -1218,6 +1390,7 @@
     overflow: hidden;
     gap: 10px;
     margin-bottom: 0;
+    background-color: transparent !important;
   }
   .fileInfo > span:not(.fileSize) {
     margin-right: 0;
@@ -1226,6 +1399,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     margin-bottom: 0;
+    background-color: transparent !important;
   }
   .fileSize {
     display: inline-block;
@@ -1235,24 +1409,22 @@
     margin-top: 0;
     font-size: 0.85rem;
     padding-left: 0;
+    background-color: transparent !important;
   }
 
-  /* Ajustar botón de menú móvil */
   .mobileItemMenuButton {
     width: 32px;
     height: 32px;
-    margin-left: 5px; /* Espacio a la izquierda del botón ... */
+    margin-left: 5px;
   }
   .mobileItemMenuButton svg {
     width: 18px;
     height: 18px;
   }
-  /* Ocultar botón de menú si estamos en modo selección */
   .itemActionsHiddenInSelection .mobileItemMenuButton {
     display: none !important;
   }
 
-  /* Barra contextual móvil */
   .contextualActionBar {
     padding: 5px;
     flex-wrap: wrap;
@@ -1281,7 +1453,6 @@
   .cancelButtonContextual {
     margin-left: auto;
   }
-  /* Nav bar móvil */
   .navBarContent {
     min-height: 30px;
     gap: 10px;
@@ -1301,14 +1472,13 @@
   .mobileIconButton {
     padding: 6px;
   }
-  /* Lista móvil pequeña */
   .itemActions {
-    gap: 0px; /* Reset gap for the single button */
+    gap: 0px;
   }
   .mobileItemMenuButton {
     width: 30px;
     height: 30px;
-    margin-left: 2px; /* Menos margen */
+    margin-left: 2px;
   }
   .mobileItemMenuButton svg {
     width: 16px;
@@ -1317,7 +1487,6 @@
   .fileSize {
     display: none;
   }
-  /* Barra contextual móvil pequeña */
   .contextualButton span {
     display: none;
   }

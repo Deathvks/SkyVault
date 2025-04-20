@@ -7,16 +7,18 @@
   min-height: 100vh;
   padding: 20px;
   background-color: var(--background-page); /* Fondo grisáceo */
+  transition: background-color 0.3s ease; /* Transición */
 }
 
 .formContainer {
-  background-color: var(--background-elevated); /* Fondo blanco */
+  background-color: var(--background-elevated); /* Fondo blanco/oscuro */
   padding: 40px 30px; /* Padding ajustado */
   border-radius: var(--border-radius-large); /* Redondeo iOS */
-  /* box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1); <-- Sombra opcional, puede quitarse para minimalismo */
+  /* box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1); <-- Sombra opcional */
   width: 100%;
   max-width: 400px; /* Ancho ajustado */
   text-align: center;
+  transition: background-color 0.3s ease; /* Transición */
 }
 
 .title {
@@ -24,6 +26,7 @@
   color: var(--text-primary);
   font-size: 1.8rem; /* Tamaño título grande */
   font-weight: 700; /* Bold */
+  transition: color 0.3s ease; /* Transición */
 }
 
 .formGroup {
@@ -31,51 +34,61 @@
   text-align: left;
 }
 
-/* Label hereda de index.css (font-size: 0.9rem; color: var(--text-secondary);) */
-/* No necesita redefinirse a menos que quieras algo específico */
-/* .label { ... } */
+/* Label hereda de index.css */
+.label {
+  /* Estilos base ya definidos en index.css */
+  transition: color 0.3s ease; /* Transición */
+}
 
-/* Input hereda de index.css (padding, border-radius, background, focus) */
-/* No necesita redefinirse */
+/* Input hereda de index.css */
 /* .input { ... } */
+/* Ya tiene transición base en index.css */
 
-/* Botón - Usar estilo primario 'filled' */
+/* Botón - Estilo primario azul */
 .button {
   /* Hereda estilos base de button en index.css */
   width: 100%;
   padding: 12px; /* Padding vertical ajustado */
-  background-color: var(--primary-blue); /* Azul */
-  color: var(--button-text-light); /* Blanco */
+  /* --- FORZAR ESTILO AZUL --- */
+  background-color: var(--primary-blue) !important; /* Añadir !important */
+  color: var(--button-text-light) !important; /* Añadir !important */
+  /* --- FIN FORZAR ESTILO AZUL --- */
   border: none; /* Asegurar sin borde */
   border-radius: var(--border-radius-medium); /* Redondeo iOS */
   font-size: 1rem; /* Tamaño texto botón */
   font-weight: 600; /* Semibold */
   cursor: pointer;
-  transition: background-color 0.2s ease, opacity 0.2s ease, transform 0.1s ease;
+  transition: background-color 0.2s ease, opacity 0.2s ease, transform 0.1s ease,
+    color 0.2s ease; /* Transición completa */
   margin-top: 10px; /* Espacio sobre el botón */
   -webkit-tap-highlight-color: transparent; /* Quitar highlight toque móvil */
 }
 /* Hover state */
 .button:hover:not(:disabled) {
-  background-color: var(--hover-blue); /* Azul más oscuro */
+  background-color: var(--hover-blue) !important; /* Añadir !important */
 }
 /* Active state (presionado) */
 .button:active:not(:disabled) {
   transform: scale(0.98);
 }
-/* Disabled state hereda opacidad de index.css, pero podemos asegurar color */
+/* Disabled state */
 .button:disabled {
-  background-color: var(--primary-blue);
-  opacity: 0.5; /* Heredado o reforzado */
+  background-color: var(--primary-blue) !important; /* Añadir !important */
+  opacity: 0.5 !important; /* Añadir !important si la opacidad no funciona */
+  color: var(
+    --button-text-light
+  ) !important; /* Añadir !important si el color no funciona */
+  cursor: not-allowed;
 }
 
-/* Mensajes de error (si se usaran localmente, aunque ahora van por toast) */
+/* Mensajes de error (si se usaran localmente) */
 .error {
   color: var(--error-red); /* Rojo sistema */
   margin-top: 15px;
   margin-bottom: 0;
   font-size: 0.9rem; /* Texto secundario */
   text-align: center;
+  transition: color 0.3s ease; /* Transición */
 }
 
 /* Contenedor y link inferior */
@@ -83,12 +96,14 @@
   margin-top: 30px; /* Espacio sobre el link */
   font-size: 0.95rem; /* Tamaño normal */
   color: var(--text-secondary); /* Gris secundario */
+  transition: color 0.3s ease; /* Transición */
 }
 
 .link {
   color: var(--text-link); /* Azul link */
   text-decoration: none;
   font-weight: 500; /* Medium */
+  transition: color 0.3s ease; /* Transición */
 }
 .link:hover {
   text-decoration: underline;
@@ -104,11 +119,10 @@
     padding: 30px 20px; /* Menos padding */
     box-shadow: none; /* Sin sombra en móvil */
     border-radius: 0; /* Sin redondeo si ocupa todo */
-    /* Opcional: añadir borde si el fondo de página es igual al del form */
-    /* border: 1px solid var(--border-color-light); */
     width: 100%;
     max-width: none;
     margin: 0 -20px; /* Para que ocupe todo el ancho del padding del contenedor */
+    background-color: var(--background-elevated); /* Asegurar fondo correcto */
   }
   .title {
     font-size: 1.6rem; /* Título ligeramente más pequeño */
