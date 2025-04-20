@@ -412,13 +412,11 @@ function DashboardPage() {
         setIsMobileMenuOpen(false);
       }
     };
-
     if (isMobileMenuOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     } else {
       document.removeEventListener("mousedown", handleClickOutside);
     }
-
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -1137,7 +1135,6 @@ function DashboardPage() {
       searchTerm && searchResults ? searchResults.folders || [] : folders;
     const currentFilesSource =
       searchTerm && searchResults ? searchResults.files || [] : files;
-
     selectedItems.forEach((itemIdString) => {
       const [type, idStr] = itemIdString.split("-");
       const id = parseInt(idStr, 10);
@@ -1145,7 +1142,6 @@ function DashboardPage() {
       if (type === "folder")
         itemFound = currentFoldersSource.find((f) => f.id === id);
       else itemFound = currentFilesSource.find((f) => f.id === id);
-
       if (itemFound) {
         itemsDataToMove.push({
           type,
@@ -2066,7 +2062,6 @@ function DashboardPage() {
         onClose={() => setIsPreviewModalOpen(false)}
         file={fileToPreview}
       />
-
       <Modal
         isOpen={isBulkDeleteModalOpen}
         onClose={!isDeletingItem ? () => setIsBulkDeleteModalOpen(false) : null}
