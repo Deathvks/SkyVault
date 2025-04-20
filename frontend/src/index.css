@@ -1,0 +1,362 @@
+/* frontend/src/index.css */
+
+/* 1. Variables CSS Refinadas (Inspirado en iOS - Light Mode) */
+:root {
+  /* Colores Principales */
+  --system-blue: #007aff; /* Azul estándar iOS */
+  --system-red: #ff3b30; /* Rojo estándar iOS */
+  --system-green: #34c759; /* Verde estándar iOS */
+  --system-gray-100: #f2f2f7; /* Gris muy claro (fondo página light) */
+  --system-gray-200: #e5e5ea; /* Gris claro (fondos sutiles light, bordes) */
+  --system-gray-300: #d1d1d6; /* Gris medio-claro (bordes input light) */
+  --system-gray-400: #c7c7cc; /* Gris medio */
+  --system-gray-500: #aeaeb2; /* Gris medio-oscuro (texto placeholder light) */
+  --system-gray-600: #8e8e93; /* Gris oscuro (texto secundario light) */
+  --system-label: #000000; /* Texto principal (negro) */
+  --system-background-primary: #ffffff; /* Fondo elementos elevados (blanco) */
+  --system-background-secondary: var(--system-gray-100); /* Fondo página */
+
+  /* Asignación a variables semánticas */
+  --primary-blue: var(--system-blue);
+  --hover-blue: #006ae6; /* Azul un poco más oscuro para hover */
+  --text-primary: var(--system-label);
+  --text-secondary: var(--system-gray-600);
+  --text-link: var(--primary-blue);
+  --text-placeholder: var(--system-gray-500);
+  --background-page: var(--system-background-secondary);
+  --background-elevated: var(--system-background-primary);
+  --border-color-light: var(--system-gray-200);
+  --border-color-input: var(--system-gray-300);
+  --button-text-light: #ffffff;
+  --error-red: var(--system-red);
+  --success-green: var(--system-green);
+  /* Colores para mensajes (pueden ajustarse más) */
+  --success-green-dark: #2b8a4f; /* Ajustado */
+  --success-bg-light: #eaf9ed; /* Ajustado */
+  --success-border: #a6d9b8; /* Ajustado */
+  --error-bg-light: #ffeeed; /* Ajustado */
+  --error-border: #f5b1ad; /* Ajustado */
+
+  /* Radios de Borde (ligeramente más redondeado) */
+  --border-radius-small: 6px;
+  --border-radius-medium: 10px; /* Más redondeado */
+  --border-radius-large: 14px;
+  --border-radius-pill: 30px; /* Para botones tipo píldora */
+  --border-radius-round: 50%;
+
+  /* Transición suave para cambio de tema */
+  color-scheme: light;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* --- Variables Modo Oscuro (iOS Inspired) --- */
+:root[data-theme="dark"] {
+  /* Colores Oscuros (basados en iOS Dark Mode) */
+  --system-blue-dark: #0a84ff;
+  --system-red-dark: #ff453a;
+  --system-green-dark: #30d158; /* Un poco más brillante que el system-green light */
+  --system-gray-100-dark: #1c1c1e; /* Fondo página dark (System Gray 6 Dark) */
+  --system-gray-200-dark: #2c2c2e; /* Fondo elementos elevados dark (System Gray 5 Dark) */
+  --system-gray-300-dark: #3a3a3c; /* Separadores, bordes sutiles dark (System Gray 4 Dark) */
+  --system-gray-400-dark: #48484a; /* Bordes input, botones grises (System Gray 3 Dark) */
+  --system-gray-500-dark: #636366; /* Texto placeholder dark (System Gray 2 Dark) */
+  --system-gray-600-dark: #8e8e93; /* Texto secundario dark (System Gray Dark) */
+  --system-label-dark: #ffffff; /* Texto principal (blanco) */
+  --system-background-primary-dark: var(--system-gray-200-dark);
+  --system-background-secondary-dark: var(--system-gray-100-dark);
+
+  /* Reasignación a variables semánticas para modo oscuro */
+  --primary-blue: var(--system-blue-dark);
+  --hover-blue: #0b77e6; /* Ajustar hover para azul oscuro */
+  --text-primary: var(--system-label-dark);
+  --text-secondary: var(
+    --system-gray-600-dark
+  ); /* Usar gris oscuro estándar para secundario */
+  --text-link: var(--primary-blue);
+  --text-placeholder: var(--system-gray-500-dark);
+  --background-page: var(--system-background-secondary-dark);
+  --background-elevated: var(--system-background-primary-dark);
+  --border-color-light: var(--system-gray-300-dark);
+  --border-color-input: var(
+    --system-gray-400-dark
+  ); /* Borde input más visible */
+  --button-text-light: #ffffff; /* Mantenemos texto blanco para botones primarios */
+  --error-red: var(--system-red-dark);
+  --success-green: var(--system-green-dark);
+  --success-green-dark: #30d158; /* Usar el mismo verde brillante */
+  --success-bg-light: rgba(48, 209, 88, 0.15); /* Fondo más oscuro */
+  --success-border: rgba(48, 209, 88, 0.4);
+  --error-bg-light: rgba(255, 69, 58, 0.15);
+  --error-border: rgba(255, 69, 58, 0.4);
+
+  color-scheme: dark; /* Indicar al navegador el esquema */
+}
+
+/* 2. Reset y Box-sizing Global */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* 3. Estilos Base del Body */
+html {
+  font-size: 16px;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+    "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol";
+  line-height: 1.45;
+  color: var(--text-primary);
+  background-color: var(--background-page);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  min-height: 100vh; /* Asegurar que el body ocupe al menos la ventana */
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 4. Estilos Base para Elementos Comunes */
+
+/* --- Botones --- */
+button {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1rem; /* ~17pt en iOS */
+  border-radius: var(--border-radius-medium);
+  padding: 10px 16px;
+  border: none;
+  background-color: var(--system-gray-200); /* Default gray button (light) */
+  color: var(--text-primary); /* Cambia con el tema */
+  transition: background-color 0.2s ease, opacity 0.2s ease, transform 0.1s ease,
+    color 0.2s ease;
+  font-weight: 500; /* Medium weight */
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+button:hover:not(:disabled) {
+  background-color: var(--system-gray-300); /* Light mode hover */
+}
+button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+button:disabled {
+  cursor: not-allowed;
+  color: var(--system-gray-400); /* Light mode disabled text */
+  background-color: var(--system-gray-200); /* Light mode disabled bg */
+  opacity: 0.7;
+}
+
+/* --- Botones Dark Mode Overrides --- */
+:root[data-theme="dark"] button {
+  background-color: var(--system-gray-400-dark); /* Dark mode default bg */
+  color: var(--text-primary); /* Ya es blanco en dark mode */
+}
+:root[data-theme="dark"] button:hover:not(:disabled) {
+  background-color: var(--system-gray-500-dark); /* Dark mode hover */
+}
+:root[data-theme="dark"] button:disabled {
+  color: var(--system-gray-600-dark); /* Dark mode disabled text */
+  background-color: var(--system-gray-400-dark); /* Dark mode disabled bg */
+  opacity: 0.6;
+}
+
+/* Estilos específicos para clases de botón (aplican a ambos modos por usar variables) */
+.button-primary {
+  background-color: var(--primary-blue);
+  color: var(--button-text-light);
+  font-weight: 600;
+}
+.button-primary:hover:not(:disabled) {
+  background-color: var(--hover-blue);
+}
+.button-primary:disabled {
+  background-color: var(--primary-blue);
+  color: rgba(255, 255, 255, 0.8); /* Texto ligeramente atenuado en dark */
+  opacity: 0.5;
+}
+/* Dark mode override para texto deshabilitado en primario si es necesario */
+:root[data-theme="dark"] .button-primary:disabled {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.button-tinted {
+  /* Usa rgba para adaptarse a claro/oscuro */
+  background-color: rgba(0, 122, 255, 0.1);
+  color: var(--primary-blue);
+}
+.button-tinted:hover:not(:disabled) {
+  background-color: rgba(0, 122, 255, 0.15);
+}
+.button-tinted:disabled {
+  background-color: rgba(0, 122, 255, 0.1);
+  color: var(--system-gray-400); /* Light mode disabled text */
+  opacity: 0.7;
+}
+/* Dark mode override para texto deshabilitado en tinted */
+:root[data-theme="dark"] .button-tinted:disabled {
+  color: var(--system-gray-600-dark);
+}
+
+.button-text {
+  background-color: transparent;
+  color: var(--primary-blue);
+  padding: 6px 8px;
+  font-weight: 500;
+}
+.button-text:hover:not(:disabled) {
+  /* Usa rgba para adaptarse */
+  background-color: rgba(0, 122, 255, 0.08);
+}
+.button-text:disabled {
+  background-color: transparent;
+  color: var(--system-gray-400); /* Light mode disabled text */
+  opacity: 0.7;
+}
+/* Dark mode override para texto deshabilitado en text */
+:root[data-theme="dark"] .button-text:disabled {
+  color: var(--system-gray-600-dark);
+}
+
+/* --- Inputs --- */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"] {
+  font-family: inherit;
+  font-size: 1rem;
+  padding: 11px 15px;
+  border: 1px solid var(--border-color-input);
+  border-radius: var(--border-radius-medium);
+  width: 100%;
+  background-color: var(--background-elevated);
+  color: var(--text-primary);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease,
+    background-color 0.2s ease;
+  outline: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+input[type="text"]::placeholder,
+input[type="email"]::placeholder,
+input[type="password"]::placeholder,
+input[type="search"]::placeholder {
+  color: var(--text-placeholder);
+}
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="search"]:focus {
+  border-color: var(--primary-blue);
+  /* Ajustar halo para ambos modos */
+  box-shadow: 0 0 0 2px rgba(var(--primary-blue), 0.2); /* Usar la variable blue aquí */
+}
+
+/* Dark Mode Inputs */
+:root[data-theme="dark"] input[type="text"],
+:root[data-theme="dark"] input[type="email"],
+:root[data-theme="dark"] input[type="password"] {
+  background-color: var(--system-gray-300-dark); /* Fondo input más oscuro */
+  border-color: var(--border-color-input); /* Usa la variable redefinida */
+}
+:root[data-theme="dark"] input[type="text"]:focus,
+:root[data-theme="dark"] input[type="email"]:focus,
+:root[data-theme="dark"] input[type="password"]:focus {
+  background-color: var(--system-gray-300-dark); /* Mantener fondo en focus */
+  /* El box-shadow ya usa la variable --primary-blue que cambia */
+}
+
+/* Búsqueda */
+input[type="search"] {
+  border-radius: var(--border-radius-pill);
+  background-color: var(--system-gray-100); /* Light */
+  border-color: var(--system-gray-100); /* Light */
+}
+input[type="search"]:focus {
+  background-color: var(--background-elevated); /* Light focus */
+  border-color: var(--primary-blue); /* Light focus */
+}
+/* Dark Mode Búsqueda */
+:root[data-theme="dark"] input[type="search"] {
+  background-color: var(--system-gray-300-dark); /* Dark */
+  border-color: var(--system-gray-300-dark); /* Dark */
+}
+:root[data-theme="dark"] input[type="search"]:focus {
+  background-color: var(--system-gray-400-dark); /* Dark focus */
+  border-color: var(--primary-blue); /* Dark focus */
+}
+
+/* --- Labels --- */
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 400;
+  color: var(--text-secondary); /* Cambia con el tema */
+  font-size: 0.9rem;
+}
+
+/* --- Links --- */
+a {
+  color: var(--text-link); /* Cambia con el tema */
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* --- Listas --- */
+ul {
+  list-style: none;
+}
+
+/* --- Mensajes (Toast o globales) --- */
+.error-message {
+  color: var(--error-red); /* Cambia con el tema */
+  background-color: var(--error-bg-light); /* Cambia con el tema */
+  border: 1px solid var(--error-border); /* Cambia con el tema */
+  padding: 10px 15px;
+  border-radius: var(--border-radius-medium);
+  margin-bottom: 15px;
+  font-size: 0.95rem;
+}
+.success-message {
+  color: var(--success-green-dark); /* Cambia con el tema */
+  background-color: var(--success-bg-light); /* Cambia con el tema */
+  border: 1px solid var(--success-border); /* Cambia con el tema */
+  padding: 10px 15px;
+  border-radius: var(--border-radius-medium);
+  margin-bottom: 15px;
+  font-size: 0.95rem;
+}
+
+/* 5. Limpieza (Asegurar que no haya estilos de componentes específicos aquí) */
+
+/* 6. Media Queries globales (si son necesarias) */
+@media (max-width: 480px) {
+  html {
+    font-size: 15px;
+  }
+  button,
+  .button-primary,
+  .button-tinted {
+    padding: 12px 16px;
+    font-size: 1.05rem;
+  }
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"] {
+    font-size: 1rem;
+  }
+}

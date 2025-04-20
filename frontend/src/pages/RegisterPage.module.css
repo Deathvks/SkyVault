@@ -1,0 +1,137 @@
+/* frontend/src/pages/RegisterPage.module.css */
+
+.pageContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  background-color: var(--background-page); /* Fondo grisáceo */
+}
+
+.formContainer {
+  background-color: var(--background-elevated); /* Fondo blanco */
+  padding: 40px 30px; /* Padding ajustado */
+  border-radius: var(--border-radius-large); /* Redondeo iOS */
+  /* box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1); <-- Sombra opcional */
+  width: 100%;
+  max-width: 400px; /* Ancho ajustado */
+  text-align: center;
+}
+
+.title {
+  margin-bottom: 35px; /* Más espacio inferior */
+  color: var(--text-primary);
+  font-size: 1.8rem; /* Tamaño título grande */
+  font-weight: 700; /* Bold */
+}
+
+.formGroup {
+  margin-bottom: 25px; /* Más espacio entre grupos */
+  text-align: left;
+}
+
+/* Label hereda de index.css */
+/* .label { ... } */
+
+/* Input hereda de index.css */
+/* .input { ... } */
+
+/* Botón - Usar estilo primario 'filled' */
+.button {
+  /* Hereda estilos base de button en index.css */
+  width: 100%;
+  padding: 12px;
+  background-color: var(--primary-blue); /* Azul */
+  color: var(--button-text-light); /* Blanco */
+  border: none;
+  border-radius: var(--border-radius-medium);
+  font-size: 1rem;
+  font-weight: 600; /* Semibold */
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease, transform 0.1s ease;
+  margin-top: 10px;
+  -webkit-tap-highlight-color: transparent;
+}
+/* Hover state */
+.button:hover:not(:disabled) {
+  background-color: var(--hover-blue);
+}
+/* Active state (presionado) */
+.button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+/* Disabled state hereda opacidad de index.css */
+.button:disabled {
+  background-color: var(--primary-blue);
+  opacity: 0.5;
+}
+
+/* Mensajes de Error/Éxito */
+.error {
+  color: var(--error-red);
+  /* Usar estilos de .error-message de index.css si se aplica esa clase */
+  /* Si es solo texto simple: */
+  margin-top: 15px;
+  margin-bottom: 0;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.success {
+  /* Usar estilos de .success-message de index.css si se aplica esa clase */
+  /* Si es solo texto simple: */
+  color: var(--success-green); /* Verde sistema */
+  margin-top: 15px;
+  margin-bottom: 0;
+  font-size: 0.9rem;
+  text-align: center;
+  /* Si necesitas el fondo y borde como en index.css: */
+  /* background-color: var(--success-bg-light); */
+  /* border: 1px solid var(--success-border); */
+  /* padding: 10px; */
+  /* border-radius: var(--border-radius-medium); */
+}
+
+/* Contenedor y link inferior */
+.linkContainer {
+  margin-top: 30px;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+
+.link {
+  color: var(--text-link);
+  text-decoration: none;
+  font-weight: 500; /* Medium */
+}
+.link:hover {
+  text-decoration: underline;
+}
+
+/* --- Responsive --- */
+@media (max-width: 480px) {
+  .pageContainer {
+    align-items: flex-start;
+    padding-top: 40px;
+  }
+  .formContainer {
+    padding: 30px 20px;
+    box-shadow: none;
+    border-radius: 0;
+    width: 100%;
+    max-width: none;
+    margin: 0 -20px;
+  }
+  .title {
+    font-size: 1.6rem;
+    margin-bottom: 30px;
+  }
+  .button {
+    padding: 14px; /* Botón más grande */
+    font-size: 1.05rem;
+  }
+  .linkContainer {
+    font-size: 0.9rem;
+  }
+}
