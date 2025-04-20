@@ -398,17 +398,23 @@ function DashboardPage() {
 
   const handleFolderClick = (folder) => {
     if (isActionLoading || folder.id === currentFolderId) return;
-    if (searchTerm) {
-      // No navegar si estamos buscando
-      toast.info("Limpia la búsqueda para navegar a las carpetas.");
-      return;
+    if (searchTerm) { // No navegar si estamos buscando
+        toast.info("Limpia la búsqueda para navegar a las carpetas.");
+        return;
     }
-    // Navegación normal
-    setCurrentFolderId(folder.id); // loadContents se disparará por useEffect
-    setShowFabMenu(false);
+
+    // --- ACTUALIZAR PATH AQUÍ, ANTES DE CAMBIAR CARPETA ---
+    const newPathEntry = { id: folder.id, name: folder.name };
+    // Comprobación extra para evitar añadir duplicados si se hace clic muy rápido
+    if (path[path.length - 1]?.id !== folder.id) {
+       setPath((prevPath) => [...prevPath, newPathEntry]);
+    }
+    // ------------------------------------------------------
+
+    setCurrentFolderId(folder.id); // Esto disparará useEffect -> loadContents
+    setShowFabMenu(false); // Ocultar otros menús
     if (isMobileSearchVisible) setIsMobileSearchVisible(false);
-    // La lógica de actualizar 'path' ahora está dentro de loadContents
-  };
+};
 
   const handleBreadcrumbClick = (folderId, index) => {
     if (isActionLoading || folderId === currentFolderId) return;
