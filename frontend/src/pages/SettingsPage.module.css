@@ -61,8 +61,8 @@
   cursor: pointer;
   font-size: 1rem;
   color: var(--text-primary);
-  /* No necesita position: relative aquí si ::before lo maneja */
   transition: color 0.3s ease; /* Transición */
+  position: relative; /* Puede ser necesario para alinear ::before si top afecta layout */
 }
 
 /* Ocultar el radio button nativo */
@@ -75,7 +75,7 @@
 
 /* Span que contiene el texto */
 .radioText {
- /* No necesita estilos especiales aquí */
+  /* No necesita estilos especiales aquí */
 }
 
 /* Círculo exterior (pseudo-elemento ::before) */
@@ -91,7 +91,7 @@
   transition: border-color 0.2s ease, background-color 0.2s ease;
   flex-shrink: 0;
   /* --- POSICIONAMIENTO RELATIVO --- */
-  position: relative; /* Hace que ::before sea el contexto de posición para ::after */
+  position: relative; /* CORRECTO: Contexto para ::after */
   /* ----------------------------- */
   top: -1px; /* Ajuste vertical */
   box-sizing: border-box;
@@ -110,21 +110,22 @@
 
 /* Punto interior (pseudo-elemento ::after) */
 .radioInput:checked + .radioText::after {
+  /* --- RESTAURAR content --- */
+  content: ""; /* CORRECTO: Necesario para que exista */
+  /* ------------------------- */
   display: block;
-  width: 10px;   /* Tamaño del punto interior */
-  height: 10px;  /* Tamaño del punto interior */
+  width: 10px; /* Tamaño del punto interior */
+  height: 10px; /* Tamaño del punto interior */
   border-radius: 50%;
   background-color: var(--button-text-light); /* Color del punto (blanco) */
   /* --- POSICIONAMIENTO ABSOLUTO (relativo a ::before) --- */
-  position: absolute;
-  /* Centrar el punto 10x10 dentro del contenedor 20x20 */
-  top: 5px;             /* (20px - 10px) / 2 */
-  left: 5px;            /* (20px - 10px) / 2 */
-  /* transform: translate(1px, 0px); <-- ELIMINADO */
+  position: absolute; /* CORRECTO */
+  top: 5px; /* CORRECTO: Centrado vertical en 20px */
+  left: 5px; /* CORRECTO: Centrado horizontal en 20px */
   /* ---------------------------------------------------- */
 }
 
-/* --- Overrides Dark Mode para Radio Buttons --- */
+/* --- Dark Mode Overrides para Radio Buttons --- */
 :root[data-theme="dark"] .radioInput + .radioText::before {
   border-color: var(--system-gray-500-dark);
   background-color: var(--background-elevated); /* Fondo de tarjeta oscuro */
@@ -139,7 +140,6 @@
 :root[data-theme="dark"] .radioInput:checked + .radioText::after {
   background-color: var(--button-text-light); /* Mantiene punto blanco */
 }
-
 
 .backLink {
   display: block;
