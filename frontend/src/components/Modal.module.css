@@ -43,33 +43,38 @@
 
 .modalHeader {
   display: flex;
-  justify-content: center;
+  /* justify-content: center; */     /* <-- Cambiado */
+  justify-content: space-between; /* <-- Añadido */
   align-items: center;
-  position: relative;
+  /* position: relative; */         /* <-- Eliminado (o comentar) */
   padding-bottom: 15px;
-  margin-bottom: 15px;
+  margin-bottom: 15px;              /* Mantenido */
   flex-shrink: 0;
+  gap: 10px; /* Añadir espacio entre título y botón */
 }
 
 .modalTitle {
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
-  text-align: center;
+  /* text-align: center; */         /* <-- Eliminado */
   color: var(--text-primary);
   transition: color 0.3s ease;
-  padding: 0 35px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* padding: 0 35px; */           /* <-- Eliminado o ajustado */
+  padding: 0;                     /* Quitar padding horizontal */
+  white-space: nowrap;            /* Mantener en una línea */
+  overflow: hidden;               /* Ocultar desbordamiento */
+  text-overflow: ellipsis;        /* Añadir puntos suspensivos */
+  flex-grow: 1;                   /* Permitir que ocupe el espacio disponible */
+  min-width: 0;                   /* Ayuda a flex-grow con overflow */
 }
 
 .modalCloseButton {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 30px;
-  height: 30px;
+  /* position: absolute; */         /* <-- Eliminado */
+  /* top: 10px; */                 /* <-- Eliminado */
+  /* right: 10px; */                /* <-- Eliminado */
+  width: 30px;                    /* Mantener tamaño */
+  height: 30px;                   /* Mantener tamaño */
   border-radius: 50%;
   background-color: var(--system-gray-200);
   border: none;
@@ -82,7 +87,9 @@
   transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
   -webkit-tap-highlight-color: transparent;
   transform: none !important;
+  flex-shrink: 0; /* Evitar que el botón se encoja */
 }
+
 .modalCloseButton:hover {
   background-color: var(--system-gray-300);
   color: var(--text-primary);
@@ -297,11 +304,9 @@
   }
   .modalTitle {
     font-size: 1.05rem;
-    padding: 0 25px;
+    padding: 0;
   }
   .modalCloseButton {
-    top: 8px;
-    right: 8px;
     width: 28px;
     height: 28px;
   }
@@ -309,6 +314,11 @@
     width: 14px;
     height: 14px;
   }
+
+  .modalHeader {
+    gap: 8px;
+ }
+
   .modalBody p {
     font-size: 0.9rem;
   }

@@ -1109,6 +1109,57 @@
   border-bottom-color: var(--system-gray-300-dark);
 }
 
+.headerIconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  color: var(--text-secondary); /* Color por defecto (gris claro en modo light) */
+  border-radius: 50%;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  background: none !important; /* Forzar sin fondo */
+  background-color: transparent !important;
+  border: none !important; /* Forzar sin borde */
+  cursor: pointer;
+  outline: none;
+}
+
+/* --- REGLA EXPLÍCITA PARA DARK MODE --- */
+:global(:root[data-theme="dark"]) .headerIconButton {
+  color: var(--system-gray-600-dark); /* <-- Asegura el color gris secundario oscuro (#8e8e93) */
+}
+/* --- FIN REGLA EXPLÍCITA --- */
+
+
+.headerIconButton:hover:not(:disabled) {
+  /* background-color: var(--system-gray-100); */ /* Sin fondo hover */
+  color: var(--primary-blue); /* Cambiar solo el color del icono en hover */
+  text-decoration: none;
+}
+:global(:root[data-theme="dark"]) .headerIconButton:hover:not(:disabled) {
+  /* background-color: var(--system-gray-300-dark); */ /* Sin fondo hover */
+  color: var(--primary-blue); /* Mantener cambio de color del icono */
+}
+
+.headerIconButton:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    color: var(--system-gray-400); /* Color deshabilitado light */
+    background-color: transparent !important;
+}
+:global(:root[data-theme="dark"]) .headerIconButton:disabled {
+    /* Ajusta si prefieres un gris más claro u oscuro para deshabilitado */
+    color: var(--system-gray-500-dark); /* Color deshabilitado dark */
+    opacity: 0.5; /* Mantener opacidad */
+}
+
+.headerIconButton svg {
+  display: block;
+  width: 20px; /* Tamaño estándar para iconos header */
+  height: 20px;
+  fill: currentColor; /* Heredar color del botón */
+}
+
 /* --- Media Queries --- */
 @media (min-width: 701px) {
   .desktopOnlySearch,

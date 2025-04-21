@@ -136,6 +136,18 @@ const DeleteSelectedIcon = () => (
     <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z" />
   </svg>
 );
+const ReloadIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    height="20px"
+    viewBox="0 0 24 24"
+    width="20px"
+    fill="currentColor"
+  >
+    <path d="M0 0h24v24H0V0z" fill="none" />
+    <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+  </svg>
+);
 // --- Fin Iconos ---
 
 function DashboardPage() {
@@ -398,23 +410,24 @@ function DashboardPage() {
 
   const handleFolderClick = (folder) => {
     if (isActionLoading || folder.id === currentFolderId) return;
-    if (searchTerm) { // No navegar si estamos buscando
-        toast.info("Limpia la búsqueda para navegar a las carpetas.");
-        return;
+    if (searchTerm) {
+      // No navegar si estamos buscando
+      toast.info("Limpia la búsqueda para navegar a las carpetas.");
+      return;
     }
 
     // --- ACTUALIZAR PATH AQUÍ, ANTES DE CAMBIAR CARPETA ---
     const newPathEntry = { id: folder.id, name: folder.name };
     // Comprobación extra para evitar añadir duplicados si se hace clic muy rápido
     if (path[path.length - 1]?.id !== folder.id) {
-       setPath((prevPath) => [...prevPath, newPathEntry]);
+      setPath((prevPath) => [...prevPath, newPathEntry]);
     }
     // ------------------------------------------------------
 
     setCurrentFolderId(folder.id); // Esto disparará useEffect -> loadContents
     setShowFabMenu(false); // Ocultar otros menús
     if (isMobileSearchVisible) setIsMobileSearchVisible(false);
-};
+  };
 
   const handleBreadcrumbClick = (folderId, index) => {
     if (isActionLoading || folderId === currentFolderId) return;
@@ -1123,6 +1136,30 @@ function DashboardPage() {
     }
   };
 
+  // ... (dentro del componente DashboardPage)
+
+    // --- Función para recargar la vista ---
+    const handleReload = () => {
+      if (isActionLoading) return; // No hacer nada si ya está cargando
+
+      // // Cancelar selección múltiple si está activa (LÍNEAS ELIMINADAS/COMENTADAS)
+      // setSelectedItems(new Set());
+      // setIsSelectionMode(false);
+
+      // Llamar a la función para refrescar los datos del perfil (incluida la cuota)
+      refreshUserProfile(); // <-- Mantener esta línea
+
+      // Si hay un término de búsqueda, limpiar la búsqueda (esto ya recarga la carpeta actual)
+      if (searchTerm) {
+        clearSearch();
+        toast.info("Vista recargada.");
+      } else {
+        // Si no hay búsqueda, simplemente recargar el contenido actual
+        loadContents(currentFolderId);
+        toast.info("Vista recargada.");
+      }
+    };
+
   // --- Función de Renderizado de Items ---
   const renderItem = (item, type) => {
     const isFolder = type === "folder";
@@ -1402,16 +1439,26 @@ function DashboardPage() {
                   {getQuotaText()}
                 </span>
               )}
+              {/* --- BOTÓN RECARGA (HEADER DESKTOP) --- */}
+              <button
+                onClick={handleReload}
+                className={styles.headerIconButton} // Nueva clase compartida
+                title="Recargar"
+                disabled={isActionLoading}
+              >
+                <ReloadIcon />
+              </button>
+              {/* --- FIN NUEVO BOTÓN --- */}
               <Link
                 to="/settings"
-                className={styles.trashLinkDesktop}
+                className={styles.headerIconButton} // Nueva clase compartida
                 title="Ajustes"
               >
                 <SettingsIcon />
               </Link>
               <Link
                 to="/trash"
-                className={styles.trashLinkDesktop}
+                className={styles.headerIconButton} // Nueva clase compartida
                 title="Papelera"
               >
                 <TrashIcon />
@@ -1451,6 +1498,17 @@ function DashboardPage() {
                       {getQuotaText()}
                     </div>
                   )}
+                  {/* --- OPCIÓN RECARGA (MENÚ MÓVIL) --- */}
+                  <button
+                    onClick={() => {
+                      handleReload();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    disabled={isActionLoading}
+                  >
+                    Recargar
+                  </button>
+                  {/* --- FIN OPCIÓN --- */}
                   <Link
                     to="/settings"
                     className={styles.mobileDropdownLink}
@@ -1551,34 +1609,48 @@ function DashboardPage() {
                 </span>
               ))}
             </div>
-            {allVisibleItemsCount > 0 &&
-              !isLoading && ( // Solo mostrar si hay items y no está cargando
-                <div className={styles.selectAllContainer}>
-                  <label
-                    htmlFor="select-all-checkbox"
-                    className={styles.selectAllLabel}
-                    title={
-                      isAllCurrentlySelected
-                        ? "Deseleccionar todo"
-                        : "Seleccionar todo"
-                    }
-                  >
-                    {isAllCurrentlySelected ? (
-                      <CheckboxCheckedIcon />
-                    ) : (
-                      <CheckboxUncheckedIcon />
-                    )}
-                    <input
-                      type="checkbox"
-                      id="select-all-checkbox"
-                      checked={isAllCurrentlySelected}
-                      onChange={handleSelectAll}
-                      className={styles.hiddenCheckbox}
-                      disabled={isActionLoading}
-                    />
-                  </label>
-                </div>
-              )}
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                marginLeft: "auto",
+                flexShrink: 0,
+              }}
+            >
+              {" "}
+              {/* Contenedor Flex */}
+              {allVisibleItemsCount > 0 &&
+                !isLoading && ( // Solo mostrar si hay items y no está cargando
+                  <div className={styles.selectAllContainer}>
+                    <label
+                      htmlFor="select-all-checkbox"
+                      className={styles.selectAllLabel}
+                      title={
+                        isAllCurrentlySelected
+                          ? "Deseleccionar todo"
+                          : "Seleccionar todo"
+                      }
+                    >
+                      {isAllCurrentlySelected ? (
+                        <CheckboxCheckedIcon />
+                      ) : (
+                        <CheckboxUncheckedIcon />
+                      )}
+                      <input
+                        type="checkbox"
+                        id="select-all-checkbox"
+                        checked={isAllCurrentlySelected}
+                        onChange={handleSelectAll}
+                        className={styles.hiddenCheckbox}
+                        disabled={isActionLoading}
+                      />
+                    </label>
+                  </div>
+                )}
+              {/* El botón de recarga fue movido al header */}
+            </div>
           </div>
         </nav>
       )}

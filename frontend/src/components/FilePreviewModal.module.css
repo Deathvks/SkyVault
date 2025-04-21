@@ -2,10 +2,13 @@
 
 .previewContainer {
   width: 100%;
-  max-height: 75vh; /* Altura por defecto para imágenes, texto, etc. */
+  max-height: 75vh;
   overflow-y: auto;
   text-align: center;
-  background-color: var(--system-gray-100);
+  /* --- MODIFICACIÓN --- */
+  /* background-color: var(--system-gray-100); */ /* <-- Elimina o comenta esta línea */
+  background-color: var(--background-elevated);  /* <-- Usa esta variable en su lugar */
+  /* --- FIN MODIFICACIÓN --- */
   border-radius: var(--border-radius-medium);
   padding: 10px;
   margin-top: 10px;
@@ -14,19 +17,20 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  /* Transición suave por si cambia el tamaño */
-  transition: width 0.3s ease, height 0.3s ease;
+  /* Añadir background-color a la transición para suavidad */
+  transition: width 0.3s ease, height 0.3s ease, background-color 0.3s ease;
 }
 
 /* --- NUEVA CLASE para PDFs --- */
 .previewContainerLarge {
-  width: 90vw; /* Ocupar casi todo el ancho de la ventana */
-  height: 85vh; /* Ocupar casi toda la altura de la ventana */
-  max-height: 85vh; /* Asegurar que no exceda */
-  padding: 5px; /* Menos padding para dar más espacio al PDF */
-  background-color: var(
-    --system-gray-300
-  ); /* Fondo un poco más oscuro para PDFs */
+  width: 90vw;
+  height: 85vh;
+  max-height: 85vh;
+  padding: 5px;
+   /* --- MODIFICACIÓN (si usaste otro color aquí) --- */
+  /* background-color: var(--system-gray-300); */ /* <-- Elimina o comenta si existe */
+   background-color: var(--background-elevated);  /* <-- Usa esta variable también */
+   /* --- FIN MODIFICACIÓN --- */
 }
 /* ---------------------------- */
 
