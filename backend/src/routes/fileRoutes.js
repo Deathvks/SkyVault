@@ -60,10 +60,46 @@ const ALLOWED_MIME_TYPES = [
   "application/vnd.ms-powerpoint", // .ppt
   "application/vnd.openxmlformats-officedocument.presentationml.presentation", // .pptx
 
-  // Comprimidos y otros
-  "application/zip", // .zip
+  // --- Web, Scripting y Desarrollo (Añadidos y existentes) ---
+  "text/html",             // .html, .htm
+  "text/css",              // .css
+  "text/javascript",       // .js, .mjs
+  "application/json",      // .json
+  "application/xml",       // .xml
+  "text/xml",              // .xml (alternativo)
+  "text/markdown",         // .md, .markdown
+  "text/yaml",             // .yaml, .yml
+  "application/x-yaml",    // .yaml, .yml (alternativo)
+  "application/x-sh",      // .sh
+  "text/x-shellscript",    // .sh (alternativo)
+  "application/sql",       // .sql
+  "application/x-typescript", // .ts (a veces usado)
+  "video/mp2t",            // .ts (MPEG Transport Stream, a veces usado erróneamente para TypeScript)
+  "text/jsx",              // .jsx
+  "text/x-python",         // .py
+  "application/x-python-code", // .py (alternativo)
+  "text/x-java-source",    // .java
+  "text/x-c",              // .c, .h
+  "text/x-c++src",         // .cpp
+  "text/x-php",            // .php
+  "application/x-httpd-php", // .php (alternativo)
+  "application/x-ruby",    // .rb
+  "text/x-go",             // .go
+  "text/x-swift",          // .swift
+  "text/x-kotlin",         // .kt
+  "text/rust",             // .rs
+  "text/x-rust",           // .rs (alternativo)
+
+  // --- Comprimidos y Otros ---
+  "application/zip",              // .zip
   "application/x-rar-compressed", // .rar
-  "application/octet-stream", // Genérico, puede cubrir otros formatos no específicos
+  "application/x-tar",            // .tar
+  "application/gzip",             // .gz
+  "application/x-bzip2",          // .bz2
+  "application/x-7z-compressed",  // .7z
+  
+  // --- Fallback Genérico (Importante mantenerlo) ---
+  "application/octet-stream", // Para tipos desconocidos o sin MIME específico
 ];
 
 // Configuración de Multer
