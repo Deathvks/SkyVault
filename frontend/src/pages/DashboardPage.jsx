@@ -108,7 +108,6 @@ const CheckboxCheckedIcon = () => (
     height="22"
     fill="currentColor"
   >
-    {/* Fill cambiado a currentColor para heredar de .selectedItem */}
     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
   </svg>
 );
@@ -120,7 +119,6 @@ const CheckboxUncheckedIcon = () => (
     height="22"
     fill="currentColor"
   >
-    {/* Fill cambiado a currentColor para heredar */}
     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" />
   </svg>
 );
@@ -152,7 +150,7 @@ const ReloadIcon = () => (
 
 function DashboardPage() {
   // --- Estados ---
-  const { logout, user, refreshUserProfile } = useAuth(); // <-- Obtener user y refreshUserProfile
+  const { logout, user, refreshUserProfile } = useAuth();
   const [currentFolderId, setCurrentFolderId] = useState("root");
   const [folders, setFolders] = useState([]);
   const [files, setFiles] = useState([]);
@@ -161,7 +159,7 @@ function DashboardPage() {
   const [showFabMenu, setShowFabMenu] = useState(false);
   const fileInputRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchResults, setSearchResults] = useState(null); // null: no busca, {folders, files}: resultados
+  const [searchResults, setSearchResults] = useState(null);
   const searchTimeoutRef = useRef(null);
   const desktopSearchInputRef = useRef(null);
   const mobileSearchInputRef = useRef(null);
@@ -172,21 +170,21 @@ function DashboardPage() {
   const [newFolderName, setNewFolderName] = useState("");
   const [isConfirmDeleteModalOpen, setIsConfirmDeleteModalOpen] =
     useState(false);
-  const [itemToDelete, setItemToDelete] = useState(null); // {type, id, name}
+  const [itemToDelete, setItemToDelete] = useState(null);
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
-  const [itemToRename, setItemToRename] = useState(null); // {type, id, currentName}
+  const [itemToRename, setItemToRename] = useState(null);
   const [renameInputValue, setRenameInputValue] = useState("");
   const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
-  const [itemsToMove, setItemsToMove] = useState(null); // Puede ser array [{type, id, name, folder_id?, parent_folder_id?}]
+  const [itemsToMove, setItemsToMove] = useState(null);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-  const [fileToPreview, setFileToPreview] = useState(null); // {id, name, mime_type}
+  const [fileToPreview, setFileToPreview] = useState(null);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [isDeletingItem, setIsDeletingItem] = useState(false);
   const [isRenamingItem, setIsRenamingItem] = useState(false);
   const [isMovingItem, setIsMovingItem] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [isActionLoading, setIsActionLoading] = useState(false); // Estado combinado de carga
-  const [selectedItems, setSelectedItems] = useState(new Set()); // Set de 'type-id' strings
+  const [isActionLoading, setIsActionLoading] = useState(false);
+  const [selectedItems, setSelectedItems] = useState(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [isContextMenuVisible, setIsContextMenuVisible] = useState(false);
@@ -194,37 +192,31 @@ function DashboardPage() {
     x: 0,
     y: 0,
   });
-  const [contextMenuItem, setContextMenuItem] = useState(null); // {type, id, name, ...}
+  const [contextMenuItem, setContextMenuItem] = useState(null);
   const longPressTimerRef = useRef(null);
   const touchStartPositionRef = useRef({ x: 0, y: 0 });
 
   // --- Funciones de Carga y Navegación ---
   const loadContents = useCallback(
     async (folderIdToLoad) => {
-      // Resetear selección al cargar nueva carpeta
       setSelectedItems(new Set());
       setIsSelectionMode(false);
       setIsLoading(true);
-      setFolders([]); // Limpiar estado anterior
-      setFiles([]); // Limpiar estado anterior
+      setFolders([]);
+      setFiles([]);
       try {
         const response = await getFolderContents(folderIdToLoad);
         setFolders(response.data.subFolders || []);
         setFiles(response.data.files || []);
 
-        // Actualizar path (migas de pan)
         if (folderIdToLoad === "root") {
-          // Si vamos a la raíz, el path es solo Raíz
           if (path.length > 1 || path[0]?.id !== "root") {
             setPath([{ id: "root", name: "Raíz" }]);
           }
         } else {
-          // Si vamos a una subcarpeta
           let currentPathEntry = null;
           let existingIndex = -1;
-          // Buscar si ya está en el path (ej. navegando hacia atrás)
           for (let i = path.length - 1; i >= 0; i--) {
-            // Usar comparación no estricta por si viene como string de params
             if (path[i].id == folderIdToLoad) {
               currentPathEntry = path[i];
               existingIndex = i;
@@ -233,24 +225,15 @@ function DashboardPage() {
           }
 
           if (currentPathEntry) {
-            // Si ya existe en el path, cortar hasta ella
             if (existingIndex < path.length - 1) {
               setPath((prevPath) => prevPath.slice(0, existingIndex + 1));
             }
-            // Si es el último elemento, el path ya es correcto, no hacer nada
           } else {
-            // Si no existe (navegando hacia adelante), necesitamos añadirla.
-            // Intentamos obtener el nombre de la respuesta de la API padre (si es posible)
-            // o usamos un placeholder si no.
-            let folderName = "Cargando..."; // Placeholder inicial
-            // Esta lógica es imperfecta, idealmente la API devolvería el nombre de la carpeta actual
-            // o necesitaríamos una llamada getFolderDetails(folderIdToLoad).
-            // Asumimos por ahora que el nombre vendrá 'después' o usamos placeholder.
+            let folderName = "Cargando...";
             setPath((prevPath) => [
               ...prevPath,
               { id: folderIdToLoad, name: folderName },
             ]);
-            // TODO: Considerar obtener el nombre real si es crítico mostrarlo inmediatamente.
           }
         }
       } catch (err) {
@@ -260,7 +243,6 @@ function DashboardPage() {
         );
         if (err.response?.status === 401 || err.response?.status === 403)
           logout();
-        // Si falla al cargar una carpeta específica, volver a la raíz por seguridad
         if (folderIdToLoad !== "root") {
           setCurrentFolderId("root");
           setPath([{ id: "root", name: "Raíz" }]);
@@ -270,30 +252,28 @@ function DashboardPage() {
       }
     },
     [path, logout]
-  ); // Dependencia de path es necesaria para actualizar breadcrumbs
+  );
 
   useEffect(() => {
-    // Cargar contenido inicial o cuando cambia currentFolderId, si no estamos buscando
     if (!searchTerm) {
       loadContents(currentFolderId);
     }
-    // No añadir loadContents a las dependencias para evitar bucles si se redefine incorrectamente
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentFolderId, searchTerm]); // Recargar si cambia la carpeta O si se limpia la búsqueda
+  }, [currentFolderId, searchTerm]);
 
   // --- Funciones de Búsqueda ---
   const performSearch = useCallback(
     async (term) => {
       if (!term) {
         setSearchResults(null);
-        setIsLoading(false); // Asegurar que no se quede cargando
-        loadContents(currentFolderId); // Recargar carpeta actual si se borra búsqueda
+        setIsLoading(false);
+        loadContents(currentFolderId);
         return;
       }
       console.log(`[Search] Iniciando búsqueda para: "${term}"`);
       setIsLoading(true);
-      setSearchResults(null); // Limpiar resultados mientras busca
-      let inputRefToFocus = null; // Guardar referencia al input activo
+      setSearchResults(null);
+      let inputRefToFocus = null;
       if (document.activeElement === desktopSearchInputRef.current)
         inputRefToFocus = desktopSearchInputRef;
       else if (document.activeElement === mobileSearchInputRef.current)
@@ -307,13 +287,12 @@ function DashboardPage() {
         toast.error(
           err.response?.data?.message || "Error al realizar la búsqueda."
         );
-        setSearchResults({ folders: [], files: [] }); // Poner vacío en error
+        setSearchResults({ folders: [], files: [] });
         if (err.response?.status === 401 || err.response?.status === 403)
           logout();
       } finally {
         setIsLoading(false);
         console.log("[Search] Búsqueda finalizada.");
-        // Intentar devolver foco DESPUÉS de que el estado isLoading se actualice
         if (inputRefToFocus?.current) {
           setTimeout(() => {
             if (
@@ -328,28 +307,27 @@ function DashboardPage() {
       }
     },
     [setIsLoading, setSearchResults, loadContents, currentFolderId, logout]
-  ); // Dependencias de performSearch
+  );
 
   const handleSearchChange = (event) => {
     const newTerm = event.target.value;
     setSearchTerm(newTerm);
-    setSelectedItems(new Set()); // Limpiar selección al buscar
+    setSelectedItems(new Set());
     setIsSelectionMode(false);
 
-    clearTimeout(searchTimeoutRef.current); // Limpiar timeout anterior
+    clearTimeout(searchTimeoutRef.current);
 
     const termToSearch = newTerm.trim();
 
     if (termToSearch) {
       console.log(`[Search] Debounce iniciado para: "${termToSearch}"`);
       searchTimeoutRef.current = setTimeout(() => {
-        performSearch(termToSearch); // Llamar después del retardo
-      }, 500); // 500ms debounce
+        performSearch(termToSearch);
+      }, 500);
     } else {
-      // Si el input se vacía, limpiar resultados y cargar contenido actual
       console.log("[Search] Término vacío, limpiando búsqueda.");
       setSearchResults(null);
-      loadContents(currentFolderId); // Cargar carpeta actual
+      loadContents(currentFolderId);
     }
   };
 
@@ -360,8 +338,7 @@ function DashboardPage() {
     setSelectedItems(new Set());
     setIsSelectionMode(false);
     if (isMobileSearchVisible) setIsMobileSearchVisible(false);
-    loadContents(currentFolderId); // Recargar carpeta actual
-    // Devolver foco si es posible
+    loadContents(currentFolderId);
     if (desktopSearchInputRef.current) desktopSearchInputRef.current.focus();
     else if (mobileSearchInputRef.current) mobileSearchInputRef.current.focus();
   };
@@ -392,57 +369,48 @@ function DashboardPage() {
 
   const toggleMobileSearch = () => {
     setIsMobileSearchVisible((prev) => !prev);
-    if (!isMobileSearchVisible) setIsMobileMenuOpen(false); // Cerrar menú si se abre búsqueda
-    // Enfocar input al abrir
+    if (!isMobileSearchVisible) setIsMobileMenuOpen(false);
     setTimeout(() => {
       if (!isMobileSearchVisible && mobileSearchInputRef.current) {
         mobileSearchInputRef.current.focus();
       }
-    }, 50); // Pequeño delay para asegurar renderizado
+    }, 50);
   };
 
   // --- Acciones de Usuario y Elementos ---
   const handleLogout = () => {
     logout();
     toast.info("Sesión cerrada correctamente.");
-    // Navegación gestionada por ProtectedRoute
   };
 
   const handleFolderClick = (folder) => {
     if (isActionLoading || folder.id === currentFolderId) return;
     if (searchTerm) {
-      // No navegar si estamos buscando
       toast.info("Limpia la búsqueda para navegar a las carpetas.");
       return;
     }
 
-    // --- ACTUALIZAR PATH AQUÍ, ANTES DE CAMBIAR CARPETA ---
     const newPathEntry = { id: folder.id, name: folder.name };
-    // Comprobación extra para evitar añadir duplicados si se hace clic muy rápido
     if (path[path.length - 1]?.id !== folder.id) {
       setPath((prevPath) => [...prevPath, newPathEntry]);
     }
-    // ------------------------------------------------------
 
-    setCurrentFolderId(folder.id); // Esto disparará useEffect -> loadContents
-    setShowFabMenu(false); // Ocultar otros menús
+    setCurrentFolderId(folder.id);
+    setShowFabMenu(false);
     if (isMobileSearchVisible) setIsMobileSearchVisible(false);
   };
 
   const handleBreadcrumbClick = (folderId, index) => {
     if (isActionLoading || folderId === currentFolderId) return;
 
-    // Si estamos en búsqueda, limpiarla ANTES de navegar
     if (searchTerm) {
-      clearSearch(); // Esto debería recargar la carpeta actual
-      // Esperar un poco para que se procese clearSearch y luego navegar
+      clearSearch();
       setTimeout(() => {
         const newPath = path.slice(0, index + 1);
-        setPath(newPath); // Actualizar path para breadcrumb
-        setCurrentFolderId(folderId); // Disparar carga del contenido correcto
-      }, 100); // Un delay puede ser necesario
+        setPath(newPath);
+        setCurrentFolderId(folderId);
+      }, 100);
     } else {
-      // Navegación normal desde breadcrumb
       const newPath = path.slice(0, index + 1);
       setPath(newPath);
       setCurrentFolderId(folderId);
@@ -508,7 +476,7 @@ function DashboardPage() {
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file || isActionLoading) return;
-    const originalInput = event.target; // Guardar referencia
+    const originalInput = event.target;
 
     setIsUploading(true);
     const formData = new FormData();
@@ -526,8 +494,8 @@ function DashboardPage() {
         isLoading: false,
         autoClose: 3000,
       });
-      if (!searchTerm) loadContents(currentFolderId); // Recargar si no busca
-      refreshUserProfile(); // <-- Refrescar cuota en contexto
+      if (!searchTerm) loadContents(currentFolderId);
+      refreshUserProfile();
     } catch (err) {
       const errorMsg =
         err.response?.data?.message || "Error al subir el archivo.";
@@ -542,7 +510,7 @@ function DashboardPage() {
         logout();
     } finally {
       setIsUploading(false);
-      if (originalInput) originalInput.value = null; // Limpiar input
+      if (originalInput) originalInput.value = null;
     }
   };
 
@@ -583,7 +551,7 @@ function DashboardPage() {
     setItemToDelete({ type, id, name });
     setIsConfirmDeleteModalOpen(true);
     setIsMobileMenuOpen(false);
-    setIsContextMenuVisible(false); // Cerrar context menu si está abierto
+    setIsContextMenuVisible(false);
   };
 
   const handleConfirmDelete = async () => {
@@ -595,10 +563,9 @@ function DashboardPage() {
     const typeText = type === "folder" ? "La carpeta" : "El archivo";
 
     try {
-      await action(id); // Soft delete
+      await action(id);
       toast.success(`${typeText} "${name}" se movió a la papelera.`);
 
-      // Quitar de la vista actual
       if (searchTerm && searchResults) {
         setSearchResults((prev) => ({
           ...prev,
@@ -609,17 +576,17 @@ function DashboardPage() {
       } else {
         const stateUpdater = type === "folder" ? setFolders : setFiles;
         stateUpdater((prev) => prev.filter((item) => item.id !== id));
+        if (type === "folder") {
+          setPath((prevPath) => prevPath.filter((p) => p.id !== id));
+        }
       }
 
-      // Quitar de selección si estaba seleccionado
       setSelectedItems((prev) => {
         const newSelected = new Set(prev);
         newSelected.delete(getItemId(type, id));
         if (newSelected.size === 0) setIsSelectionMode(false);
         return newSelected;
       });
-
-      // No refrescar cuota aquí, el soft delete no cambia el uso. Se hará en borrado permanente.
     } catch (err) {
       toast.error(
         err.response?.data?.message ||
@@ -675,7 +642,6 @@ function DashboardPage() {
         trimmedNewName;
       toast.success(`${typeText} renombrado a "${finalName}".`);
 
-      // Actualizar UI
       if (searchTerm && searchResults) {
         setSearchResults((prev) => ({
           ...prev,
@@ -693,7 +659,6 @@ function DashboardPage() {
           )
         );
         if (type === "folder") {
-          // Actualizar breadcrumbs si es carpeta
           setPath((prevPath) =>
             prevPath.map((p) => (p.id === id ? { ...p, name: finalName } : p))
           );
@@ -800,11 +765,10 @@ function DashboardPage() {
           });
         }
       }
-      // Limpiar selección y recargar/limpiar vista
       setSelectedItems(new Set());
       setIsSelectionMode(false);
       if (!searchTerm) loadContents(currentFolderId);
-      else clearSearch(); // Limpiar búsqueda para ver estado actualizado
+      else clearSearch();
     } catch (err) {
       const errorMsg =
         err.response?.data?.message || `Error al mover elemento(s).`;
@@ -825,49 +789,39 @@ function DashboardPage() {
   const handlePreview = (file) => {
     if (isActionLoading || !file) return;
 
-    const mime = file.mime_type?.toLowerCase() || ""; // Usar minúsculas
-    const fileNameLower = file.name?.toLowerCase() || ""; // Usar minúsculas
+    const mime = file.mime_type?.toLowerCase() || "";
+    const fileNameLower = file.name?.toLowerCase() || "";
 
-    // --- ACTUALIZAR ESTA LÓGICA ---
     const isPreviewable =
-      ( // Comprobación por MIME Type
-        mime.startsWith("image/") ||
-        mime === "application/pdf" ||
-        mime.startsWith("text/") || // Cubre text/markdown si el MIME es correcto
-        mime.startsWith("video/") ||
-        mime.startsWith("audio/") ||
-        [ // Lista explícita de otros tipos application/*
-          "application/json",
-          "application/javascript",
-          "application/xml",
-          "application/xhtml+xml",
-          "application/x-yaml",
-          "application/sql",
-          "application/x-sh",
-          // Añade otros si es necesario
-        ].includes(mime)
-      ) ||
-      ( // Fallback: Comprobación por extensión
-        fileNameLower.endsWith('.md') || // <-- Añadido
-        fileNameLower.endsWith('.txt') ||
-        fileNameLower.endsWith('.js') ||
-        fileNameLower.endsWith('.css') ||
-        fileNameLower.endsWith('.json') ||
-        fileNameLower.endsWith('.html') ||
-        fileNameLower.endsWith('.xml')
-        // Añade otras extensiones si es necesario
-      );
-    // --- FIN DE LA ACTUALIZACIÓN ---
+      mime.startsWith("image/") ||
+      mime === "application/pdf" ||
+      mime.startsWith("text/") ||
+      mime.startsWith("video/") ||
+      mime.startsWith("audio/") ||
+      [
+        "application/json",
+        "application/javascript",
+        "application/xml",
+        "application/xhtml+xml",
+        "application/x-yaml",
+        "application/sql",
+        "application/x-sh",
+      ].includes(mime) ||
+      fileNameLower.endsWith(".md") ||
+      fileNameLower.endsWith(".txt") ||
+      fileNameLower.endsWith(".js") ||
+      fileNameLower.endsWith(".css") ||
+      fileNameLower.endsWith(".json") ||
+      fileNameLower.endsWith(".html") ||
+      fileNameLower.endsWith(".xml");
 
     if (isPreviewable) {
-      // Si es previsualizable (ahora incluye .md por extensión), abre el modal
       setFileToPreview(file);
       setIsPreviewModalOpen(true);
       setShowFabMenu(false);
       setIsMobileMenuOpen(false);
       setIsContextMenuVisible(false);
     } else {
-      // Si AÚN no es previsualizable (tipos realmente no soportados), muestra el toast
       toast.info(
         `Previsualización no disponible para '${file.name}'. Puedes descargarlo.`
       );
@@ -878,13 +832,13 @@ function DashboardPage() {
   const getItemId = (type, id) => `${type}-${id}`;
 
   const handleSelectItem = (type, id) => {
-    if (isActionLoading) return; // No permitir selección si algo está cargando
+    if (isActionLoading) return;
     const uniqueItemId = getItemId(type, id);
     setSelectedItems((prevSelected) => {
       const newSelected = new Set(prevSelected);
       if (newSelected.has(uniqueItemId)) newSelected.delete(uniqueItemId);
       else newSelected.add(uniqueItemId);
-      setIsSelectionMode(newSelected.size > 0); // Activar/desactivar modo selección
+      setIsSelectionMode(newSelected.size > 0);
       return newSelected;
     });
   };
@@ -962,7 +916,6 @@ function DashboardPage() {
       setIsSelectionMode(false);
       if (!searchTerm) loadContents(currentFolderId);
       else clearSearch();
-      // No refrescar cuota aquí
     } catch (err) {
       toast.update(toastId, {
         render: err.response?.data?.message || `Error al mover a papelera.`,
@@ -1018,7 +971,7 @@ function DashboardPage() {
       isRenamingItem ||
       isMovingItem ||
       isUploading;
-    setIsActionLoading(anyUserActionInProgress || isLoading); // isLoading es de carga de contenido
+    setIsActionLoading(anyUserActionInProgress || isLoading);
   }, [
     isLoading,
     isCreatingFolder,
@@ -1031,23 +984,21 @@ function DashboardPage() {
   // --- Manejadores para Context Menu y Long Press ---
   const openActionMenu = (event, type, item) => {
     if (event.type === "contextmenu") event.preventDefault();
-    if (isSelectionMode || isActionLoading) return; // No mostrar si selecciona o carga
+    if (isSelectionMode || isActionLoading) return;
 
     setContextMenuItem({ type, ...item });
     let posX = 0,
       posY = 0;
     if (event.clientX && event.clientY) {
-      // Click derecho o long press simulado
       posX = event.clientX;
       posY = event.clientY;
     } else if (event.target?.getBoundingClientRect) {
-      // Click en botón
       const rect = event.target.getBoundingClientRect();
       posX = rect.left;
       posY = rect.bottom + 5;
     }
     const menuWidth = 180,
-      menuHeight = 250; // Estimados
+      menuHeight = 250;
     if (posX + menuWidth > window.innerWidth)
       posX = window.innerWidth - menuWidth - 10;
     if (posY + menuHeight > window.innerHeight)
@@ -1064,7 +1015,6 @@ function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    // Cerrar context menu al hacer click fuera o Esc
     if (isContextMenuVisible) {
       const handleGlobalClick = (e) => {
         if (e.button !== 2) handleCloseContextMenu();
@@ -1095,7 +1045,7 @@ function DashboardPage() {
       };
       openActionMenu(positionEvent, type, item);
       longPressTimerRef.current = null;
-    }, 700); // 700ms long press
+    }, 700);
   };
 
   const handleTouchMove = (event) => {
@@ -1104,7 +1054,6 @@ function DashboardPage() {
       const deltaX = Math.abs(touch.clientX - touchStartPositionRef.current.x);
       const deltaY = Math.abs(touch.clientY - touchStartPositionRef.current.y);
       if (deltaX > 10 || deltaY > 10) {
-        // Cancelar si hay movimiento
         clearTimeout(longPressTimerRef.current);
         longPressTimerRef.current = null;
       }
@@ -1113,7 +1062,6 @@ function DashboardPage() {
 
   const handleTouchEnd = () => {
     if (longPressTimerRef.current) {
-      // Cancelar si se levanta antes
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
@@ -1138,12 +1086,11 @@ function DashboardPage() {
 
   // --- Función para formatear texto de cuota ---
   const getQuotaText = () => {
-    if (!user) return ""; // No mostrar nada si el usuario no está cargado
+    if (!user) return "";
     const usedFormatted = formatBytes(user.storageUsedBytes);
     let quotaFormatted = "Ilimitado";
     let percent = 0;
     if (user.role !== "admin" && typeof user.storageQuotaBytes === "number") {
-      // Asegurar que es número
       quotaFormatted = formatBytes(user.storageQuotaBytes);
       percent = calculateUsagePercent(
         user.storageUsedBytes,
@@ -1159,17 +1106,12 @@ function DashboardPage() {
 
   // --- Función para recargar la vista ---
   const handleReload = () => {
-    if (isActionLoading) return; // No hacer nada si ya está cargando
-
-    // Llamar a la función para refrescar los datos del perfil (incluida la cuota)
-    refreshUserProfile(); // <-- Mantener esta línea
-
-    // Si hay un término de búsqueda, limpiar la búsqueda (esto ya recarga la carpeta actual)
+    if (isActionLoading) return;
+    refreshUserProfile();
     if (searchTerm) {
       clearSearch();
       toast.info("Vista recargada.");
     } else {
-      // Si no hay búsqueda, simplemente recargar el contenido actual
       loadContents(currentFolderId);
       toast.info("Vista recargada.");
     }
@@ -1180,37 +1122,32 @@ function DashboardPage() {
     const isFolder = type === "folder";
     const uniqueItemId = getItemId(type, item.id);
     const isSelected = selectedItems.has(uniqueItemId);
-    const mime = item.mime_type?.toLowerCase() || ""; // Asegurar toLowerCase
-    const fileNameLower = item.name?.toLowerCase() || ""; // Asegurar toLowerCase
+    const mime = item.mime_type?.toLowerCase() || "";
+    const fileNameLower = item.name?.toLowerCase() || "";
 
-    // --- MODIFICADO isPreviewable (incluye .md) ---
     const isPreviewable =
-      !isFolder && // Must not be a folder
+      !isFolder &&
       (mime.startsWith("image/") ||
         mime === "application/pdf" ||
-        mime.startsWith("text/") || // Covers text/plain, text/css, text/markdown etc.
+        mime.startsWith("text/") ||
         mime.startsWith("video/") ||
         mime.startsWith("audio/") ||
         [
-          // Lista explícita de otros tipos application/* previsualizables
           "application/json",
-          "application/javascript", // Covers .js
+          "application/javascript",
           "application/xml",
           "application/xhtml+xml",
           "application/x-yaml",
           "application/sql",
           "application/x-sh",
-          // Añade otros si los soportas
         ].includes(mime) ||
-        // --- FALLBACK: Check extension explícitamente ---
-        fileNameLower.endsWith(".md") || // <-- AÑADIDO
+        fileNameLower.endsWith(".md") ||
         fileNameLower.endsWith(".txt") ||
         fileNameLower.endsWith(".js") ||
         fileNameLower.endsWith(".css") ||
         fileNameLower.endsWith(".json") ||
         fileNameLower.endsWith(".html") ||
         fileNameLower.endsWith(".xml"));
-    // --- FIN MODIFICACIÓN isPreviewable ---
 
     const isImage = !isFolder && mime.startsWith("image/");
     const fileSizeMB = item.size ? item.size / (1024 * 1024) : 0;
@@ -1269,7 +1206,7 @@ function DashboardPage() {
               )}
               <button
                 onClick={() => (isPreviewable ? handlePreview(item) : null)}
-                className={styles.folderLink} // Usa la misma clase para estilo consistente
+                className={styles.folderLink}
                 disabled={isActionLoading || !isPreviewable}
                 title={
                   isPreviewable
@@ -1286,80 +1223,15 @@ function DashboardPage() {
             </>
           )}
         </span>
+
+        {/* CONTENEDOR DE ACCIONES */}
         <div
           className={`${styles.itemActions} ${
             isSelectionMode ? styles.itemActionsHiddenInSelection : ""
           }`}
         >
-          {/* Botones Desktop */}
-          {isPreviewable && ( // <-- Ahora el botón se muestra para .md también
-            <button
-              onClick={() => handlePreview(item)}
-              className={`${styles.itemActionButton} ${styles.actionButtonDesktopOnly} ${styles.previewButton}`}
-              title="Previsualizar"
-              disabled={isActionLoading}
-            >
-              <PreviewIcon />
-            </button>
-          )}
-          <button
-            onClick={() => openRenameModal(type, item.id, item.name)}
-            className={`${styles.itemActionButton} ${styles.actionButtonDesktopOnly} ${styles.renameButton}`}
-            title="Renombrar"
-            disabled={isActionLoading}
-          >
-            <svg viewBox="0 0 24 24">
-              <path
-                fill="currentColor"
-                d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
-              />
-            </svg>
-          </button>
-          <button
-            onClick={() => openMoveModal(type, item.id, item.name)}
-            className={`${styles.itemActionButton} ${styles.actionButtonDesktopOnly} ${styles.moveButton}`}
-            title="Mover"
-            disabled={isActionLoading}
-          >
-            <svg
-              height="18px"
-              viewBox="0 0 24 24"
-              width="18px"
-              fill="currentColor"
-            >
-              <path d="M0 0h24v24H0V0z" fill="none" />
-              <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8-8-8z" />
-            </svg>
-          </button>
-          {!isFolder && (
-            <button
-              onClick={() => handleDownloadFile(item.id, item.name)}
-              className={`${styles.itemActionButton} ${styles.actionButtonDesktopOnly} ${styles.downloadButton}`}
-              title="Descargar"
-              disabled={isActionLoading}
-            >
-              <svg viewBox="0 0 24 24">
-                <path
-                  fill="currentColor"
-                  d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"
-                />
-              </svg>
-            </button>
-          )}
-          <button
-            onClick={() => handleDeleteItem(type, item.id, item.name)}
-            className={`${styles.itemActionButton} ${styles.actionButtonDesktopOnly} ${styles.deleteButton}`}
-            title="Mover a Papelera"
-            disabled={isActionLoading}
-          >
-            <svg viewBox="0 0 24 24">
-              <path
-                fill="currentColor"
-                d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
-              />
-            </svg>
-          </button>
-          {/* Botón Menú Móvil */}
+          {/* Los botones específicos de escritorio se han comentado/eliminado */}
+          {/* Botón Menú Móvil (ESTE SE QUEDA) */}
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -1472,26 +1344,24 @@ function DashboardPage() {
                   {getQuotaText()}
                 </span>
               )}
-              {/* --- BOTÓN RECARGA (HEADER DESKTOP) --- */}
               <button
                 onClick={handleReload}
-                className={styles.headerIconButton} // Nueva clase compartida
+                className={styles.headerIconButton}
                 title="Recargar"
                 disabled={isActionLoading}
               >
                 <ReloadIcon />
               </button>
-              {/* --- FIN NUEVO BOTÓN --- */}
               <Link
                 to="/settings"
-                className={styles.headerIconButton} // Nueva clase compartida
+                className={styles.headerIconButton}
                 title="Ajustes"
               >
                 <SettingsIcon />
               </Link>
               <Link
                 to="/trash"
-                className={styles.headerIconButton} // Nueva clase compartida
+                className={styles.headerIconButton}
                 title="Papelera"
               >
                 <TrashIcon />
@@ -1531,7 +1401,6 @@ function DashboardPage() {
                       {getQuotaText()}
                     </div>
                   )}
-                  {/* --- OPCIÓN RECARGA (MENÚ MÓVIL) --- */}
                   <button
                     onClick={() => {
                       handleReload();
@@ -1541,7 +1410,6 @@ function DashboardPage() {
                   >
                     Recargar
                   </button>
-                  {/* --- FIN OPCIÓN --- */}
                   <Link
                     to="/settings"
                     className={styles.mobileDropdownLink}
@@ -1653,36 +1521,33 @@ function DashboardPage() {
               }}
             >
               {" "}
-              {/* Contenedor Flex */}
-              {allVisibleItemsCount > 0 &&
-                !isLoading && ( // Solo mostrar si hay items y no está cargando
-                  <div className={styles.selectAllContainer}>
-                    <label
-                      htmlFor="select-all-checkbox"
-                      className={styles.selectAllLabel}
-                      title={
-                        isAllCurrentlySelected
-                          ? "Deseleccionar todo"
-                          : "Seleccionar todo"
-                      }
-                    >
-                      {isAllCurrentlySelected ? (
-                        <CheckboxCheckedIcon />
-                      ) : (
-                        <CheckboxUncheckedIcon />
-                      )}
-                      <input
-                        type="checkbox"
-                        id="select-all-checkbox"
-                        checked={isAllCurrentlySelected}
-                        onChange={handleSelectAll}
-                        className={styles.hiddenCheckbox}
-                        disabled={isActionLoading}
-                      />
-                    </label>
-                  </div>
-                )}
-              {/* El botón de recarga fue movido al header */}
+              {allVisibleItemsCount > 0 && !isLoading && (
+                <div className={styles.selectAllContainer}>
+                  <label
+                    htmlFor="select-all-checkbox"
+                    className={styles.selectAllLabel}
+                    title={
+                      isAllCurrentlySelected
+                        ? "Deseleccionar todo"
+                        : "Seleccionar todo"
+                    }
+                  >
+                    {isAllCurrentlySelected ? (
+                      <CheckboxCheckedIcon />
+                    ) : (
+                      <CheckboxUncheckedIcon />
+                    )}
+                    <input
+                      type="checkbox"
+                      id="select-all-checkbox"
+                      checked={isAllCurrentlySelected}
+                      onChange={handleSelectAll}
+                      className={styles.hiddenCheckbox}
+                      disabled={isActionLoading}
+                    />
+                  </label>
+                </div>
+              )}
             </div>
           </div>
         </nav>
@@ -1690,7 +1555,7 @@ function DashboardPage() {
 
       {/* Contenido Principal */}
       <main className={styles.mainContent}>
-        {searchTerm && searchResults !== null ? ( // MODO BUSQUEDA ACTIVA
+        {searchTerm && searchResults !== null ? (
           <>
             <h3 className={styles.contentHeader}>
               Resultados para "{searchTerm}"
@@ -1727,7 +1592,7 @@ function DashboardPage() {
               </>
             )}
           </>
-        ) : searchTerm && searchResults === null ? ( // MODO BUSQUEDA INICIADA (ESPERANDO)
+        ) : searchTerm && searchResults === null ? (
           <>
             {" "}
             <h3 className={styles.contentHeader}>
@@ -1736,7 +1601,6 @@ function DashboardPage() {
             <p className={styles.loadingMessage}>Buscando...</p>{" "}
           </>
         ) : (
-          // MODO NAVEGACION NORMAL
           <>
             {isLoading ? (
               <p className={styles.loadingMessage}>Cargando...</p>
@@ -1960,7 +1824,7 @@ function DashboardPage() {
       />
 
       {/* Botón Flotante (FAB) */}
-      {!isSelectionMode && ( // Ocultar FAB si estamos seleccionando
+      {!isSelectionMode && (
         <div className={styles.fabContainer}>
           <div
             className={`${styles.fabMenu} ${
