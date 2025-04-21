@@ -1102,6 +1102,8 @@
 }
 
 /* --- Media Queries --- */
+/* En frontend/src/pages/DashboardPage.module.css */
+
 @media (min-width: 701px) {
   .desktopOnlySearch,
   .desktopOnlyActions {
@@ -1114,7 +1116,6 @@
     display: none !important;
   }
   .actionButtonDesktopOnly {
-    /* Se eliminan del JSX, no es necesario mostrar */
     display: none !important;
   }
   .mobileItemMenuButton {
@@ -1123,11 +1124,12 @@
 
   .itemList {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, 180px);
     gap: 18px;
     background-color: transparent;
     border-radius: 0;
     margin-bottom: 20px;
+    justify-content: flex-start;
   }
 
   .listItem {
@@ -1135,94 +1137,116 @@
     align-items: center;
     text-align: center;
     padding: 25px 15px;
-    border-bottom: none;
+    /* --- Usa outline en lugar de border --- */
+    outline: 1px solid var(--system-gray-400);
+    outline-offset: -1px;
+    border: none;
+    /* --- --- */
     border-radius: var(--border-radius-large);
-    background-color: rgba(242, 242, 247, 0.8);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    background-color: var(--background-elevated);
     box-shadow: none;
     transition: transform 0.15s ease, box-shadow 0.15s ease,
-      background-color 0.15s ease, border-color 0.15s ease;
+      background-color 0.15s ease, outline-color 0.15s ease, outline-width 0.15s ease;
     position: relative;
   }
   :global(:root[data-theme="dark"]) .listItem {
-    background-color: rgba(40, 40, 42, 0.75);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--background-elevated);
+    outline-color: var(--system-gray-400-dark);
     box-shadow: none;
   }
 
-  .listItem:hover {
-    transform: translateY(-1px) scale(1.01);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    background-color: rgba(242, 242, 247, 0.85);
-    border-color: rgba(0, 0, 0, 0.1);
+  /* Hover solo si NO está seleccionado */
+  .listItem:not(.selectedItem):hover {
+    transform: translateY(0); /* Sin transform */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Sombra opcional */
+    outline-color: var(--system-gray-400); /* Mantiene color outline */
   }
-  :global(:root[data-theme="dark"]) .listItem:hover {
+  /* Hover oscuro solo si NO está seleccionado */
+  :global(:root[data-theme="dark"]) .listItem:not(.selectedItem):hover {
     transform: translateY(0);
     box-shadow: none;
-    background-color: rgba(55, 55, 58, 0.8);
-    border-color: rgba(255, 255, 255, 0.15);
+    outline-color: var(--system-gray-400-dark); /* Mantiene color outline */
   }
 
+  /* Estilo de Selección */
   .selectedItem {
-    background-color: rgba(242, 242, 247, 0.8) !important;
-    border: 2px solid var(--primary-blue);
-    box-shadow: none;
-    transform: translateY(0);
+    background-color: var(--background-elevated) !important;
+    outline: 2px solid var(--primary-blue);
+    outline-offset: -2px;
   }
   :global(:root[data-theme="dark"]) .selectedItem {
-    background-color: rgba(40, 40, 42, 0.75) !important;
-    border-color: var(--primary-blue);
+    background-color: var(--background-elevated) !important;
+    outline-color: var(--primary-blue);
   }
-  .selectedItem:hover {
-    transform: translateY(0);
-    box-shadow: none;
-    border-color: var(--primary-blue);
-  }
+  /* No se necesita .selectedItem:hover si el outline es suficiente */
 
-  .itemName {
-    flex-direction: column;
-    white-space: normal;
-    text-align: center;
-    margin-right: 0;
-    margin-bottom: 0;
-    width: 100%;
-    font-size: 0.9rem;
-    line-height: 1.3;
-    flex-grow: 0;
-    overflow: visible;
-    word-break: break-word;
-    background-color: transparent !important;
-    padding-top: 15px;
-  }
-  .itemName > span:first-child:not(.fileSize) {
-    display: block;
-    margin-bottom: 0;
-    overflow: visible;
-  }
-  .itemIcon {
-    font-size: 3rem;
-    width: auto;
-    line-height: 1;
-    display: block;
-    text-align: center;
-    overflow: visible;
-    margin-right: 0;
-    margin-bottom: 0;
-    background-color: transparent !important;
-  }
+
+  /* Miniatura de Imagen */
   .itemThumbnail {
-    width: 70px;
-    height: 70px;
+    width: 70px;  /* Tamaño final 70px */
+    height: 70px; /* Tamaño final 70px */
     border-radius: var(--border-radius-medium);
     display: block;
     margin-left: auto;
     margin-right: auto;
     overflow: hidden;
     margin-bottom: 0;
-    margin-right: auto;
+    /* Borde para separar imágenes blancas */
+    border: 1px solid var(--border-color-light);
+    object-fit: cover; /* Asegurar object-fit */
   }
+   :global(:root[data-theme="dark"]) .itemThumbnail {
+     border: 1px solid var(--system-gray-300-dark);
+     background-color: transparent !important; /* Mantenido */
+   }
+
+   /* Icono Genérico */
+  .itemIcon {
+    width: 70px;        /* Igualar al thumbnail */
+    height: 70px;       /* Igualar al thumbnail */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.8rem;    /* Tamaño emoji */
+    line-height: 1;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 0;
+    border-radius: var(--border-radius-medium);
+    background-color: var(--system-gray-100); /* Fondo claro */
+    color: var(--text-secondary);
+    overflow: hidden;
+    transition: color 0.3s ease, background-color 0.3s ease;
+  }
+  :global(:root[data-theme="dark"]) .itemIcon {
+     background-color: var(--system-gray-200-dark); /* Fondo oscuro */
+     color: var(--system-gray-600-dark);
+  }
+
+  /* Nombre del Item (Carpeta o Archivo) */
+  .itemName {
+    flex-direction: column; /* Necesario para que text-align funcione bien */
+    text-align: center;   /* Centrado */
+    white-space: normal;  /* Permitir wrap si es necesario */
+    margin-right: 0;
+    margin-bottom: 0;
+    width: 100%;
+    font-size: 0.9rem;
+    line-height: 1.3;
+    flex-grow: 0;
+    overflow: visible;    /* Quitar overflow hidden aquí */
+    word-break: break-word;
+    background-color: transparent !important;
+    padding-top: 10px;     /* Espacio sobre el nombre */
+    margin-top: 5px;      /* Espacio sobre el nombre */
+  }
+  .itemName > span:first-child:not(.fileSize) {
+    display: block;
+    margin-bottom: 0;
+    overflow: visible;
+  }
+
+  /* Link Carpeta (dentro de itemName) */
   .folderLink {
     text-align: center !important;
     font-weight: 500;
@@ -1230,15 +1254,18 @@
     width: 100%;
     flex-grow: 0;
     display: block;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    /* white-space: nowrap; */ /* Eliminado para centrado */
+    overflow: hidden;         /* Volver a añadir overflow */
+    text-overflow: ellipsis;  /* Volver a añadir ellipsis */
     background-color: transparent !important;
-    padding: 5px 0;
+    padding: 0; /* Quitar padding vertical */
+    margin: 0;  /* Quitar margen vertical */
   }
   .listItem:hover .folderLink:not(:disabled) {
     text-decoration: none;
   }
+
+  /* Info Archivo (dentro de itemName) */
   .fileInfo {
     flex-direction: column;
     flex-grow: 0;
@@ -1248,35 +1275,39 @@
     margin-bottom: 0;
     background-color: transparent !important;
   }
+  /* Nombre archivo (dentro de fileInfo) */
   .fileInfo > span:not(.fileSize) {
+    text-align: center !important;
     margin-right: 0;
-    text-align: center;
     display: block;
     width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    /* white-space: nowrap; */ /* Eliminado para centrado */
+    overflow: hidden;         /* Volver a añadir overflow */
+    text-overflow: ellipsis;  /* Volver a añadir ellipsis */
     margin-bottom: 0;
     background-color: transparent !important;
-    padding: 5px 0;
+    padding: 0; /* Quitar padding vertical */
+    word-break: break-word;
   }
+  /* Tamaño archivo (dentro de fileInfo) */
   .fileSize {
     display: block;
     text-align: center;
     width: 100%;
     margin-left: 0;
-    margin-top: 0px;
+    margin-top: 2px; /* Pequeño espacio sobre el tamaño */
     font-size: 0.8rem;
     padding-left: 0;
     background-color: transparent !important;
-    padding-bottom: 5px;
+    padding-bottom: 0px; /* Quitar padding inferior */
   }
 
-  /* Ocultar el contenedor de acciones en grid */
+  /* Ocultar acciones individuales */
   .itemActions {
     display: none !important;
   }
 
+  /* Checkbox de selección */
   .itemSelection {
     position: absolute;
     top: 10px;
@@ -1292,12 +1323,7 @@
     height: 20px;
   }
 
-  /* Ya no es necesario porque .itemActions está oculto */
-  /* .selectedItem .actionButtonDesktopOnly {
-    opacity: 0 !important;
-    pointer-events: none !important;
-  } */
-
+  /* Información de cuota */
   .quotaInfoMobile {
     display: none;
   }
@@ -1350,12 +1376,19 @@
     align-items: center;
     text-align: left;
     padding: 12px 10px;
-    border-bottom: 1px solid var(--border-color-light);
+    border-bottom: 1px solid var(--border-color-light); /* Borde inferior en lista */
     border-radius: 0;
     box-shadow: none;
     overflow: visible;
     gap: 5px;
     background-color: transparent;
+    /* --- ASEGURAR que no haya borde lateral/superior/outline en lista --- */
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    border-width: 0 0 1px 0; /* Solo abajo */
+    outline: none;
+    transform: none; /* Resetear transform en lista */
   }
   .listItem:last-child {
     border-bottom: none;
@@ -1364,23 +1397,64 @@
     transform: none;
     box-shadow: none;
     background-color: var(--system-gray-100);
+    /* Sin borde lateral/superior en hover lista */
+    border-color: var(
+      --border-color-light
+    ); /* Mantener borde inferior visible */
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    outline: none;
   }
   :global(:root[data-theme="dark"]) .listItem:hover {
     background-color: var(--system-gray-300-dark);
+    border-color: var(--border-color-light); /* Usa variable que cambia */
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    outline: none;
   }
   .selectedItem {
     background-color: rgba(0, 122, 255, 0.08) !important;
-    border: none;
+    border: none !important; /* Sin borde lateral en selección lista */
+    border-bottom: 1px solid var(--border-color-light) !important; /* Mantener borde inferior */
+    box-shadow: none !important; /* Sin shadow en selección lista */
+    outline: none !important; /* Sin outline en selección lista */
   }
+  .selectedItem:last-child {
+    border-bottom: none !important; /* Quitar borde inferior al último seleccionado */
+  }
+
   :global(:root[data-theme="dark"]) .selectedItem {
     background-color: rgba(10, 132, 255, 0.15) !important;
-    border: none;
+    border: none !important;
+    border-bottom: 1px solid var(--border-color-light) !important;
+    box-shadow: none !important;
+    outline: none !important;
   }
+  :global(:root[data-theme="dark"]) .selectedItem:last-child {
+    border-bottom: none !important;
+  }
+
   .selectedItem:hover {
     background-color: rgba(0, 122, 255, 0.1) !important;
+    border: none !important;
+    border-bottom: 1px solid var(--border-color-light) !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+  .selectedItem:last-child:hover {
+    border-bottom: none !important;
   }
   :global(:root[data-theme="dark"]) .selectedItem:hover {
     background-color: rgba(10, 132, 255, 0.18) !important;
+    border: none !important;
+    border-bottom: 1px solid var(--border-color-light) !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+  :global(:root[data-theme="dark"]) .selectedItem:last-child:hover {
+    border-bottom: none !important;
   }
 
   .itemSelection {
