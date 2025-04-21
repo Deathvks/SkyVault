@@ -58,14 +58,27 @@ export const moveFolder = (folderId, data) =>
 export const getFolderTree = () => apiClient.get("/folders/tree"); // Para el modal de mover
 
 // --- Archivos ---
-export const uploadFile = (formData) =>
+
+// MODIFICADO: uploadFile ahora acepta onUploadProgress
+export const uploadFile = (
+  formData,
+  onUploadProgress // <-- Añadido callback
+) =>
   apiClient.post("/files/upload", formData, {
     // Importante: Configurar headers para multipart/form-data
     headers: { "Content-Type": "multipart/form-data" },
+    onUploadProgress, // <-- Pasar el callback a Axios
   });
 
-export const downloadFile = (fileId) =>
-  apiClient.get(`/files/${fileId}/download`, { responseType: "blob" }); // Esperar un Blob como respuesta
+// MODIFICADO: downloadFile ahora acepta onDownloadProgress
+export const downloadFile = (
+  fileId,
+  onDownloadProgress // <-- Añadido callback
+) =>
+  apiClient.get(`/files/${fileId}/download`, {
+    responseType: "blob", // Esperar un Blob como respuesta
+    onDownloadProgress, // <-- Pasar el callback a Axios
+  });
 
 export const deleteFile = (fileId) => apiClient.delete(`/files/${fileId}`); // Soft delete
 
