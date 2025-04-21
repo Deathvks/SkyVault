@@ -112,9 +112,70 @@ Sigue estos pasos para poner en marcha SkyVault en tu máquina local:
     * Instala las dependencias: `npm install`
     * **Configura la Base de Datos MySQL:**
         * Asegúrate de que tu servidor MySQL esté corriendo.
-        * Crea una base de datos con el nombre que pusiste en `DB_NAME`.
-        * Ejecuta el script SQL (`schema.sql` o similar, que te proporcioné antes) para crear las tablas (`Users`, `Folders`, `Files`) con la estructura correcta, incluyendo las columnas de cuota. O, si prefieres usar migraciones: `npx sequelize-cli db:migrate` (asegúrate de haber creado las migraciones correspondientes).
-        * (Si es una base de datos existente) Ejecuta los comandos `ALTER TABLE` y actualiza las cuotas/uso de usuarios existentes si es necesario.
+        * Crea una base de datos con el nombre que pusiste en `DB_NAME`, asegurándote de usar el conjunto de caracteres `utf8mb4` y la colación `utf8mb4_unicode_ci` para compatibilidad completa con caracteres. Ejemplo:
+          ```sql
+          CREATE DATABASE IF NOT EXISTS tu_base_de_datos_skyvault CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+          ```
+        * **Ejecuta el siguiente script SQL** para crear las tablas (`Users`, `Folders`, `Files`) con la estructura correcta, incluyendo las columnas de cuota, índices y relaciones:
+          ```sql
+          -- Script de Base de Datos para SkyVault (MySQL)
+          -- Derivado de los modelos Sequelize. Considera usar migraciones Sequelize.
+
+          USE tu_base_de_datos_skyvault; -- Asegúrate de seleccionar tu base de datos
+
+          -- Tabla Users
+          CREATE TABLE IF NOT EXISTS `Users` (
+            `id` INTEGER NOT NULL auto_increment ,
+            `username` VARCHAR(50) NOT NULL UNIQUE,
+            `email` VARCHAR(100) NOT NULL UNIQUE,
+            `password_hash` VARCHAR(255) NOT NULL,
+            `role` ENUM('user', 'admin') NOT NULL DEFAULT 'user',
+            `storage_quota_bytes` BIGINT UNSIGNED NULL,
+            `storage_used_bytes` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+            `createdAt` DATETIME NOT NULL,
+            `updatedAt` DATETIME NOT NULL,
+            PRIMARY KEY (`id`)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+          -- Tabla Folders
+          CREATE TABLE IF NOT EXISTS `Folders` (
+            `id` INTEGER NOT NULL auto_increment ,
+            `name` VARCHAR(100) NOT NULL,
+            `user_id` INTEGER NULL, -- Se relaciona con Users.id
+            `parent_folder_id` INTEGER NULL, -- Se relaciona con Folders.id (auto-referencia)
+            `createdAt` DATETIME NOT NULL,
+            `updatedAt` DATETIME NOT NULL,
+            `deletedAt` DATETIME NULL, -- Para Soft Deletes (paranoid: true)
+            PRIMARY KEY (`id`),
+            UNIQUE INDEX `unique_folder_constraint` (`user_id`, `parent_folder_id`, `name`, `deletedAt`), -- Índice Único Compuesto
+            CONSTRAINT `Folders_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `Users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+            CONSTRAINT `Folders_ibfk_2` FOREIGN KEY (`parent_folder_id`) REFERENCES `Folders` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+          -- Tabla Files
+          CREATE TABLE IF NOT EXISTS `Files` (
+            `id` INTEGER NOT NULL auto_increment ,
+            `name` VARCHAR(255) NOT NULL,
+            `storage_path` VARCHAR(512) NOT NULL,
+            `mime_type` VARCHAR(100) NULL,
+            `size` BIGINT UNSIGNED NULL,
+            `user_id` INTEGER NULL, -- Se relaciona con Users.id
+            `folder_id` INTEGER NULL, -- Se relaciona con Folders.id
+            `createdAt` DATETIME NOT NULL,
+            `updatedAt` DATETIME NOT NULL,
+            `deletedAt` DATETIME NULL, -- Para Soft Deletes (paranoid: true)
+            PRIMARY KEY (`id`),
+            UNIQUE INDEX `unique_file_constraint` (`user_id`, `folder_id`, `name`, `deletedAt`), -- Índice Único Compuesto
+            CONSTRAINT `Files_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `Users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+            CONSTRAINT `Files_ibfk_2` FOREIGN KEY (`folder_id`) REFERENCES `Folders` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+          -- Nota: Los índices únicos incluyen `deletedAt` para permitir nombres duplicados
+          -- si uno de los elementos está en la papelera (soft-deleted).
+          -- La gestión de estos índices puede variar ligeramente según la configuración exacta de MySQL.
+          ```
+        * *Alternativa (si usas migraciones Sequelize):* Ejecuta `npx sequelize-cli db:migrate` (esto requiere que hayas configurado `sequelize-cli` y creado los archivos de migración correspondientes a los modelos).
+        * (Si es una base de datos existente) Ejecuta los comandos `ALTER TABLE` necesarios para añadir las columnas de cuota (`storage_quota_bytes`, `storage_used_bytes`) a la tabla `Users` y actualiza las cuotas/uso de usuarios existentes si es necesario.
     * Inicia el servidor backend: `npm run dev` (usa Nodemon para recarga automática) o `npm start` (usa Node directamente). Deberías ver un mensaje indicando que el servidor escucha en el puerto `SERVER_PORT` (ej. 3001) y que la conexión a la BD fue exitosa.
 
 3.  **Configurar Frontend:**

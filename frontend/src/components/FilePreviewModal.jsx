@@ -1,3 +1,4 @@
+// frontend/src/components/FilePreviewModal.jsx
 import React, { useState, useEffect, useRef } from "react";
 import Modal from "./Modal";
 import { getFileDataAsBlob, downloadFile } from "../services/api";
@@ -41,17 +42,19 @@ SyntaxHighlighter.registerLanguage("bash", bash);
 import styles from "./FilePreviewModal.module.css";
 import modalBaseStyles from "./Modal.module.css";
 
+// Función auxiliar para intentar determinar el lenguaje para SyntaxHighlighter
 const getLanguageFromMime = (mimeType = "", fileName = "") => {
   mimeType = mimeType.toLowerCase();
   const extension = fileName.split(".").pop()?.toLowerCase() || "";
 
-  // Extensión
+  // Prioridad a la extensión para tipos comunes de código/texto
+  if (extension === "js" || extension === "mjs") return "javascript";
+  if (extension === "jsx") return "jsx";
+  if (extension === "ts") return "typescript";
+  if (extension === "tsx") return "tsx";
+  if (extension === "css") return "css";
   if (extension === "html" || extension === "htm") return "html";
   if (extension === "xml") return "xml";
-  if (extension === "jsx") return "jsx";
-  if (extension === "tsx") return "tsx";
-  if (extension === "js" || extension === "mjs") return "javascript";
-  if (extension === "css") return "css";
   if (extension === "json") return "json";
   if (extension === "md" || extension === "markdown") return "markdown";
   if (extension === "yaml" || extension === "yml") return "yaml";
@@ -59,12 +62,28 @@ const getLanguageFromMime = (mimeType = "", fileName = "") => {
   if (extension === "py") return "python";
   if (extension === "php") return "php";
   if (extension === "sh") return "bash";
-  // ... otros
+  if (extension === "java") return "java";
+  if (extension === "c") return "c";
+  if (
+    extension === "cpp" ||
+    extension === "cxx" ||
+    extension === "h" ||
+    extension === "hpp"
+  )
+    return "cpp";
+  if (extension === "rb") return "ruby";
+  if (extension === "go") return "go";
+  if (extension === "rs") return "rust";
+  if (extension === "kt") return "kotlin";
+  if (extension === "swift") return "swift";
+  if (extension === "txt") return "text"; // Para archivos de texto plano
 
-  // Fallback por MIME
-  if (mimeType.includes("html")) return "html";
+  // Fallback usando el MIME type si la extensión no coincidió
   if (mimeType.includes("javascript")) return "javascript";
+  if (mimeType.includes("typescript")) return "typescript";
   if (mimeType.includes("css")) return "css";
+  if (mimeType.includes("html")) return "html";
+  if (mimeType.includes("xml")) return "xml";
   if (mimeType.includes("json")) return "json";
   if (mimeType.includes("markdown")) return "markdown";
   if (mimeType.includes("yaml")) return "yaml";
@@ -72,9 +91,9 @@ const getLanguageFromMime = (mimeType = "", fileName = "") => {
   if (mimeType.includes("python")) return "python";
   if (mimeType.includes("php")) return "php";
   if (mimeType.includes("shell")) return "bash";
-  if (mimeType.includes("typescript")) return "typescript";
+  if (mimeType.startsWith("text/")) return "text"; // Genérico para otros text/*
 
-  return "text";
+  return "text"; // Último fallback
 };
 
 function FilePreviewModal({ isOpen, onClose, file }) {
@@ -82,12 +101,13 @@ function FilePreviewModal({ isOpen, onClose, file }) {
   const [textContent, setTextContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [fileType, setFileType] = useState("");
-  const [language, setLanguage] = useState("text");
+  const [fileType, setFileType] = useState(""); // 'image', 'pdf', 'video', 'audio', 'text', 'unsupported'
+  const [language, setLanguage] = useState("text"); // para SyntaxHighlighter
   const objectUrlRef = useRef(null);
   const { appliedTheme } = useTheme();
 
   useEffect(() => {
+    // Función de limpieza para revocar URLs de Blob
     const cleanup = () => {
       if (objectUrlRef.current) {
         URL.revokeObjectURL(objectUrlRef.current);
@@ -96,19 +116,23 @@ function FilePreviewModal({ isOpen, onClose, file }) {
     };
 
     if (isOpen && file) {
-      cleanup();
+      cleanup(); // Limpiar URL anterior si existe
       setIsLoading(true);
       setError("");
       setPreviewContentUrl(null);
       setTextContent("");
-      setFileType("unsupported");
-      setLanguage("text");
+      // Resetear estados (no es necesario resetear a 'unsupported' aquí)
+      // setFileType('');
+      // setLanguage('text');
 
       const mime = file?.mime_type?.toLowerCase() || "";
       const fileName = file?.name || "";
-      let type = "unsupported";
-      let lang = "text";
+      const fileNameLower = fileName.toLowerCase();
 
+      let type = "unsupported"; // Empezar asumiendo que no es soportado
+      let lang = "text"; // Lenguaje por defecto
+
+      // --- LÓGICA DE DETECCIÓN ACTUALIZADA ---
       if (mime.startsWith("image/")) {
         type = "image";
       } else if (mime === "application/pdf") {
@@ -118,7 +142,8 @@ function FilePreviewModal({ isOpen, onClose, file }) {
       } else if (mime.startsWith("audio/")) {
         type = "audio";
       } else if (
-        mime.startsWith("text/") ||
+        // Comprobar tipos MIME de texto/código conocidos
+        mime.startsWith("text/") || // Incluye text/plain, text/markdown, text/css, etc.
         [
           "application/json",
           "application/javascript",
@@ -129,30 +154,73 @@ function FilePreviewModal({ isOpen, onClose, file }) {
           "application/x-typescript",
           "application/x-php",
           "application/x-python-code",
+          // Añade otros application/* que quieras tratar como texto
         ].includes(mime)
       ) {
         type = "text";
-        lang = getLanguageFromMime(mime, fileName);
+        lang = getLanguageFromMime(mime, fileName); // Determinar lenguaje específico
+      } else if (
+        // *** FALLBACK POR EXTENSIÓN para tipos de texto/código comunes ***
+        fileNameLower.endsWith(".md") ||
+        fileNameLower.endsWith(".txt") ||
+        fileNameLower.endsWith(".js") ||
+        fileNameLower.endsWith(".mjs") ||
+        fileNameLower.endsWith(".jsx") ||
+        fileNameLower.endsWith(".css") ||
+        fileNameLower.endsWith(".json") ||
+        fileNameLower.endsWith(".html") ||
+        fileNameLower.endsWith(".htm") ||
+        fileNameLower.endsWith(".xml") ||
+        fileNameLower.endsWith(".ts") ||
+        fileNameLower.endsWith(".tsx") ||
+        fileNameLower.endsWith(".py") ||
+        fileNameLower.endsWith(".php") ||
+        fileNameLower.endsWith(".sql") ||
+        fileNameLower.endsWith(".yaml") ||
+        fileNameLower.endsWith(".yml") ||
+        fileNameLower.endsWith(".sh") ||
+        fileNameLower.endsWith(".java") ||
+        fileNameLower.endsWith(".c") ||
+        fileNameLower.endsWith(".cpp") ||
+        fileNameLower.endsWith(".h") ||
+        fileNameLower.endsWith(".cs") || // C#
+        fileNameLower.endsWith(".rb") || // Ruby
+        fileNameLower.endsWith(".go") || // Go
+        fileNameLower.endsWith(".rs") || // Rust
+        fileNameLower.endsWith(".kt") || // Kotlin
+        fileNameLower.endsWith(".swift") // Swift
+      ) {
+        type = "text"; // Forzar tipo texto si la extensión coincide
+        lang = getLanguageFromMime(mime, fileName); // Intentar obtener lenguaje correcto (debería funcionar por extensión ahora)
+        console.log(
+          `FilePreviewModal: Tipo de archivo establecido a 'text' basado en extensión para: ${fileName}`
+        );
       }
+      // --- FIN LÓGICA DE DETECCIÓN ---
 
-      setFileType(type);
-      setLanguage(lang);
+      setFileType(type); // Establecer el tipo final
+      setLanguage(lang); // Establecer el lenguaje final
 
+      // Solo intentar cargar si el tipo NO es 'unsupported'
       if (type !== "unsupported") {
         const loadFileContent = async () => {
           try {
+            // Usar la función API que devuelve el blob
             const response = await getFileDataAsBlob(file.id);
             if (type === "text") {
+              // Si es texto, leer el contenido del blob
               const text = await response.data.text();
               setTextContent(text);
             } else {
+              // Para otros tipos (imagen, pdf, video, audio), crear una Object URL
               objectUrlRef.current = URL.createObjectURL(response.data);
               setPreviewContentUrl(objectUrlRef.current);
             }
           } catch (err) {
-            console.error(`Error cargando ${file.name}:`, err);
+            console.error(`Error cargando contenido de ${file.name}:`, err);
             const errorMsg =
-              err.response?.data?.message || `No se pudo cargar el archivo.`;
+              err.response?.data?.message ||
+              `No se pudo cargar el contenido del archivo.`;
             setError(errorMsg);
           } finally {
             setIsLoading(false);
@@ -160,9 +228,14 @@ function FilePreviewModal({ isOpen, onClose, file }) {
         };
         loadFileContent();
       } else {
+        // Si sigue siendo 'unsupported', no necesitamos cargar nada
         setIsLoading(false);
+        console.log(
+          `FilePreviewModal: Tipo no soportado para ${fileName} (MIME: ${mime})`
+        );
       }
     } else {
+      // Limpieza si el modal se cierra o no hay archivo
       cleanup();
       setIsLoading(false);
       setError("");
@@ -172,12 +245,14 @@ function FilePreviewModal({ isOpen, onClose, file }) {
       setLanguage("text");
     }
 
+    // Devolver la función de limpieza para que se ejecute al desmontar o si cambian las dependencias
     return cleanup;
-  }, [isOpen, file]);
+  }, [isOpen, file]); // Dependencias del efecto
 
+  // Función para manejar la descarga desde el modal (si la preview no está disponible)
   const handleDownloadFile = async (fileId, fileName) => {
     try {
-      const response = await downloadFile(fileId);
+      const response = await downloadFile(fileId); // Usa la función de api.js
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
@@ -188,37 +263,52 @@ function FilePreviewModal({ isOpen, onClose, file }) {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Error descargando desde modal:", error);
+      // Podrías usar toast aquí también si lo importas
       alert("No se pudo descargar el archivo.");
     }
   };
 
+  // Función para renderizar el contenido de la previsualización
   const renderPreview = () => {
-    if (isLoading)
+    if (isLoading) {
       return <p className={styles.loadingText}>Cargando previsualización...</p>;
-    if (error) return <p className={styles.errorText}>{error}</p>;
+    }
+    if (error) {
+      return <p className={styles.errorText}>{error}</p>;
+    }
 
     switch (fileType) {
       case "image":
         return (
           <img
             src={previewContentUrl}
-            alt={file.name}
+            alt={`Previsualización de ${file.name}`}
             className={styles.previewImage}
           />
         );
       case "pdf":
+        // Usar <object> es más robusto que <iframe> para PDFs en algunos navegadores
         return (
           <object
             data={previewContentUrl}
             type="application/pdf"
             className={styles.previewPdf}
+            aria-label={`Previsualización de PDF: ${file.name}`}
           >
-            <p>
-              Tu navegador no soporta PDF.{" "}
-              <a href={previewContentUrl} download={file.name}>
-                Descárgalo aquí
-              </a>
-              .
+            {/* Fallback si el navegador no puede mostrar el PDF */}
+            <p style={{ padding: "20px", textAlign: "center" }}>
+              Tu navegador no puede mostrar PDFs directamente. Puedes{" "}
+              <a
+                href={previewContentUrl}
+                download={file.name}
+                style={{
+                  color: "var(--text-link)",
+                  textDecoration: "underline",
+                }}
+              >
+                descargar el archivo PDF
+              </a>{" "}
+              para verlo.
             </p>
           </object>
         );
@@ -228,8 +318,9 @@ function FilePreviewModal({ isOpen, onClose, file }) {
             controls
             className={styles.previewMedia}
             src={previewContentUrl}
+            title={`Reproductor de vídeo: ${file.name}`}
           >
-            Tu navegador no soporta vídeo.
+            Tu navegador no soporta la etiqueta de vídeo.
           </video>
         );
       case "audio":
@@ -238,42 +329,47 @@ function FilePreviewModal({ isOpen, onClose, file }) {
             controls
             className={styles.previewMedia}
             src={previewContentUrl}
+            title={`Reproductor de audio: ${file.name}`}
           >
-            Tu navegador no soporta audio.
+            Tu navegador no soporta la etiqueta de audio.
           </audio>
         );
       case "text":
+        // Usar SyntaxHighlighter para texto y código
         return (
           <SyntaxHighlighter
-            language={language}
-            style={appliedTheme === "dark" ? tomorrow : coy}
+            language={language} // El lenguaje detectado (ej. 'markdown', 'javascript', 'text')
+            style={appliedTheme === "dark" ? tomorrow : coy} // Estilo claro/oscuro
             customStyle={{
               width: "100%",
+              height: "100%", // Ocupar contenedor
               margin: 0,
-              padding: "15px",
-              borderRadius: "var(--border-radius-small)",
-              maxHeight: "70vh",
-              overflow: "auto",
-              fontSize: "0.85rem",
-              backgroundColor: "var(--background-elevated)",
-              border: "1px solid var(--border-color-light)",
+              padding: "15px", // Padding interno
+              borderRadius: "var(--border-radius-small)", // Redondeo interno
+              // maxHeight: "70vh", // Altura máxima (ya controlada por .previewContainer)
+              overflow: "auto", // Scroll si es necesario
+              fontSize: "0.85rem", // Tamaño fuente código/texto
+              lineHeight: 1.5,
+              // Dejar que el contenedor maneje el fondo y borde
+              // backgroundColor: "var(--background-elevated)",
+              // border: "1px solid var(--border-color-light)",
             }}
-            wrapLines
-            showLineNumbers={false}
+            wrapLines={true} // Habilitar ajuste de línea
+            showLineNumbers={false} // Opcional: mostrar números de línea
           >
             {textContent}
           </SyntaxHighlighter>
         );
-      default:
+      default: // fileType === 'unsupported'
         return (
           <div className={styles.unsupported}>
             <p>
-              Vista previa no disponible para este tipo de archivo (
-              {file?.mime_type}).
+              Vista previa no disponible para este tipo de archivo (MIME:{" "}
+              {file?.mime_type || "desconocido"}).
             </p>
             <button
               onClick={() => handleDownloadFile(file?.id, file?.name)}
-              className={modalBaseStyles.confirmButton}
+              className={modalBaseStyles.confirmButton} // Reutilizar estilo de botón primario
               style={{ marginTop: 15 }}
               disabled={!file?.id}
             >
@@ -290,9 +386,10 @@ function FilePreviewModal({ isOpen, onClose, file }) {
       onClose={onClose}
       title={`Previsualización: ${file?.name || ""}`}
     >
+      {/* Contenedor que controla tamaño y scroll */}
       <div
         className={`${styles.previewContainer} ${
-          fileType === "pdf" ? styles.previewContainerLarge : ""
+          fileType === "pdf" ? styles.previewContainerLarge : "" // Clase especial para PDFs grandes
         }`}
       >
         {renderPreview()}
