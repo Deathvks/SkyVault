@@ -2,13 +2,14 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useSettings } from "../context/SettingsContext"; // <-- Importar hook de ajustes
 import {
   getTrashItems,
   restoreFile,
   restoreFolder,
   deleteFilePermanently,
   deleteFolderPermanently,
-  emptyUserTrash, // <-- Importar nueva función API
+  emptyUserTrash,
 } from "../services/api";
 import Modal from "../components/Modal";
 import { toast } from "react-toastify";
@@ -42,7 +43,6 @@ const DeleteForeverIcon = () => (
   </svg>
 );
 const EmptyTrashIcon = () => (
-  // <-- Icono para Vaciar Papelera
   <svg
     xmlns="http://www.w3.org/2000/svg"
     height="20px"
@@ -57,6 +57,8 @@ const EmptyTrashIcon = () => (
 
 function TrashPage() {
   const { logout } = useAuth();
+  // <-- Obtener ajustes de confirmación -->
+  const { confirmPermanentDelete, confirmEmptyTrash } = useSettings();
   const [trashItems, setTrashItems] = useState({ folders: [], files: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [itemToPermanentlyDelete, setItemToPermanentlyDelete] = useState(null);
@@ -65,7 +67,7 @@ function TrashPage() {
     setIsConfirmPermanentDeleteModalOpen,
   ] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isEmptyTrashModalOpen, setIsEmptyTrashModalOpen] = useState(false); // <-- Nuevo estado para modal
+  const [isEmptyTrashModalOpen, setIsEmptyTrashModalOpen] = useState(false);
 
   const RETENTION_HOURS = 24;
 
@@ -129,18 +131,11 @@ function TrashPage() {
     }
   };
 
-  const openPermanentDeleteModal = (type, id, name) => {
-    if (isProcessing) return;
-    setItemToPermanentlyDelete({ type, id, name });
-    setIsConfirmPermanentDeleteModalOpen(true);
-  };
-
-  const handlePermanentDelete = async () => {
-    if (!itemToPermanentlyDelete || isProcessing) return;
+  // Lógica para ejecutar borrado permanente individual
+  const executePermanentDelete = async (type, id, name) => {
     setIsProcessing(true);
-    setIsConfirmPermanentDeleteModalOpen(false);
-    const { type, id, name } = itemToPermanentlyDelete;
     const toastId = toast.loading(`Eliminando "${name}" permanentemente...`);
+    let success = false;
     try {
       let response;
       if (type === "folder") {
@@ -159,6 +154,7 @@ function TrashPage() {
         autoClose: 3000,
       });
       fetchTrash();
+      success = true;
     } catch (error) {
       console.error(`Error permanently deleting ${type}:`, error);
       toast.update(toastId, {
@@ -170,22 +166,40 @@ function TrashPage() {
       });
     } finally {
       setIsProcessing(false);
-      setItemToPermanentlyDelete(null);
+    }
+    return success;
+  };
+
+  // Modificado para usar ajuste de confirmación
+  const openPermanentDeleteModal = (type, id, name) => {
+    if (isProcessing) return;
+    if (confirmPermanentDelete) {
+      setItemToPermanentlyDelete({ type, id, name });
+      setIsConfirmPermanentDeleteModalOpen(true);
+    } else {
+      executePermanentDelete(type, id, name);
     }
   };
 
-  // --- NUEVAS Funciones para Vaciar Papelera ---
-  const openEmptyTrashModal = () => {
-    if (isProcessing || !hasItems) return; // No abrir si está procesando o vacía
-    setIsEmptyTrashModalOpen(true);
+  // Modificado para solo ejecutar la lógica
+  const handlePermanentDelete = async () => {
+    if (!itemToPermanentlyDelete) return;
+    setIsConfirmPermanentDeleteModalOpen(false);
+    await executePermanentDelete(
+      itemToPermanentlyDelete.type,
+      itemToPermanentlyDelete.id,
+      itemToPermanentlyDelete.name
+    );
+    setItemToPermanentlyDelete(null);
   };
 
-  const handleConfirmEmptyTrash = async () => {
-    if (isProcessing) return;
-    setIsProcessing(true);
-    setIsEmptyTrashModalOpen(false);
-    const toastId = toast.loading("Vaciando papelera...");
+  // --- NUEVAS Funciones para Vaciar Papelera ---
 
+  // Lógica para ejecutar Vaciar Papelera
+  const executeEmptyTrash = async () => {
+    setIsProcessing(true);
+    const toastId = toast.loading("Vaciando papelera...");
+    let success = false;
     try {
       const response = await emptyUserTrash();
       toast.update(toastId, {
@@ -194,7 +208,8 @@ function TrashPage() {
         isLoading: false,
         autoClose: 4000,
       });
-      fetchTrash(); // Recargar para mostrarla vacía
+      fetchTrash();
+      success = true;
     } catch (error) {
       console.error("Error emptying trash:", error);
       toast.update(toastId, {
@@ -206,6 +221,23 @@ function TrashPage() {
     } finally {
       setIsProcessing(false);
     }
+    return success;
+  };
+
+  // Modificado para usar ajuste de confirmación
+  const openEmptyTrashModal = () => {
+    if (isProcessing || !hasItems) return;
+    if (confirmEmptyTrash) {
+      setIsEmptyTrashModalOpen(true);
+    } else {
+      executeEmptyTrash();
+    }
+  };
+
+  // Modificado para solo ejecutar la lógica
+  const handleConfirmEmptyTrash = async () => {
+    setIsEmptyTrashModalOpen(false);
+    await executeEmptyTrash();
   };
   // --- FIN NUEVAS Funciones ---
 
@@ -249,7 +281,7 @@ function TrashPage() {
             <RestoreIcon />
           </button>
           <button
-            onClick={() => openPermanentDeleteModal(type, item.id, item.name)}
+            onClick={() => openPermanentDeleteModal(type, item.id, item.name)} // Llama a la función que comprueba el ajuste
             className={`${styles.actionButton} ${styles.deleteButton}`}
             title="Eliminar permanentemente"
             disabled={isProcessing}
@@ -271,17 +303,15 @@ function TrashPage() {
       <div className={styles.trashCard}>
         <div className={styles.header}>
           <h2 className={styles.title}>Papelera de Reciclaje</h2>
-          {/* --- BOTÓN VACIAR PAPELERA --- */}
           <button
-            onClick={openEmptyTrashModal}
-            className={styles.emptyTrashButton} // <-- Añadir clase para estilo
-            disabled={!hasItems || isProcessing} // Deshabilitar si no hay items o se está procesando algo
+            onClick={openEmptyTrashModal} // Llama a la función que comprueba el ajuste
+            className={styles.emptyTrashButton}
+            disabled={!hasItems || isProcessing}
             title={!hasItems ? "La papelera está vacía" : "Vaciar papelera"}
           >
-            <EmptyTrashIcon /> {/* <-- Usar el icono */}
+            <EmptyTrashIcon />
             Vaciar Papelera
           </button>
-          {/* --------------------------- */}
           <Link to="/" className={styles.backLink}>
             Volver al Dashboard
           </Link>
@@ -344,7 +374,7 @@ function TrashPage() {
                 Cancelar
               </button>
               <button
-                onClick={handlePermanentDelete}
+                onClick={handlePermanentDelete} // Llama al handler del modal
                 className={modalStyles.confirmButtonDanger}
                 disabled={isProcessing}
               >
@@ -356,7 +386,7 @@ function TrashPage() {
         )}
       </Modal>
 
-      {/* --- NUEVO Modal Confirmación Vaciar Papelera --- */}
+      {/* Modal Confirmación Vaciar Papelera */}
       <Modal
         isOpen={isEmptyTrashModalOpen}
         onClose={!isProcessing ? () => setIsEmptyTrashModalOpen(false) : null}
@@ -387,7 +417,7 @@ function TrashPage() {
               Cancelar
             </button>
             <button
-              onClick={handleConfirmEmptyTrash}
+              onClick={handleConfirmEmptyTrash} // Llama al handler del modal
               className={modalStyles.confirmButtonDanger}
               disabled={isProcessing}
             >
@@ -397,7 +427,6 @@ function TrashPage() {
           </div>
         </>
       </Modal>
-      {/* --- FIN NUEVO Modal --- */}
     </div>
   );
 }

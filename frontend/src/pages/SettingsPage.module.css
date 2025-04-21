@@ -3,11 +3,11 @@
 .pageContainer {
   display: flex;
   justify-content: center;
-  align-items: flex-start; /* Alinear arriba */
+  align-items: flex-start;
   padding: 40px 20px;
   background-color: var(--background-page);
-  min-height: calc(100vh - 60px); /* Ajustar si tienes header fijo */
-  transition: background-color 0.3s ease; /* Transición */
+  min-height: calc(100vh - 60px);
+  transition: background-color 0.3s ease;
 }
 
 .settingsCard {
@@ -15,8 +15,10 @@
   padding: 30px;
   border-radius: var(--border-radius-large);
   width: 100%;
-  max-width: 600px; /* Ancho máximo */
-  transition: background-color 0.3s ease; /* Transición */
+  /* === ANCHO AUMENTADO === */
+  max-width: 700px; /* <-- Ajustado */
+  /* === FIN ANCHO === */
+  transition: background-color 0.3s ease;
 }
 
 .title {
@@ -25,14 +27,14 @@
   color: var(--text-primary);
   font-size: 1.6rem;
   font-weight: 600;
-  transition: color 0.3s ease; /* Transición */
+  transition: color 0.3s ease;
 }
 
 .settingSection {
   margin-bottom: 30px;
   padding-bottom: 25px;
   border-bottom: 1px solid var(--border-color-light);
-  transition: border-bottom-color 0.3s ease; /* Transición */
+  transition: border-bottom-color 0.3s ease;
 }
 .settingsCard > .settingSection:last-of-type {
   border-bottom: none;
@@ -41,18 +43,18 @@
 }
 
 .sectionTitle {
-  font-size: 1.1rem; /* Más pequeño que el título principal */
+  font-size: 1.1rem;
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 20px;
-  transition: color 0.3s ease; /* Transición */
+  transition: color 0.3s ease;
 }
 
 /* Estilos para grupo de radio buttons */
 .radioGroup {
   display: flex;
   flex-direction: column;
-  gap: 15px; /* Espacio entre opciones */
+  gap: 15px;
 }
 
 .radioLabel {
@@ -61,11 +63,10 @@
   cursor: pointer;
   font-size: 1rem;
   color: var(--text-primary);
-  transition: color 0.3s ease; /* Transición */
-  position: relative; /* Puede ser necesario para alinear ::before si top afecta layout */
+  transition: color 0.3s ease;
+  position: relative;
 }
 
-/* Ocultar el radio button nativo */
 .radioInput {
   position: absolute;
   opacity: 0;
@@ -73,72 +74,61 @@
   height: 0;
 }
 
-/* Span que contiene el texto */
 .radioText {
-  /* No necesita estilos especiales aquí */
+  margin-left: 32px;
+  line-height: 1.4;
 }
 
-/* Círculo exterior (pseudo-elemento ::before) */
 .radioInput + .radioText::before {
   content: "";
-  display: inline-block;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
   width: 20px;
   height: 20px;
   border-radius: 50%;
   border: 2px solid var(--system-gray-400);
-  margin-right: 12px;
   background-color: var(--background-elevated);
   transition: border-color 0.2s ease, background-color 0.2s ease;
   flex-shrink: 0;
-  /* --- POSICIONAMIENTO RELATIVO --- */
-  position: relative; /* CORRECTO: Contexto para ::after */
-  /* ----------------------------- */
-  top: -1px; /* Ajuste vertical */
   box-sizing: border-box;
 }
 
-/* Estado hover del círculo exterior */
 .radioLabel:hover .radioInput + .radioText::before {
   border-color: var(--system-gray-500);
 }
 
-/* Círculo exterior - Estado seleccionado */
 .radioInput:checked + .radioText::before {
   border-color: var(--primary-blue);
   background-color: var(--primary-blue);
 }
 
-/* Punto interior (pseudo-elemento ::after) */
 .radioInput:checked + .radioText::after {
-  /* --- RESTAURAR content --- */
-  content: ""; /* CORRECTO: Necesario para que exista */
-  /* ------------------------- */
+  content: "";
   display: block;
-  width: 10px; /* Tamaño del punto interior */
-  height: 10px; /* Tamaño del punto interior */
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background-color: var(--button-text-light); /* Color del punto (blanco) */
-  /* --- POSICIONAMIENTO ABSOLUTO (relativo a ::before) --- */
-  position: absolute; /* CORRECTO */
-  top: 5px; /* CORRECTO: Centrado vertical en 20px */
-  left: 5px; /* CORRECTO: Centrado horizontal en 20px */
-  /* ---------------------------------------------------- */
+  background-color: var(--button-text-light);
+  position: absolute;
+  top: 5px;
+  left: 5px;
 }
 
-/* --- Dark Mode Overrides para Radio Buttons --- */
 :root[data-theme="dark"] .radioInput + .radioText::before {
   border-color: var(--system-gray-500-dark);
-  background-color: var(--background-elevated); /* Fondo de tarjeta oscuro */
+  background-color: var(--background-elevated);
 }
 :root[data-theme="dark"] .radioLabel:hover .radioInput + .radioText::before {
-  border-color: var(--system-gray-300-dark); /* Borde hover oscuro */
+  border-color: var(--system-gray-300-dark);
 }
 :root[data-theme="dark"] .radioInput:checked + .radioText::before {
-  border-color: var(--primary-blue); /* Mantiene borde azul */
-  background-color: var(--primary-blue); /* Mantiene fondo azul */
+  border-color: var(--primary-blue);
+  background-color: var(--primary-blue);
 }
 :root[data-theme="dark"] .radioInput:checked + .radioText::after {
-  background-color: var(--button-text-light); /* Mantiene punto blanco */
+  background-color: var(--button-text-light);
 }
 
 .backLink {
@@ -148,10 +138,100 @@
   color: var(--text-link);
   text-decoration: none;
   font-size: 0.95rem;
-  transition: color 0.3s ease; /* Transición */
+  transition: color 0.3s ease;
 }
 .backLink:hover {
   text-decoration: underline;
+}
+
+/* --- Estilos para Checkboxes --- */
+.checkboxGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: baseline; /* Alinear por línea base */
+  cursor: pointer;
+  font-size: 1rem; /* Mantenemos 1rem por ahora */
+  color: var(--text-primary);
+  transition: color 0.3s ease;
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+  /* gap: 10px; */ /* Quitado gap */
+}
+
+.checkboxInput {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.checkboxText {
+  /* margin-left: 32px; */ /* Quitado margen */
+  line-height: 1.4;
+  flex-grow: 1;
+}
+
+.checkboxInput + .checkboxText::before {
+  content: "";
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--border-radius-small);
+  border: 2px solid var(--system-gray-400);
+  background-color: var(--background-elevated);
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  position: relative;
+  margin-right: 10px; /* Espacio con margen */
+  top: 3px; /* Ajuste vertical */
+}
+
+.checkboxLabel:hover .checkboxInput + .checkboxText::before {
+  border-color: var(--system-gray-500);
+}
+
+.checkboxInput:checked + .checkboxText::before {
+  border-color: var(--primary-blue);
+  background-color: var(--primary-blue);
+}
+
+.checkboxInput:checked + .checkboxText::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  width: 7px;
+  height: 12px;
+  border: solid var(--button-text-light);
+  border-width: 0 2.5px 2.5px 0;
+  box-sizing: border-box;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+/* --- Dark Mode Overrides para Checkboxes --- */
+:root[data-theme="dark"] .checkboxInput + .checkboxText::before {
+  border-color: var(--system-gray-500-dark);
+  background-color: var(--background-elevated);
+}
+:root[data-theme="dark"]
+  .checkboxLabel:hover
+  .checkboxInput
+  + .checkboxText::before {
+  border-color: var(--system-gray-300-dark);
+}
+:root[data-theme="dark"] .checkboxInput:checked + .checkboxText::before {
+  border-color: var(--primary-blue);
+  background-color: var(--primary-blue);
+}
+:root[data-theme="dark"] .checkboxInput:checked + .checkboxText::after {
+  border-color: var(--button-text-light);
 }
 
 /* Responsive */
@@ -161,6 +241,7 @@
   }
   .settingsCard {
     padding: 20px;
+    max-width: none; /* Permitir que ocupe más ancho en móvil si es necesario */
   }
   .title {
     font-size: 1.4rem;
@@ -172,5 +253,15 @@
   }
   .radioLabel {
     font-size: 0.95rem;
+  }
+  .checkboxLabel {
+    font-size: 0.95rem; /* Reducir también en móvil */
+  }
+}
+
+/* Ajuste extra si 700px sigue siendo poco */
+@media (max-width: 400px) {
+  .checkboxLabel {
+    font-size: 0.9rem; /* Reducir aún más en pantallas muy pequeñas */
   }
 }

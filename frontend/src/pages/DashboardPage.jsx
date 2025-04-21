@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom"; // Asegúrate que Link está importado
 import { useAuth } from "../context/AuthContext";
+import { useSettings } from "../context/SettingsContext"; // <--- Importar hook de ajustes
 import {
   getFolderContents,
   createFolder,
@@ -151,6 +152,13 @@ const ReloadIcon = () => (
 function DashboardPage() {
   // --- Estados ---
   const { logout, user, refreshUserProfile } = useAuth();
+  // <-- Obtener ajuste de confirmación y ajustes de notificaciones -->
+  const {
+    confirmMoveToTrash,
+    showSuccessNotifications,
+    showErrorNotifications,
+  } = useSettings();
+  // ---------------------------------------------------------------
   const [currentFolderId, setCurrentFolderId] = useState("root");
   const [folders, setFolders] = useState([]);
   const [files, setFiles] = useState([]);
@@ -230,17 +238,37 @@ function DashboardPage() {
             }
           } else {
             let folderName = "Cargando...";
+            const parentId = path[path.length - 1]?.id;
+            if (parentId) {
+              const parentFolders = folders;
+              const found = parentFolders.find((f) => f.id == folderIdToLoad);
+              if (found) folderName = found.name;
+            }
             setPath((prevPath) => [
               ...prevPath,
               { id: folderIdToLoad, name: folderName },
             ]);
+            if (folderName === "Cargando..." && folders.length > 0) {
+              const folderData = folders.find((f) => f.id === folderIdToLoad);
+              if (folderData) {
+                setPath((prev) =>
+                  prev.map((p) =>
+                    p.id === folderIdToLoad
+                      ? { ...p, name: folderData.name }
+                      : p
+                  )
+                );
+              }
+            }
           }
         }
       } catch (err) {
         console.error("Error loading folder contents:", err);
-        toast.error(
-          err.response?.data?.message || `No se pudo cargar la carpeta.`
-        );
+        if (showErrorNotifications) {
+          toast.error(
+            err.response?.data?.message || `No se pudo cargar la carpeta.`
+          );
+        }
         if (err.response?.status === 401 || err.response?.status === 403)
           logout();
         if (folderIdToLoad !== "root") {
@@ -251,7 +279,7 @@ function DashboardPage() {
         setIsLoading(false);
       }
     },
-    [path, logout]
+    [path, logout, folders, showErrorNotifications]
   );
 
   useEffect(() => {
@@ -284,9 +312,11 @@ function DashboardPage() {
         setSearchResults(response.data || { folders: [], files: [] });
       } catch (err) {
         console.error("Error en búsqueda:", err);
-        toast.error(
-          err.response?.data?.message || "Error al realizar la búsqueda."
-        );
+        if (showErrorNotifications) {
+          toast.error(
+            err.response?.data?.message || "Error al realizar la búsqueda."
+          );
+        }
         setSearchResults({ folders: [], files: [] });
         if (err.response?.status === 401 || err.response?.status === 403)
           logout();
@@ -306,7 +336,14 @@ function DashboardPage() {
         }
       }
     },
-    [setIsLoading, setSearchResults, loadContents, currentFolderId, logout]
+    [
+      setIsLoading,
+      setSearchResults,
+      loadContents,
+      currentFolderId,
+      logout,
+      showErrorNotifications,
+    ]
   );
 
   const handleSearchChange = (event) => {
@@ -380,13 +417,13 @@ function DashboardPage() {
   // --- Acciones de Usuario y Elementos ---
   const handleLogout = () => {
     logout();
-    toast.info("Sesión cerrada correctamente.");
+    // No mostramos toast.info aquí
   };
 
   const handleFolderClick = (folder) => {
     if (isActionLoading || folder.id === currentFolderId) return;
     if (searchTerm) {
-      toast.info("Limpia la búsqueda para navegar a las carpetas.");
+      // No mostramos toast.info aquí
       return;
     }
 
@@ -432,12 +469,16 @@ function DashboardPage() {
       link.click();
       link.parentNode.removeChild(link);
       window.URL.revokeObjectURL(url);
-      toast.update(toastId, {
-        render: `"${fileName}" descargado.`,
-        type: "success",
-        isLoading: false,
-        autoClose: 3000,
-      });
+      if (showSuccessNotifications) {
+        toast.update(toastId, {
+          render: `"${fileName}" descargado.`,
+          type: "success",
+          isLoading: false,
+          autoClose: 3000,
+        });
+      } else {
+        toast.dismiss(toastId);
+      }
     } catch (err) {
       console.error("Error descargando archivo:", err);
       let errorMsg = "Error al descargar el archivo.";
@@ -454,12 +495,16 @@ function DashboardPage() {
       } else {
         errorMsg = err.response?.data?.message || errorMsg;
       }
-      toast.update(toastId, {
-        render: errorMsg,
-        type: "error",
-        isLoading: false,
-        autoClose: 5000,
-      });
+      if (showErrorNotifications) {
+        toast.update(toastId, {
+          render: errorMsg,
+          type: "error",
+          isLoading: false,
+          autoClose: 5000,
+        });
+      } else {
+        toast.dismiss(toastId);
+      }
       if (err.response?.status === 401 || err.response?.status === 403)
         logout();
     }
@@ -488,24 +533,32 @@ function DashboardPage() {
 
     try {
       await uploadFile(formData);
-      toast.update(toastId, {
-        render: `"${file.name}" subido con éxito.`,
-        type: "success",
-        isLoading: false,
-        autoClose: 3000,
-      });
+      if (showSuccessNotifications) {
+        toast.update(toastId, {
+          render: `"${file.name}" subido con éxito.`,
+          type: "success",
+          isLoading: false,
+          autoClose: 3000,
+        });
+      } else {
+        toast.dismiss(toastId);
+      }
       if (!searchTerm) loadContents(currentFolderId);
       refreshUserProfile();
     } catch (err) {
       const errorMsg =
         err.response?.data?.message || "Error al subir el archivo.";
       console.error("Error subiendo archivo:", errorMsg, err.response);
-      toast.update(toastId, {
-        render: errorMsg,
-        type: "error",
-        isLoading: false,
-        autoClose: 5000,
-      });
+      if (showErrorNotifications) {
+        toast.update(toastId, {
+          render: errorMsg,
+          type: "error",
+          isLoading: false,
+          autoClose: 5000,
+        });
+      } else {
+        toast.dismiss(toastId);
+      }
       if (err.response?.status === 401 || err.response?.status === 403)
         logout();
     } finally {
@@ -534,10 +587,16 @@ function DashboardPage() {
         name: newFolderName.trim(),
         parentFolderId: parentId,
       });
-      toast.success(`Carpeta "${newFolderName.trim()}" creada.`);
+      if (showSuccessNotifications) {
+        toast.success(`Carpeta "${newFolderName.trim()}" creada.`);
+      }
       if (!searchTerm) loadContents(currentFolderId);
     } catch (err) {
-      toast.error(err.response?.data?.message || "Error al crear la carpeta.");
+      if (showErrorNotifications) {
+        toast.error(
+          err.response?.data?.message || "Error al crear la carpeta."
+        );
+      }
       if (err.response?.status === 401 || err.response?.status === 403)
         logout();
     } finally {
@@ -546,25 +605,17 @@ function DashboardPage() {
     }
   };
 
-  const openConfirmDeleteModal = (type, id, name) => {
-    if (isActionLoading) return;
-    setItemToDelete({ type, id, name });
-    setIsConfirmDeleteModalOpen(true);
-    setIsMobileMenuOpen(false);
-    setIsContextMenuVisible(false);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!itemToDelete || isActionLoading) return;
+  const executeMoveToTrash = async (type, id, name) => {
     setIsDeletingItem(true);
-    setIsConfirmDeleteModalOpen(false);
-    const { type, id, name } = itemToDelete;
     const action = type === "folder" ? deleteFolder : deleteFile;
     const typeText = type === "folder" ? "La carpeta" : "El archivo";
+    let success = false;
 
     try {
       await action(id);
-      toast.success(`${typeText} "${name}" se movió a la papelera.`);
+      if (showSuccessNotifications) {
+        toast.success(`${typeText} "${name}" se movió a la papelera.`);
+      }
 
       if (searchTerm && searchResults) {
         setSearchResults((prev) => ({
@@ -587,21 +638,44 @@ function DashboardPage() {
         if (newSelected.size === 0) setIsSelectionMode(false);
         return newSelected;
       });
+      success = true;
     } catch (err) {
-      toast.error(
-        err.response?.data?.message ||
-          `Error al mover ${typeText.toLowerCase()} a la papelera.`
-      );
+      if (showErrorNotifications) {
+        toast.error(
+          err.response?.data?.message ||
+            `Error al mover ${typeText.toLowerCase()} a la papelera.`
+        );
+      }
       if (err.response?.status === 401 || err.response?.status === 403)
         logout();
     } finally {
       setIsDeletingItem(false);
-      setItemToDelete(null);
+    }
+    return success;
+  };
+
+  const handleDeleteItem = (type, id, name) => {
+    if (isActionLoading) return;
+    if (confirmMoveToTrash) {
+      setItemToDelete({ type, id, name });
+      setIsConfirmDeleteModalOpen(true);
+      setIsContextMenuVisible(false);
+    } else {
+      executeMoveToTrash(type, id, name);
+      setIsContextMenuVisible(false);
     }
   };
 
-  const handleDeleteItem = (type, id, name) =>
-    openConfirmDeleteModal(type, id, name);
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
+    setIsConfirmDeleteModalOpen(false);
+    await executeMoveToTrash(
+      itemToDelete.type,
+      itemToDelete.id,
+      itemToDelete.name
+    );
+    setItemToDelete(null);
+  };
 
   const openRenameModal = (type, id, currentName) => {
     if (isActionLoading) return;
@@ -623,8 +697,6 @@ function DashboardPage() {
       trimmedNewName === itemToRename.currentName
     ) {
       setIsRenameModalOpen(false);
-      if (trimmedNewName === itemToRename.currentName)
-        toast.info("No se realizaron cambios.");
       return;
     }
 
@@ -640,7 +712,9 @@ function DashboardPage() {
         response.data.file?.name ||
         response.data.folder?.name ||
         trimmedNewName;
-      toast.success(`${typeText} renombrado a "${finalName}".`);
+      if (showSuccessNotifications) {
+        toast.success(`${typeText} renombrado a "${finalName}".`);
+      }
 
       if (searchTerm && searchResults) {
         setSearchResults((prev) => ({
@@ -665,10 +739,12 @@ function DashboardPage() {
         }
       }
     } catch (err) {
-      toast.error(
-        err.response?.data?.message ||
-          `Error al renombrar ${typeText.toLowerCase()}.`
-      );
+      if (showErrorNotifications) {
+        toast.error(
+          err.response?.data?.message ||
+            `Error al renombrar ${typeText.toLowerCase()}.`
+        );
+      }
       if (err.response?.status === 401 || err.response?.status === 403)
         logout();
     } finally {
@@ -690,7 +766,9 @@ function DashboardPage() {
         : files;
     const itemData = itemsSource?.find((i) => i.id === id);
     if (!itemData) {
-      toast.error("Error al preparar para mover.");
+      if (showErrorNotifications) {
+        toast.error("Error al preparar para mover.");
+      }
       return;
     }
     setItemsToMove([
@@ -730,12 +808,16 @@ function DashboardPage() {
         response = await action(item.id, {
           destinationFolderId: destinationIdForApi,
         });
-        toast.update(toastId, {
-          render: response.data.message || `"${item.name}" movido.`,
-          type: "success",
-          isLoading: false,
-          autoClose: 3000,
-        });
+        if (showSuccessNotifications) {
+          toast.update(toastId, {
+            render: response.data.message || `"${item.name}" movido.`,
+            type: "success",
+            isLoading: false,
+            autoClose: 3000,
+          });
+        } else {
+          toast.dismiss(toastId);
+        }
       } else {
         const itemsPayload = itemsToProcess.map((item) => ({
           type: item.type,
@@ -744,6 +826,7 @@ function DashboardPage() {
         response = await bulkMoveItems(itemsPayload, destinationIdForApi);
         if (response.status === 207 && response.data?.errors?.length > 0) {
           toast.update(toastId, {
+            // WARNING - No controlado por ajustes aún
             render: `Movimiento parcial: ${
               response.data.message ||
               `${
@@ -755,14 +838,18 @@ function DashboardPage() {
             autoClose: 5000,
           });
         } else {
-          toast.update(toastId, {
-            render:
-              response.data.message ||
-              `${itemsToProcess.length} elemento(s) movido(s).`,
-            type: "success",
-            isLoading: false,
-            autoClose: 3000,
-          });
+          if (showSuccessNotifications) {
+            toast.update(toastId, {
+              render:
+                response.data.message ||
+                `${itemsToProcess.length} elemento(s) movido(s).`,
+              type: "success",
+              isLoading: false,
+              autoClose: 3000,
+            });
+          } else {
+            toast.dismiss(toastId);
+          }
         }
       }
       setSelectedItems(new Set());
@@ -772,12 +859,16 @@ function DashboardPage() {
     } catch (err) {
       const errorMsg =
         err.response?.data?.message || `Error al mover elemento(s).`;
-      toast.update(toastId, {
-        render: errorMsg,
-        type: "error",
-        isLoading: false,
-        autoClose: 5000,
-      });
+      if (showErrorNotifications) {
+        toast.update(toastId, {
+          render: errorMsg,
+          type: "error",
+          isLoading: false,
+          autoClose: 5000,
+        });
+      } else {
+        toast.dismiss(toastId);
+      }
       if (err.response?.status === 401 || err.response?.status === 403)
         logout();
     } finally {
@@ -822,9 +913,7 @@ function DashboardPage() {
       setIsMobileMenuOpen(false);
       setIsContextMenuVisible(false);
     } else {
-      toast.info(
-        `Previsualización no disponible para '${file.name}'. Puedes descargarlo.`
-      );
+      // No mostramos toast.info aquí
     }
   };
 
@@ -872,15 +961,8 @@ function DashboardPage() {
   const isAllCurrentlySelected =
     allVisibleItemsCount > 0 && selectedItems.size === allVisibleItemsCount;
 
-  const openBulkDeleteModal = () => {
-    if (selectedItems.size === 0 || isActionLoading) return;
-    setIsBulkDeleteModalOpen(true);
-  };
-
-  const handleConfirmBulkDelete = async () => {
-    if (selectedItems.size === 0 || isActionLoading) return;
+  const executeBulkMoveToTrash = async () => {
     setIsDeletingItem(true);
-    setIsBulkDeleteModalOpen(false);
     const itemsToProcess = Array.from(selectedItems).map((itemId) => {
       const [type, idStr] = itemId.split("-");
       return { type, id: parseInt(idStr, 10) };
@@ -888,10 +970,12 @@ function DashboardPage() {
     const toastId = toast.loading(
       `Moviendo ${itemsToProcess.length} elementos a papelera...`
     );
+    let success = false;
     try {
       const response = await bulkMoveItemsToTrash(itemsToProcess);
       if (response.status === 207 && response.data?.errors?.length > 0) {
         toast.update(toastId, {
+          // WARNING - No controlado
           render: `Borrado parcial: ${
             response.data.message ||
             `${itemsToProcess.length - response.data.errors.length} movidos, ${
@@ -903,31 +987,56 @@ function DashboardPage() {
           autoClose: 5000,
         });
       } else {
-        toast.update(toastId, {
-          render:
-            response.data.message ||
-            `${itemsToProcess.length} elemento(s) movido(s) a papelera.`,
-          type: "success",
-          isLoading: false,
-          autoClose: 3000,
-        });
+        if (showSuccessNotifications) {
+          toast.update(toastId, {
+            render:
+              response.data.message ||
+              `${itemsToProcess.length} elemento(s) movido(s) a papelera.`,
+            type: "success",
+            isLoading: false,
+            autoClose: 3000,
+          });
+        } else {
+          toast.dismiss(toastId);
+        }
       }
       setSelectedItems(new Set());
       setIsSelectionMode(false);
       if (!searchTerm) loadContents(currentFolderId);
       else clearSearch();
+      success = true;
     } catch (err) {
-      toast.update(toastId, {
-        render: err.response?.data?.message || `Error al mover a papelera.`,
-        type: "error",
-        isLoading: false,
-        autoClose: 5000,
-      });
+      if (showErrorNotifications) {
+        toast.update(toastId, {
+          render: err.response?.data?.message || `Error al mover a papelera.`,
+          type: "error",
+          isLoading: false,
+          autoClose: 5000,
+        });
+      } else {
+        toast.dismiss(toastId);
+      }
       if (err.response?.status === 401 || err.response?.status === 403)
         logout();
     } finally {
       setIsDeletingItem(false);
     }
+    return success;
+  };
+
+  const openBulkDeleteModal = () => {
+    if (selectedItems.size === 0 || isActionLoading) return;
+    if (confirmMoveToTrash) {
+      setIsBulkDeleteModalOpen(true);
+    } else {
+      executeBulkMoveToTrash();
+    }
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    if (selectedItems.size === 0) return;
+    setIsBulkDeleteModalOpen(false);
+    await executeBulkMoveToTrash();
   };
 
   const openBulkMoveModal = () => {
@@ -959,7 +1068,9 @@ function DashboardPage() {
       setShowFabMenu(false);
       setIsMobileMenuOpen(false);
     } else {
-      toast.error("No se pudieron obtener detalles para mover.");
+      if (showErrorNotifications) {
+        toast.error("No se pudieron obtener detalles para mover.");
+      }
     }
   };
 
@@ -1080,7 +1191,9 @@ function DashboardPage() {
         searchTerm && searchResults ? searchResults.files || [] : files;
       const fileData = sourceFiles.find((f) => f.id === id);
       if (fileData) handlePreview(fileData);
-      else toast.error("No se encontró archivo para previsualizar.");
+      else if (showErrorNotifications) {
+        toast.error("No se encontró archivo para previsualizar.");
+      }
     }
   };
 
@@ -1110,11 +1223,10 @@ function DashboardPage() {
     refreshUserProfile();
     if (searchTerm) {
       clearSearch();
-      toast.info("Vista recargada.");
     } else {
       loadContents(currentFolderId);
-      toast.info("Vista recargada.");
     }
+    // No mostramos toast.info aquí
   };
 
   // --- Función de Renderizado de Items ---
@@ -1223,15 +1335,11 @@ function DashboardPage() {
             </>
           )}
         </span>
-
-        {/* CONTENEDOR DE ACCIONES */}
         <div
           className={`${styles.itemActions} ${
             isSelectionMode ? styles.itemActionsHiddenInSelection : ""
           }`}
         >
-          {/* Los botones específicos de escritorio se han comentado/eliminado */}
-          {/* Botón Menú Móvil (ESTE SE QUEDA) */}
           <button
             onClick={(e) => {
               e.stopPropagation();

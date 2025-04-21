@@ -1123,11 +1123,12 @@
 
   .itemList {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, 180px);
     gap: 18px;
     background-color: transparent;
     border-radius: 0;
     margin-bottom: 20px;
+    justify-content: flex-start; /* Alinear a la izquierda */
   }
 
   .listItem {
@@ -1135,51 +1136,58 @@
     align-items: center;
     text-align: center;
     padding: 25px 15px;
-    border-bottom: none;
+    /* --- CAMBIO: Usar outline en lugar de border --- */
+    outline: 1px solid var(--system-gray-400); /* Borde usando outline */
+    outline-offset: -1px; /* Dibujar hacia adentro */
+    border: none; /* Asegurar que no hay borde */
+    /* --- FIN CAMBIO --- */
     border-radius: var(--border-radius-large);
-    background-color: rgba(242, 242, 247, 0.8);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    background-color: var(--background-elevated);
     box-shadow: none;
     transition: transform 0.15s ease, box-shadow 0.15s ease,
-      background-color 0.15s ease, border-color 0.15s ease;
+      background-color 0.15s ease, outline-color 0.15s ease, outline-width 0.15s ease; /* Añadir outline-color/width a transition */
     position: relative;
+    /* outline: 2px solid transparent; */ /* Comentado/Eliminado */
+    /* outline-offset: -2px; */       /* Comentado/Eliminado */
   }
   :global(:root[data-theme="dark"]) .listItem {
-    background-color: rgba(40, 40, 42, 0.75);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--background-elevated);
+    /* --- CAMBIO: Usar outline en lugar de border --- */
+    outline-color: var(--system-gray-400-dark);
+    /* border: 1px solid var(--system-gray-400-dark); */ /* Comentado/Eliminado */
+    /* --- FIN CAMBIO --- */
     box-shadow: none;
   }
 
-  .listItem:hover {
-    transform: translateY(-1px) scale(1.01);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    background-color: rgba(242, 242, 247, 0.85);
-    border-color: rgba(0, 0, 0, 0.1);
+  .listItem:not(.selectedItem):hover {
+    transform: translateY(0);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* O box-shadow: none; */
+    outline-color: var(--system-gray-400); /* <-- Este color ya no aplicará a seleccionados */
   }
-  :global(:root[data-theme="dark"]) .listItem:hover {
+  :global(:root[data-theme="dark"]) .listItem:not(.selectedItem):hover {
     transform: translateY(0);
     box-shadow: none;
-    background-color: rgba(55, 55, 58, 0.8);
-    border-color: rgba(255, 255, 255, 0.15);
+    outline-color: var(--system-gray-400-dark); /* <-- Este color ya no aplicará a seleccionados */
   }
 
   .selectedItem {
-    background-color: rgba(242, 242, 247, 0.8) !important;
-    border: 2px solid var(--primary-blue);
-    box-shadow: none;
-    transform: translateY(0);
+    background-color: var(
+      --background-elevated
+    ) !important; /* Mantener fondo */
+    /* --- CAMBIO: Usar outline más grueso para selección --- */
+    outline: 2px solid var(--primary-blue); /* Outline azul de 2px */
+    outline-offset: -2px; /* Ajustar offset para 2px */
+    /* --- FIN CAMBIO --- */
   }
   :global(:root[data-theme="dark"]) .selectedItem {
-    background-color: rgba(40, 40, 42, 0.75) !important;
-    border-color: var(--primary-blue);
+    background-color: var(--background-elevated) !important;
+    /* --- CAMBIO: Outline color para dark --- */
+    outline-color: var(--primary-blue);
+    /* --- FIN CAMBIO --- */
   }
-  .selectedItem:hover {
-    transform: translateY(0);
-    box-shadow: none;
-    border-color: var(--primary-blue);
-  }
+  /* El hover para selectedItem no necesita cambios si el outline ya lo marca */
+  /* .selectedItem:hover { ... } */
+
 
   .itemName {
     flex-direction: column;
@@ -1222,7 +1230,16 @@
     overflow: hidden;
     margin-bottom: 0;
     margin-right: auto;
+    /* Quitar borde si usamos outline en el padre */
+     border: none;
+    /* O mantener un borde interno si se prefiere */
+    /* border: 1px solid var(--system-gray-200); */
   }
+  /* Quitar borde de thumbnail en dark mode si se quitó arriba */
+   :global(:root[data-theme="dark"]) .itemThumbnail {
+     border: none;
+     /* border: 1px solid var(--system-gray-300-dark); */
+   }
   .folderLink {
     text-align: center !important;
     font-weight: 500;
@@ -1292,12 +1309,6 @@
     height: 20px;
   }
 
-  /* Ya no es necesario porque .itemActions está oculto */
-  /* .selectedItem .actionButtonDesktopOnly {
-    opacity: 0 !important;
-    pointer-events: none !important;
-  } */
-
   .quotaInfoMobile {
     display: none;
   }
@@ -1350,12 +1361,19 @@
     align-items: center;
     text-align: left;
     padding: 12px 10px;
-    border-bottom: 1px solid var(--border-color-light);
+    border-bottom: 1px solid var(--border-color-light); /* Borde inferior en lista */
     border-radius: 0;
     box-shadow: none;
     overflow: visible;
     gap: 5px;
     background-color: transparent;
+    /* --- ASEGURAR que no haya borde lateral/superior/outline en lista --- */
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    border-width: 0 0 1px 0; /* Solo abajo */
+    outline: none;
+    transform: none; /* Resetear transform en lista */
   }
   .listItem:last-child {
     border-bottom: none;
@@ -1364,23 +1382,64 @@
     transform: none;
     box-shadow: none;
     background-color: var(--system-gray-100);
+    /* Sin borde lateral/superior en hover lista */
+    border-color: var(
+      --border-color-light
+    ); /* Mantener borde inferior visible */
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    outline: none;
   }
   :global(:root[data-theme="dark"]) .listItem:hover {
     background-color: var(--system-gray-300-dark);
+    border-color: var(--border-color-light); /* Usa variable que cambia */
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    outline: none;
   }
   .selectedItem {
     background-color: rgba(0, 122, 255, 0.08) !important;
-    border: none;
+    border: none !important; /* Sin borde lateral en selección lista */
+    border-bottom: 1px solid var(--border-color-light) !important; /* Mantener borde inferior */
+    box-shadow: none !important; /* Sin shadow en selección lista */
+    outline: none !important; /* Sin outline en selección lista */
   }
+  .selectedItem:last-child {
+    border-bottom: none !important; /* Quitar borde inferior al último seleccionado */
+  }
+
   :global(:root[data-theme="dark"]) .selectedItem {
     background-color: rgba(10, 132, 255, 0.15) !important;
-    border: none;
+    border: none !important;
+    border-bottom: 1px solid var(--border-color-light) !important;
+    box-shadow: none !important;
+    outline: none !important;
   }
+  :global(:root[data-theme="dark"]) .selectedItem:last-child {
+    border-bottom: none !important;
+  }
+
   .selectedItem:hover {
     background-color: rgba(0, 122, 255, 0.1) !important;
+    border: none !important;
+    border-bottom: 1px solid var(--border-color-light) !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+  .selectedItem:last-child:hover {
+    border-bottom: none !important;
   }
   :global(:root[data-theme="dark"]) .selectedItem:hover {
     background-color: rgba(10, 132, 255, 0.18) !important;
+    border: none !important;
+    border-bottom: 1px solid var(--border-color-light) !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+  :global(:root[data-theme="dark"]) .selectedItem:last-child:hover {
+    border-bottom: none !important;
   }
 
   .itemSelection {
