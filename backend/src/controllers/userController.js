@@ -65,8 +65,8 @@ exports.register = async (req, res) => {
     if (error.name === "SequelizeUniqueConstraintError") {
       // Error específico si falla la constraint única (aunque ya lo comprobamos antes)
       return res.status(409).json({
-          message: "Error: El email o el nombre de usuario ya existen.",
-        });
+        message: "Error: El email o el nombre de usuario ya existen.",
+      });
     }
     res
       .status(500)
@@ -103,14 +103,29 @@ exports.login = async (req, res) => {
       role: user.role, // Incluir rol en el token
     };
 
-    // Firmar el token (sin cambios)
-    const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: "1h", // O el tiempo que prefieras
-    });
+    // --- MODIFICADO: Opciones de firma condicionales ---
+    const signOptions = {}; // Opciones vacías por defecto
+
+    if (user.role !== "admin") {
+      // Si NO es admin, añadir expiración
+      signOptions.expiresIn = "1h"; // O el tiempo que prefieras para usuarios normales
+      console.log(
+        `[Auth] Generando token para ROL '${user.role}' con expiración: ${signOptions.expiresIn}`
+      );
+    } else {
+      // Si ES admin, NO añadir 'expiresIn' para que no caduque
+      // Los tokens sin 'exp' claim no expiran según la verificación estándar
+      console.log(
+        `[Auth] Generando token para ROL '${user.role}' SIN expiración.`
+      );
+    }
+
+    // Firmar el token usando las opciones determinadas
+    const token = jwt.sign(payload, process.env.JWT_SECRET, signOptions);
+    // ----------------------------------------------------
 
     // Devolver token (no se devuelve info de cuota aquí, se pide con getProfile)
     res.status(200).json({ message: "Login exitoso.", token });
-
   } catch (error) {
     // Manejo de errores (sin cambios)
     console.error("Error en el login:", error);
@@ -120,7 +135,6 @@ exports.login = async (req, res) => {
   }
 };
 
-
 // --- Obtener Perfil del Usuario ---
 exports.getProfile = async (req, res) => {
   try {
@@ -129,14 +143,14 @@ exports.getProfile = async (req, res) => {
     // --- Modificado para incluir campos de cuota ---
     const user = await User.findByPk(userId, {
       attributes: [
-          "id",
-          "username",
-          "email",
-          "role",
-          "createdAt",
-          "updatedAt",
-          "storage_used_bytes",     // <-- Devolver uso
-          "storage_quota_bytes"     // <-- Devolver cuota (puede ser null para admin)
+        "id",
+        "username",
+        "email",
+        "role",
+        "createdAt",
+        "updatedAt",
+        "storage_used_bytes", // <-- Devolver uso
+        "storage_quota_bytes", // <-- Devolver cuota (puede ser null para admin)
       ],
     });
     // --------------------------------------------
@@ -148,13 +162,11 @@ exports.getProfile = async (req, res) => {
 
     // Devolver el objeto usuario completo (con cuota)
     res.status(200).json(user);
-
   } catch (error) {
     console.error("Error al obtener perfil:", error);
     res.status(500).json({ message: "Error interno al obtener el perfil." });
   }
 };
-
 
 // --- Actualizar Perfil (Username y Email solamente) ---
 // NO se permite actualizar rol, contraseña o cuota aquí.
@@ -170,11 +182,10 @@ exports.updateProfile = async (req, res) => {
 
     // Validar que al menos uno se envía (aunque las reglas ya lo hacen opcional)
     if (!username && !email) {
-      return res
-        .status(400)
-        .json({
-          message: "Debe proporcionar al menos un campo (username o email) para actualizar.",
-        });
+      return res.status(400).json({
+        message:
+          "Debe proporcionar al menos un campo (username o email) para actualizar.",
+      });
     }
 
     // Encontrar usuario actual
@@ -196,7 +207,9 @@ exports.updateProfile = async (req, res) => {
       if (existingUsername) {
         return res
           .status(409) // Conflict
-          .json({ message: "El nombre de usuario ya está en uso por otro usuario." });
+          .json({
+            message: "El nombre de usuario ya está en uso por otro usuario.",
+          });
       }
       updateData.username = trimmedUsername;
       changed = true;
@@ -204,8 +217,8 @@ exports.updateProfile = async (req, res) => {
 
     // Validar y preparar actualización de email (si cambió y es diferente)
     if (email && email.trim() !== user.email) {
-       const trimmedEmail = email.trim();
-       // Comprobar si nuevo email ya está en uso por OTRO usuario
+      const trimmedEmail = email.trim();
+      // Comprobar si nuevo email ya está en uso por OTRO usuario
       const existingEmail = await User.findOne({
         where: { email: trimmedEmail, id: { [Op.ne]: userId } },
       });
@@ -221,17 +234,17 @@ exports.updateProfile = async (req, res) => {
     // Si no hubo cambios válidos, informar y devolver datos actuales
     if (!changed) {
       // Devolver usuario actual (incluyendo rol y cuota para consistencia)
-       const currentUserResponse = {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            role: user.role,
-            storageUsedBytes: user.storage_used_bytes,
-            storageQuotaBytes: user.storage_quota_bytes
-       };
+      const currentUserResponse = {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        storageUsedBytes: user.storage_used_bytes,
+        storageQuotaBytes: user.storage_quota_bytes,
+      };
       return res.status(200).json({
         message: "No se realizaron cambios en el perfil.",
-        user: currentUserResponse
+        user: currentUserResponse,
       });
     }
 
@@ -242,34 +255,29 @@ exports.updateProfile = async (req, res) => {
     const updatedUserResponse = {
       id: user.id,
       username: user.username, // Nombre actualizado
-      email: user.email,       // Email actualizado
-      role: user.role,         // Rol (no cambió)
+      email: user.email, // Email actualizado
+      role: user.role, // Rol (no cambió)
       storageUsedBytes: user.storage_used_bytes, // Cuota (no cambió)
-      storageQuotaBytes: user.storage_quota_bytes // Cuota (no cambió)
+      storageQuotaBytes: user.storage_quota_bytes, // Cuota (no cambió)
     };
 
-    res
-      .status(200)
-      .json({
-        message: "Perfil actualizado con éxito.",
-        user: updatedUserResponse,
-      });
-
+    res.status(200).json({
+      message: "Perfil actualizado con éxito.",
+      user: updatedUserResponse,
+    });
   } catch (error) {
     console.error("Error al actualizar perfil:", error);
     // Manejo de error de constraint único (si fallan las comprobaciones por concurrencia)
     if (error.name === "SequelizeUniqueConstraintError") {
-      return res
-        .status(409)
-        .json({
-          message: "Error de conflicto: El email o el nombre de usuario ya existen.",
-        });
+      return res.status(409).json({
+        message:
+          "Error de conflicto: El email o el nombre de usuario ya existen.",
+      });
     }
     // Error genérico
     res.status(500).json({ message: "Error interno al actualizar el perfil." });
   }
 };
-
 
 // --- Cambiar Contraseña ---
 // Esta función no interactúa con la cuota.
@@ -306,7 +314,6 @@ exports.changePassword = async (req, res) => {
     await user.save();
 
     res.status(200).json({ message: "Contraseña actualizada con éxito." });
-
   } catch (error) {
     console.error("Error al cambiar contraseña:", error);
     res

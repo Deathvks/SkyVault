@@ -824,29 +824,50 @@ function DashboardPage() {
 
   const handlePreview = (file) => {
     if (isActionLoading || !file) return;
-    const mime = file.mime_type || "";
-    const supportedTypes = [
-      "image/",
-      "application/pdf",
-      "text/",
-      "video/",
-      "audio/",
-      "application/json",
-      "application/javascript",
-      "application/xml",
-      "application/xhtml+xml",
-    ];
-    const isPreviewable = supportedTypes.some(
-      (typePrefix) => mime.startsWith(typePrefix) || mime === typePrefix
-    );
+
+    const mime = file.mime_type?.toLowerCase() || ""; // Usar minúsculas
+    const fileNameLower = file.name?.toLowerCase() || ""; // Usar minúsculas
+
+    // --- ACTUALIZAR ESTA LÓGICA ---
+    const isPreviewable =
+      ( // Comprobación por MIME Type
+        mime.startsWith("image/") ||
+        mime === "application/pdf" ||
+        mime.startsWith("text/") || // Cubre text/markdown si el MIME es correcto
+        mime.startsWith("video/") ||
+        mime.startsWith("audio/") ||
+        [ // Lista explícita de otros tipos application/*
+          "application/json",
+          "application/javascript",
+          "application/xml",
+          "application/xhtml+xml",
+          "application/x-yaml",
+          "application/sql",
+          "application/x-sh",
+          // Añade otros si es necesario
+        ].includes(mime)
+      ) ||
+      ( // Fallback: Comprobación por extensión
+        fileNameLower.endsWith('.md') || // <-- Añadido
+        fileNameLower.endsWith('.txt') ||
+        fileNameLower.endsWith('.js') ||
+        fileNameLower.endsWith('.css') ||
+        fileNameLower.endsWith('.json') ||
+        fileNameLower.endsWith('.html') ||
+        fileNameLower.endsWith('.xml')
+        // Añade otras extensiones si es necesario
+      );
+    // --- FIN DE LA ACTUALIZACIÓN ---
 
     if (isPreviewable) {
+      // Si es previsualizable (ahora incluye .md por extensión), abre el modal
       setFileToPreview(file);
       setIsPreviewModalOpen(true);
       setShowFabMenu(false);
       setIsMobileMenuOpen(false);
       setIsContextMenuVisible(false);
     } else {
+      // Si AÚN no es previsualizable (tipos realmente no soportados), muestra el toast
       toast.info(
         `Previsualización no disponible para '${file.name}'. Puedes descargarlo.`
       );
@@ -1136,50 +1157,62 @@ function DashboardPage() {
     }
   };
 
-  // ... (dentro del componente DashboardPage)
+  // --- Función para recargar la vista ---
+  const handleReload = () => {
+    if (isActionLoading) return; // No hacer nada si ya está cargando
 
-    // --- Función para recargar la vista ---
-    const handleReload = () => {
-      if (isActionLoading) return; // No hacer nada si ya está cargando
+    // Llamar a la función para refrescar los datos del perfil (incluida la cuota)
+    refreshUserProfile(); // <-- Mantener esta línea
 
-      // // Cancelar selección múltiple si está activa (LÍNEAS ELIMINADAS/COMENTADAS)
-      // setSelectedItems(new Set());
-      // setIsSelectionMode(false);
-
-      // Llamar a la función para refrescar los datos del perfil (incluida la cuota)
-      refreshUserProfile(); // <-- Mantener esta línea
-
-      // Si hay un término de búsqueda, limpiar la búsqueda (esto ya recarga la carpeta actual)
-      if (searchTerm) {
-        clearSearch();
-        toast.info("Vista recargada.");
-      } else {
-        // Si no hay búsqueda, simplemente recargar el contenido actual
-        loadContents(currentFolderId);
-        toast.info("Vista recargada.");
-      }
-    };
+    // Si hay un término de búsqueda, limpiar la búsqueda (esto ya recarga la carpeta actual)
+    if (searchTerm) {
+      clearSearch();
+      toast.info("Vista recargada.");
+    } else {
+      // Si no hay búsqueda, simplemente recargar el contenido actual
+      loadContents(currentFolderId);
+      toast.info("Vista recargada.");
+    }
+  };
 
   // --- Función de Renderizado de Items ---
   const renderItem = (item, type) => {
     const isFolder = type === "folder";
     const uniqueItemId = getItemId(type, item.id);
     const isSelected = selectedItems.has(uniqueItemId);
-    const mime = item.mime_type || "";
-    const isImage = !isFolder && mime.startsWith("image/");
+    const mime = item.mime_type?.toLowerCase() || ""; // Asegurar toLowerCase
+    const fileNameLower = item.name?.toLowerCase() || ""; // Asegurar toLowerCase
+
+    // --- MODIFICADO isPreviewable (incluye .md) ---
     const isPreviewable =
-      !isFolder &&
+      !isFolder && // Must not be a folder
       (mime.startsWith("image/") ||
         mime === "application/pdf" ||
-        mime.startsWith("text/") ||
+        mime.startsWith("text/") || // Covers text/plain, text/css, text/markdown etc.
         mime.startsWith("video/") ||
         mime.startsWith("audio/") ||
         [
+          // Lista explícita de otros tipos application/* previsualizables
           "application/json",
-          "application/javascript",
+          "application/javascript", // Covers .js
           "application/xml",
           "application/xhtml+xml",
-        ].includes(mime));
+          "application/x-yaml",
+          "application/sql",
+          "application/x-sh",
+          // Añade otros si los soportas
+        ].includes(mime) ||
+        // --- FALLBACK: Check extension explícitamente ---
+        fileNameLower.endsWith(".md") || // <-- AÑADIDO
+        fileNameLower.endsWith(".txt") ||
+        fileNameLower.endsWith(".js") ||
+        fileNameLower.endsWith(".css") ||
+        fileNameLower.endsWith(".json") ||
+        fileNameLower.endsWith(".html") ||
+        fileNameLower.endsWith(".xml"));
+    // --- FIN MODIFICACIÓN isPreviewable ---
+
+    const isImage = !isFolder && mime.startsWith("image/");
     const fileSizeMB = item.size ? item.size / (1024 * 1024) : 0;
     const fileSizeKB = item.size ? item.size / 1024 : 0;
     const displaySize = item.size
@@ -1236,7 +1269,7 @@ function DashboardPage() {
               )}
               <button
                 onClick={() => (isPreviewable ? handlePreview(item) : null)}
-                className={styles.folderLink}
+                className={styles.folderLink} // Usa la misma clase para estilo consistente
                 disabled={isActionLoading || !isPreviewable}
                 title={
                   isPreviewable
@@ -1259,7 +1292,7 @@ function DashboardPage() {
           }`}
         >
           {/* Botones Desktop */}
-          {isPreviewable && (
+          {isPreviewable && ( // <-- Ahora el botón se muestra para .md también
             <button
               onClick={() => handlePreview(item)}
               className={`${styles.itemActionButton} ${styles.actionButtonDesktopOnly} ${styles.previewButton}`}

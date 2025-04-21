@@ -1447,19 +1447,25 @@
     padding: 5px; /* Padding lista */
   }
   .itemName {
+    display: flex;
+    align-items: center;
+    text-align: left !important;
+    justify-content: flex-start !important;
     flex-direction: row;
     white-space: nowrap;
     text-align: left;
     margin-bottom: 0;
     font-size: 1rem;
+    flex-grow: 1;
     width: auto;
     overflow: hidden;
     margin-right: 5px;
-    gap: 10px;
+    gap: 0;
     background-color: transparent !important;
   }
   .itemIcon {
-    margin-right: 0;
+    margin-right: 10px;
+    flex-shrink: 0;
     font-size: 1.5rem;
     width: 30px;
     text-align: center;
@@ -1469,18 +1475,23 @@
   .itemThumbnail {
     width: 30px;
     height: 30px;
-    margin-right: 0;
+    margin-right: 10px;
+    flex-shrink: 0;
     margin-bottom: 0;
     margin-left: 0;
   }
   .folderLink {
-    text-align: left;
+    text-align: left !important;
     font-weight: 400;
     word-break: normal;
-    width: auto;
+    width: 100%;
     flex-grow: 1;
+    margin: 0 !important;
+    padding: 0 !important;
+    margin-right: 0;
     display: inline-block;
     white-space: nowrap;
+    vertical-align: middle;
     overflow: hidden;
     text-overflow: ellipsis;
     background-color: transparent !important;
@@ -1490,17 +1501,21 @@
     width: auto;
     text-align: left;
     overflow: hidden;
-    gap: 10px;
+    gap: 0;
+    flex-grow: 1;
     margin-bottom: 0;
     background-color: transparent !important;
   }
   .fileInfo > span:not(.fileSize) {
+    margin-right: 0;
+    flex-grow: 1;
     margin-right: 0;
     display: inline-block;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     margin-bottom: 0;
+    text-align: left !important;
     background-color: transparent !important;
   }
   .fileSize {
