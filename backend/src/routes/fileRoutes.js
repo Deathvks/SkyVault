@@ -92,6 +92,7 @@ const ALLOWED_MIME_TYPES = [
 
   // --- Comprimidos y Otros ---
   "application/zip",              // .zip
+  "application/x-zip-compressed",
   "application/x-rar-compressed", // .rar
   "application/x-tar",            // .tar
   "application/gzip",             // .gz
