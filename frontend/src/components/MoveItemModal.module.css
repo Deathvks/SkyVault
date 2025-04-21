@@ -16,7 +16,12 @@
   padding: 5px 0; /* Padding vertical interno */
   background-color: var(
     --background-elevated
-  ); /* Fondo blanco dentro del modal */
+  ); /* Fondo blanco/oscuro dentro del modal */
+  transition: border-color 0.3s ease, background-color 0.3s ease; /* Añadir transición */
+}
+/* Ajuste Dark Mode para el contenedor del árbol */
+:global(:root[data-theme="dark"]) .folderTreeContainer {
+  border-color: var(--system-gray-400-dark); /* Borde oscuro */
 }
 
 /* Estilo de cada carpeta en el árbol */
@@ -25,7 +30,7 @@
   cursor: pointer;
   border-radius: var(--border-radius-small); /* Redondeo interno */
   margin: 2px 5px; /* Margen alrededor */
-  transition: background-color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease; /* Ajustar transición */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -34,18 +39,32 @@
   display: flex; /* Para alinear icono y texto */
   align-items: center;
 }
+/* Icono simulado */
 .folderItem::before {
-  /* Simular icono de carpeta */
   content: "📁"; /* O un SVG como background-image */
   margin-right: 8px;
   font-size: 1.1em; /* Tamaño del icono */
   opacity: 0.8;
+  transition: opacity 0.15s ease; /* Transición icono */
 }
 
-/* Hover sobre carpeta (no seleccionada, no deshabilitada) */
+/* Hover sobre carpeta (Light Mode / Base) */
 .folderItem:not(.selected):not(.disabled):hover {
-  background-color: var(--system-gray-100); /* Fondo gris muy claro en hover */
+  background-color: var(
+    --system-gray-100
+  ); /* Fondo gris muy claro en hover (para Light Mode) */
 }
+
+/* --- AÑADIDO: Dark Mode Override para Hover --- */
+/* Dark Mode Override para Hover */
+:global(:root[data-theme="dark"])
+  .folderItem:not(.selected):not(.disabled):hover {
+  background-color: var(
+    --system-gray-300-dark
+  ) !important; /* Fondo gris oscuro sutil en hover (para Dark Mode) */
+  /* El color del texto (--text-primary) ya debería ser blanco en modo oscuro */
+}
+/* --- FIN DE LA NUEVA REGLA --- */
 
 /* Carpeta seleccionada */
 .selected {
@@ -56,7 +75,7 @@
   font-weight: 500; /* Medium */
 }
 .selected::before {
-  /* Icono en blanco para seleccionados */
+  /* Icono en blanco/opaco para seleccionados */
   opacity: 1;
   /* Podrías cambiar el color si usaras un icono SVG tintable */
 }
@@ -68,11 +87,17 @@
   font-style: italic; /* Opcional: cursiva */
   opacity: 0.7;
 }
+/* Hover deshabilitado */
 .disabled:hover {
   background-color: transparent; /* No resaltar hover si está deshabilitado */
 }
+/* Icono deshabilitado */
 .disabled::before {
   opacity: 0.5;
+}
+/* Dark Mode para deshabilitado */
+:global(:root[data-theme="dark"]) .disabled {
+  color: var(--system-gray-600-dark); /* Texto gris oscuro */
 }
 
 /* Contenedor de hijos (si necesitas estilos específicos para el anidamiento) */
@@ -98,8 +123,14 @@
   color: var(--system-gray-600); /* Gris secundario */
   margin-top: 5px;
   margin-bottom: 15px; /* Espacio antes de botones */
+  transition: color 0.3s ease; /* Transición */
 }
 .selectedDestination strong {
   font-weight: 600; /* Semibold */
-  color: var(--text-primary); /* Nombre en negro */
+  color: var(--text-primary); /* Nombre en negro/blanco */
+  transition: color 0.3s ease; /* Transición */
+}
+/* Dark mode para destino */
+:global(:root[data-theme="dark"]) .selectedDestination {
+  color: var(--system-gray-600-dark);
 }

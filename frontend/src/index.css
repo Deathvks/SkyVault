@@ -6,6 +6,8 @@
   --system-blue: #007aff; /* Azul estándar iOS */
   --system-red: #ff3b30; /* Rojo estándar iOS */
   --system-green: #34c759; /* Verde estándar iOS */
+  --system-orange: #ff9500; /* Naranja estándar iOS */
+  --system-teal: #5ac8fa; /* Teal estándar iOS */
   --system-gray-100: #f2f2f7; /* Gris muy claro (fondo página light) */
   --system-gray-200: #e5e5ea; /* Gris claro (fondos sutiles light, bordes) */
   --system-gray-300: #d1d1d6; /* Gris medio-claro (bordes input light) */
@@ -55,6 +57,8 @@
   --system-blue-dark: #0a84ff;
   --system-red-dark: #ff453a;
   --system-green-dark: #30d158; /* Un poco más brillante que el system-green light */
+  --system-orange-dark: #ff9f0a;
+  --system-teal-dark: #64d2ff;
   --system-gray-100-dark: #1c1c1e; /* Fondo página dark (System Gray 6 Dark) */
   --system-gray-200-dark: #2c2c2e; /* Fondo elementos elevados dark (System Gray 5 Dark) */
   --system-gray-300-dark: #3a3a3c; /* Separadores, bordes sutiles dark (System Gray 4 Dark) */
@@ -260,7 +264,7 @@ input[type="password"]:focus,
 input[type="search"]:focus {
   border-color: var(--primary-blue);
   /* Ajustar halo para ambos modos */
-  box-shadow: 0 0 0 2px rgba(var(--primary-blue), 0.2); /* Usar la variable blue aquí */
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2); /* Usar var(--primary-blue) fallaría aquí, usar valor directo */
 }
 
 /* Dark Mode Inputs */
@@ -275,6 +279,7 @@ input[type="search"]:focus {
 :root[data-theme="dark"] input[type="password"]:focus {
   background-color: var(--system-gray-300-dark); /* Mantener fondo en focus */
   /* El box-shadow ya usa la variable --primary-blue que cambia */
+  box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.25); /* Ajustar alfa para dark */
 }
 
 /* Búsqueda */
@@ -320,7 +325,7 @@ ul {
   list-style: none;
 }
 
-/* --- Mensajes (Toast o globales) --- */
+/* --- Mensajes (Globales o de ejemplo, pueden estar en CSS Modules) --- */
 .error-message {
   color: var(--error-red); /* Cambia con el tema */
   background-color: var(--error-bg-light); /* Cambia con el tema */
@@ -331,7 +336,9 @@ ul {
   font-size: 0.95rem;
 }
 .success-message {
-  color: var(--success-green-dark); /* Cambia con el tema */
+  color: var(
+    --success-green-dark
+  ); /* Usa el verde oscuro que se ve mejor en fondo claro */
   background-color: var(--success-bg-light); /* Cambia con el tema */
   border: 1px solid var(--success-border); /* Cambia con el tema */
   padding: 10px 15px;
@@ -339,8 +346,130 @@ ul {
   margin-bottom: 15px;
   font-size: 0.95rem;
 }
+/* Ajuste dark para mensajes globales */
+:root[data-theme="dark"] .error-message {
+  color: var(
+    --error-red
+  ); /* El rojo oscuro de iOS se ve bien en fondo oscuro */
+}
+:root[data-theme="dark"] .success-message {
+  color: var(
+    --success-green
+  ); /* El verde brillante oscuro se ve bien en fondo oscuro */
+}
 
-/* 5. Limpieza (Asegurar que no haya estilos de componentes específicos aquí) */
+/* 5. Estilos React Toastify */
+
+/* Contenedor principal del Toast */
+.Toastify__toast {
+  border-radius: var(--border-radius-medium) !important;
+  font-family: inherit !important;
+  padding: 12px 16px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+
+  /* --- Transparencia/Blur --- */
+  background-color: rgba(249, 249, 249, 0.9) !important; /* Light */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  color: var(--text-primary) !important;
+  /* ------------------------- */
+
+  /* --- Layout Flexbox --- */
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px;
+  /* -------------------- */
+
+  transition: background-color 0.3s ease, color 0.3s ease,
+    border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Toast Dark Mode */
+:root[data-theme="dark"] .Toastify__toast {
+  background-color: rgba(44, 44, 46, 0.85) !important; /* Dark */
+  backdrop-filter: blur(15px) !important;
+  -webkit-backdrop-filter: blur(15px) !important;
+  border: 1px solid rgba(84, 84, 88, 0.65) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Cuerpo del mensaje */
+.Toastify__toast-body {
+  font-size: 0.95rem !important;
+  line-height: 1.4 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  /* --- Layout Flexbox --- */
+  flex-grow: 1 !important;
+  min-width: 0;
+  /* -------------------- */
+}
+
+/* Botón de cierre (X) */
+.Toastify__close-button {
+  color: var(--text-secondary) !important;
+  opacity: 0.7 !important;
+  transition: color 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
+  align-self: center !important;
+  background-color: transparent !important;
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 50%;
+  width: 28px !important;
+  height: 28px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  /* --- Layout Flexbox --- */
+  flex-shrink: 0 !important;
+  /* -------------------- */
+}
+.Toastify__close-button:hover,
+.Toastify__close-button:focus {
+  color: var(--text-primary) !important;
+  opacity: 0.9 !important;
+  background-color: var(--system-gray-100) !important;
+  outline: none !important;
+}
+.Toastify__close-button > svg {
+  height: 18px !important;
+  width: 18px !important;
+  fill: currentColor !important;
+}
+
+/* Botón cierre Dark Mode */
+:root[data-theme="dark"] .Toastify__close-button {
+  color: var(--system-gray-600-dark) !important;
+}
+:root[data-theme="dark"] .Toastify__close-button:hover,
+:root[data-theme="dark"] .Toastify__close-button:focus {
+  color: var(--text-primary) !important;
+  background-color: var(--system-gray-300-dark) !important;
+}
+
+/* Barra de progreso */
+.Toastify__progress-bar {
+  height: 3px !important;
+  background: var(--primary-blue) !important; /* Color base azul */
+  opacity: 0.8 !important;
+}
+.Toastify__progress-bar--success {
+  background: var(--success-green) !important;
+}
+.Toastify__progress-bar--error {
+  background: var(--error-red) !important;
+}
+.Toastify__progress-bar--warning {
+  background: var(--system-orange, #ff9500) !important;
+}
+.Toastify__progress-bar--info {
+  background: var(--system-teal, #5ac8fa) !important;
+}
 
 /* 6. Media Queries globales (si son necesarias) */
 @media (max-width: 480px) {
@@ -360,125 +489,3 @@ ul {
     font-size: 1rem;
   }
 }
-
-/* Contenedor principal del Toast */
-.Toastify__toast {
-  border-radius: var(--border-radius-medium) !important; /* Redondeo iOS */
-  font-family: inherit !important; /* Usar fuente del sistema */
-  padding: 12px 16px !important; /* Ajustar padding */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; /* Sombra sutil */
-  /* Fondo y color base (se sobrescriben por tipo o modo oscuro) */
-  background-color: var(--background-elevated) !important;
-  color: var(--text-primary) !important;
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease; /* Transición */
-}
-
-/* --- Ajustes Dark Mode para Toast Base --- */
-:root[data-theme="dark"] .Toastify__toast {
-  /* Fondo translúcido oscuro */
-  background-color: rgba(44, 44, 46, 0.85) !important; /* --system-gray-200-dark con alfa */
-  backdrop-filter: saturate(180%) blur(15px);
-  -webkit-backdrop-filter: saturate(180%) blur(15px);
-  border: 1px solid rgba(84, 84, 88, 0.65); /* Borde sutil oscuro */
-  color: var(--text-primary) !important; /* Texto blanco */
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3) !important; /* Sombra más pronunciada */
-}
-
-/* Cuerpo del mensaje */
-.Toastify__toast-body {
-  font-size: 0.95rem !important;
-  line-height: 1.4 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Icono opcional (si lo usas) */
-/* .Toastify__toast-icon { */
-   /* margin-right: 10px !important; */
-   /* width: 20px !important; */
-/* } */
-
-/* Botón de cierre (X) */
-.Toastify__close-button {
-  color: var(--text-secondary) !important; /* Color icono X */
-  opacity: 0.7 !important;
-  transition: color 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
-  align-self: center !important; /* Centrar verticalmente */
-  /* --- Quitar contorno/fondo --- */
-  background-color: transparent !important;
-  outline: none !important;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 0 !important; /* Quitar padding si lo tuviera */
-  margin: 0 !important; /* Quitar margen si lo tuviera */
-  border-radius: 50%; /* Opcional: redondear el área de clic */
-  width: 28px !important; /* Ajustar tamaño área clic */
-  height: 28px !important; /* Ajustar tamaño área clic */
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-/* Hover del botón de cierre */
-.Toastify__close-button:hover,
-.Toastify__close-button:focus { /* Añadir focus para accesibilidad */
-  color: var(--text-primary) !important;
-  opacity: 0.9 !important;
-  background-color: var(--system-gray-100) !important; /* Fondo sutil en hover/focus */
-  outline: none !important; /* Asegurar sin outline en focus */
-}
-/* SVG dentro del botón */
-.Toastify__close-button > svg {
-  height: 18px !important;
-  width: 18px !important;
-  fill: currentColor !important; /* Heredar color del botón */
-}
-
-/* --- Ajustes Dark Mode para Botón Cierre --- */
-:root[data-theme="dark"] .Toastify__close-button {
-   color: var(--system-gray-600-dark) !important; /* Color X en dark */
-}
-:root[data-theme="dark"] .Toastify__close-button:hover,
-:root[data-theme="dark"] .Toastify__close-button:focus {
-   color: var(--text-primary) !important; /* Blanco en hover/focus */
-   background-color: var(--system-gray-300-dark) !important; /* Fondo hover/focus oscuro */
-}
-
-
-/* Barra de progreso */
-.Toastify__progress-bar {
-  height: 3px !important;
-  background: var(--primary-blue) !important; /* Color base azul */
-  opacity: 0.8 !important;
-  /* La transición la maneja la librería */
-}
-/* Barra de progreso según el tema del Toast */
-/* Usar las variables ya definidas para los colores */
-.Toastify__progress-bar--success {
-  background: var(--success-green) !important;
-}
-.Toastify__progress-bar--error {
-  background: var(--error-red) !important;
-}
-/* Definir variables si no existen para warning/info o usar colores directos */
-.Toastify__progress-bar--warning {
-  background: var(--system-orange, #ff9500) !important;
-}
-.Toastify__progress-bar--info {
-  background: var(--system-teal, #5ac8fa) !important;
-}
-
-
-/* Ajuste opcional de color de texto/fondo por tipo si es necesario */
-/* Ejemplo para error (ya comentado antes): */
-/*
-.Toastify__toast--error {
-   background-color: var(--error-bg-light) !important;
-   color: var(--error-red) !important;
-   border: 1px solid var(--error-border) !important;
-}
-:root[data-theme="dark"] .Toastify__toast--error {
-   background-color: rgba(255, 69, 58, 0.25) !important;
-   color: var(--text-primary) !important; // O mantener texto blanco
-   border: 1px solid rgba(255, 69, 58, 0.5) !important;
-}
-*/
