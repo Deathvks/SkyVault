@@ -2,13 +2,12 @@
 
 .previewContainer {
   width: 100%;
-  max-height: 75vh;
+  max-height: 75vh; /* Altura por defecto para imágenes, texto, etc. */
   overflow-y: auto;
   text-align: center;
-  /* --- MODIFICACIÓN --- */
-  /* background-color: var(--system-gray-100); */ /* <-- Elimina o comenta esta línea */
-  background-color: var(--background-elevated);  /* <-- Usa esta variable en su lugar */
-  /* --- FIN MODIFICACIÓN --- */
+  /* --- MODIFICADO: Usar fondo adaptable --- */
+  background-color: var(--background-elevated);
+  /* -------------------------------------- */
   border-radius: var(--border-radius-medium);
   padding: 10px;
   margin-top: 10px;
@@ -17,22 +16,20 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  /* Añadir background-color a la transición para suavidad */
+  /* Transición suave por si cambia el tamaño o color */
   transition: width 0.3s ease, height 0.3s ease, background-color 0.3s ease;
 }
 
-/* --- NUEVA CLASE para PDFs --- */
+/* Contenedor grande para PDFs */
 .previewContainerLarge {
-  width: 90vw;
-  height: 85vh;
-  max-height: 85vh;
-  padding: 5px;
-   /* --- MODIFICACIÓN (si usaste otro color aquí) --- */
-  /* background-color: var(--system-gray-300); */ /* <-- Elimina o comenta si existe */
-   background-color: var(--background-elevated);  /* <-- Usa esta variable también */
-   /* --- FIN MODIFICACIÓN --- */
+  width: 90vw; /* Ocupar casi todo el ancho de la ventana */
+  height: 85vh; /* Ocupar casi toda la altura de la ventana */
+  max-height: 85vh; /* Asegurar que no exceda */
+  padding: 5px; /* Menos padding para dar más espacio al PDF */
+  /* --- MODIFICADO: Usar fondo adaptable --- */
+  background-color: var(--background-elevated);
+  /* -------------------------------------- */
 }
-/* ---------------------------- */
 
 .previewImage {
   max-width: 100%;
@@ -66,24 +63,35 @@
   margin-top: 10px;
 }
 
+/* Contenedor opcional si SyntaxHighlighter necesita ayuda con el layout */
+/* .previewTextContainer {
+  width: 100%;
+  max-height: 70vh;
+  overflow: auto;
+  text-align: left;
+  border-radius: var(--border-radius-small);
+} */
+
+/* Estilo para el texto preformateado (si no usa SyntaxHighlighter o como fallback) */
+/* Puede simplificarse si SyntaxHighlighter maneja fondo, padding, borde */
 .previewText {
   width: 100%;
   max-height: 70vh; /* Altura por defecto para texto */
   overflow: auto;
   text-align: left;
-  background-color: var(--background-elevated);
+  background-color: var(--background-elevated); /* Fondo consistente */
   padding: 15px;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier,
     monospace;
   font-size: 0.85rem;
   line-height: 1.5;
-  white-space: pre-wrap;
-  word-break: break-all;
+  white-space: pre-wrap; /* Mantiene saltos y espacios */
+  word-break: break-all; /* Rompe palabras largas */
   border-radius: var(--border-radius-small);
-  border: 1px solid var(--border-color-light);
+  border: 1px solid var(--border-color-light); /* Borde sutil */
 }
 .previewText code {
-  font-family: inherit;
+  font-family: inherit; /* Hereda fuente monoespaciada */
 }
 
 .loadingText,
@@ -103,9 +111,21 @@
 .unsupported p {
   margin-bottom: 15px;
 }
-.unsupported a {
+.unsupported button {
+  /* Estilo para el botón de descarga en 'unsupported' */
   text-decoration: none;
   font-weight: 500;
+  /* Hereda estilos de .confirmButton (o define aquí) */
+  display: inline-block;
+  margin-top: 15px;
+  /* Reutilizar estilo primario */
+  background-color: var(--primary-blue);
+  color: var(--button-text-light);
+  padding: 10px 18px;
+  font-size: 0.95rem;
+}
+.unsupported button:hover {
+  background-color: var(--hover-blue);
 }
 
 /* Responsive opcional para el contenedor grande en móviles */
