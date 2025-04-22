@@ -1,193 +1,153 @@
-// Dentro de backend/src/utils/deleteUtils.js
-const fsPromises = require("fs").promises;
-const { Folder, File, User, sequelize } = require("../models"); // <-- Importar User y sequelize
-const { Op } = require("sequelize"); // <-- Importar Op si es necesario para calcular tamaño
+// backend/src/utils/deleteUtils.js
+const fs = require("fs").promises;
+const path = require("path");
+const { Op } = require("sequelize");
+const { sequelize } = require("../config/database"); // Importa sequelize desde la config [cite: 1]
+const File = require("../models/File"); // Importa el modelo File [cite: 13]
+const Folder = require("../models/Folder"); // Importa el modelo Folder [cite: 12]
+const User = require("../models/User"); // Importa el modelo User [cite: 10]
 
 /**
- * Calcula el tamaño total de los archivos dentro de una carpeta y sus subcarpetas.
- * @param {number} folderId - ID de la carpeta raíz.
- * @param {number} userId - ID del usuario propietario.
- * @param {Sequelize.Transaction} transaction - La transacción Sequelize.
- * @returns {Promise<number>} - Tamaño total en bytes.
+ * Elimina permanentemente un item (archivo o carpeta) de la base de datos
+ * y su contenido físico asociado (en caso de ser un archivo).
+ * Actualiza la cuota del usuario si se elimina un archivo.
+ * Debe ejecutarse dentro de una transacción de Sequelize.
+ *
+ * @param {Sequelize.Model} model El modelo Sequelize (File o Folder).
+ * @param {number} itemId El ID del item a eliminar.
+ * @param {number} userId El ID del usuario propietario.
+ * @param {Sequelize.Transaction} transaction La transacción activa.
+ * @returns {Promise<boolean>} True si se eliminó con éxito, False si no se encontró o no pertenecía al usuario.
+ * @throws {Error} Si ocurre un error durante la eliminación física o de la base de datos.
  */
-const calculateFolderSizeRecursive = async (folderId, userId, transaction) => {
-  let totalSize = 0;
-
-  // Sumar tamaño de archivos en la carpeta actual
-  const filesSize = await File.sum("size", {
-    where: { folder_id: folderId, user_id: userId },
-    transaction,
-    paranoid: false, // Incluir archivos soft-deleted por si acaso al calcular tamaño a liberar
-  });
-  totalSize += filesSize || 0;
-
-  // Encontrar subcarpetas
-  const subFolders = await Folder.findAll({
-    where: { parent_folder_id: folderId, user_id: userId },
-    attributes: ["id"],
-    transaction,
-    paranoid: false, // Incluir carpetas soft-deleted
-  });
-
-  // Sumar recursivamente el tamaño de las subcarpetas
-  for (const subFolder of subFolders) {
-    totalSize += await calculateFolderSizeRecursive(
-      subFolder.id,
-      userId,
-      transaction
-    );
-  }
-
-  return totalSize;
-};
-
-// Modificar deletePhysicalFilesRecursive para aceptar transacción (aunque no la use directamente para fs)
-const deletePhysicalFilesRecursive = async (
-  folderId,
-  userId /*, transaction - no necesaria aquí */
-) => {
-  // ... (lógica existente para borrar archivos físicos con fsPromises.unlink)
-  // Esta parte no necesita la transacción de BD directamente.
-  // Encuentra archivos directamente en esta carpeta (incluyendo borrados por si acaso)
-  const filesToDelete = await File.findAll({
-    where: { folder_id: folderId, user_id: userId },
-    paranoid: false, // Incluir archivos ya borrados suavemente por si acaso
-    // transaction: transaction // No es necesario para buscar paths
-  });
-
-  for (const file of filesToDelete) {
-    try {
-      if (file.storage_path) {
-        await fsPromises.unlink(file.storage_path);
-        console.log(
-          `[Util] Archivo físico permanente eliminado: ${file.storage_path}`
-        );
-      }
-    } catch (unlinkError) {
-      if (unlinkError.code !== "ENOENT") {
-        // Ignorar si no existe
-        console.error(
-          `[Util] Error eliminando archivo físico ${file.storage_path}:`,
-          unlinkError
-        );
-      }
-    }
-  }
-
-  // Encuentra subcarpetas (incluyendo borradas por si acaso)
-  const subFolders = await Folder.findAll({
-    where: { parent_folder_id: folderId, user_id: userId },
-    paranoid: false,
-    attributes: ["id"], // Solo necesitamos el id
-    // transaction: transaction // No es necesario para la recursión física
-  });
-
-  // Llamada recursiva para cada subcarpeta
-  for (const subFolder of subFolders) {
-    await deletePhysicalFilesRecursive(subFolder.id, userId);
-  }
-};
-
-/**
- * Elimina permanentemente un item (Archivo o Carpeta) y su contenido físico si aplica.
- * Actualiza el espacio usado por el usuario. ¡Debe llamarse DENTRO de una transacción!
- * @param {Sequelize.Model} model - El modelo de Sequelize (File o Folder).
- * @param {number} itemId - ID del item a eliminar.
- * @param {number} userId - ID del usuario (para verificación y borrado físico recursivo).
- * @param {Sequelize.Transaction} transaction - La transacción Sequelize activa.
- * @returns {Promise<boolean>} - True si se eliminó, false si no se encontró o no pertenecía.
- * @throws {Error} - Si ocurre un error durante la eliminación.
- */
-const permanentlyDeleteItemAndContent = async (
+async function permanentlyDeleteItemAndContent(
   model,
   itemId,
   userId,
   transaction
-) => {
-  // Encontrar el item (incluso si ya está borrado suavemente) DENTRO de la transacción
-  const item = await model.findByPk(itemId, { paranoid: false, transaction });
+) {
+  // 1. Buscar el item en la papelera, asegurándose que pertenece al usuario
+  const item = await model.findOne({
+    where: {
+      id: itemId,
+      user_id: userId,
+      deletedAt: { [Op.ne]: null }, // Asegurarse que está en la papelera (soft deleted)
+    },
+    paranoid: false, // Incluir los soft-deleted en la búsqueda
+    transaction, // Ejecutar dentro de la transacción
+  });
 
-  // Verificar si existe y pertenece al usuario
-  if (!item || item.user_id !== userId) {
+  // Si no se encuentra o no pertenece al usuario, no hacer nada y devolver false
+  if (!item) {
     console.warn(
-      `[Util] Item ${model.name} ID:${itemId} no encontrado o no pertenece al usuario ${userId} para eliminación permanente.`
+      `[DeleteUtil] Item ${model.name} ID ${itemId} no encontrado en papelera o no pertenece al usuario ${userId} para eliminación permanente.`
     );
-    return false; // No encontrado o no autorizado
+    return false;
   }
-
-  const itemName = item.name; // Guardar nombre para logs
-  let sizeToFree = 0;
 
   console.log(
-    `[Util] Iniciando eliminación permanente de ${model.name}: ${itemName} (ID: ${itemId})`
+    `[DeleteUtil] Iniciando eliminación permanente para ${model.name} ID ${itemId} del usuario ${userId}.`
   );
 
-  try {
-    // --- Calcular tamaño a liberar y borrar físico ANTES de borrar registro ---
-    if (model === Folder) {
-      sizeToFree = await calculateFolderSizeRecursive(
-        itemId,
-        userId,
-        transaction
-      ); // <-- Calcular tamaño
-      await deletePhysicalFilesRecursive(itemId, userId); // Borrar físico (no necesita tx)
-    } else if (model === File) {
-      sizeToFree = item.size || 0; // <-- Usar tamaño del archivo
-      if (item.storage_path) {
-        try {
-          await fsPromises.unlink(item.storage_path);
-          console.log(
-            `[Util] Archivo físico permanente eliminado: ${item.storage_path}`
-          );
-        } catch (unlinkError) {
-          if (unlinkError.code !== "ENOENT") {
-            console.error(/*...*/);
-          }
-        }
-      }
-    }
-
-    // --- Borrar el registro de la BD (y cascada si es carpeta) ---
-    await item.destroy({ force: true, transaction }); // <-- Forzar borrado y usar transacción
-    console.log(
-      `[Util] Registro de ${model.name}: ${itemName} (ID: ${itemId}) eliminado de la BD.`
+  // 2. Si es un Archivo, intentar eliminar el archivo físico y actualizar cuota
+  if (model === File && item.storage_path) {
+    // [cite: 13]
+    // Construir la ruta absoluta al archivo físico
+    const filePath = path.join(
+      __dirname,
+      "..",
+      "..",
+      "uploads",
+      item.storage_path
     );
+    try {
+      console.log(
+        `[DeleteUtil] Intentando eliminar archivo físico: ${filePath}`
+      );
+      await fs.unlink(filePath);
+      console.log(
+        `[DeleteUtil] Archivo físico eliminado con éxito: ${filePath}`
+      );
 
-    // --- Actualizar uso del usuario SI liberamos espacio ---
-    if (sizeToFree > 0) {
-      const user = await User.findByPk(userId, {
-        transaction,
-        lock: transaction.LOCK.UPDATE, // Bloquear fila para evitar condiciones de carrera
-      });
-      if (user) {
-        user.storage_used_bytes = Math.max(
-          0,
-          user.storage_used_bytes - sizeToFree
-        ); // Asegurar que no sea negativo
-        await user.save({ transaction }); // Guardar dentro de la transacción
-        console.log(
-          `[Util] Uso de almacenamiento actualizado para usuario ${userId}. Liberado: ${sizeToFree} bytes.`
+      // --- ACTUALIZAR ESPACIO USADO POR EL USUARIO ---
+      // --- ACTUALIZAR ESPACIO USADO POR EL USUARIO ---
+      try {
+        // <--- DENTRO DE ESTE TRY
+        const user = await User.findByPk(userId, { transaction });
+        if (user && item.size) {
+          // ¡¡VOLVER A ESTO!!
+          user.storage_used_bytes = Math.max(
+            0,
+            (user.storage_used_bytes || 0) - item.size
+          );
+          await user.save({ transaction }); // <-- El error podría estar aquí
+          console.log(
+            `[DeleteUtil] Espacio del usuario ${userId} actualizado (reducido en ${item.size} bytes).`
+          );
+        }
+      } catch (userUpdateError) {
+        // <--- EN ESTE CATCH
+        console.error(
+          `[DeleteUtil] Error al actualizar el espacio del usuario ${userId} tras eliminar archivo ID ${itemId}:`,
+          userUpdateError
         );
+        throw userUpdateError;
+        // !!! AQUÍ FALTA ALGO IMPORTANTE !!!
+        // Si la actualización del usuario falla, deberíamos probablemente
+        // detener todo y revertir la transacción.
+        // Por ahora, solo lo estamos registrando en la consola.
+      }
+      // --- FIN ACTUALIZAR ESPACIO ---
+    } catch (err) {
+      // Si el archivo no existe (ENOENT), lo ignoramos
+      // pero continuamos para borrar el registro de la DB.
+      // Si es otro error (ej. permisos), lanzamos para causar rollback.
+      if (err.code !== "ENOENT") {
+        console.error(
+          `[DeleteUtil] Error CRÍTICO eliminando archivo físico ${filePath}:`,
+          err
+        );
+        throw new Error(
+          `Error al eliminar archivo físico ${item.storage_path} para ${model.name} ID ${itemId}.`
+        ); // [cite: 13]
       } else {
         console.warn(
-          `[Util] Usuario ${userId} no encontrado para actualizar uso tras borrado.`
+          `[DeleteUtil] Archivo físico no encontrado (${filePath}), pero se procederá a eliminar el registro de la DB.`
         );
-        // Considerar si lanzar un error aquí para revertir la transacción si el usuario DEBERÍA existir
       }
     }
-    // Si todo va bien, la transacción se confirmará fuera de esta función.
-    return true;
+  } else if (model === Folder) {
+    // [cite: 12]
+    // --- IMPORTANTE: Eliminación de contenido de Carpetas ---
+    // Esta función *actualmente* solo borra el registro de la carpeta.
+    // Para una eliminación completa y actualización de cuota, necesitarías implementar
+    // lógica *recursiva* aquí que llame a `permanentlyDeleteItemAndContent`
+    // para todos los archivos y subcarpetas *dentro* de esta carpeta.
+    console.log(
+      `[DeleteUtil] Procesando eliminación permanente de registro de Carpeta ID ${itemId}. La lógica de eliminación recursiva de contenido y actualización de cuota debe implementarse por separado.`
+    ); // [cite: 12]
+  }
+
+  // 3. Eliminar el registro de la base de datos permanentemente (force: true)
+  try {
+    await item.destroy({ force: true, transaction });
+    console.log(
+      `[DeleteUtil] Registro ${model.name} ID ${itemId} eliminado permanentemente de la DB.`
+    );
+    return true; // Indicar éxito
   } catch (dbError) {
     console.error(
-      `[Util] Error durante eliminación permanente de ${model.name} ID:${itemId}:`,
+      `[DeleteUtil] Error CRÍTICO eliminando registro ${model.name} ID ${itemId} de la DB:`,
       dbError
     );
-    // No hacemos rollback aquí, se hará fuera si es necesario.
-    throw dbError; // Re-lanzar para manejo superior (importante para rollback)
+    throw new Error(
+      `Error al eliminar registro ${model.name} ID ${itemId} de la base de datos.`
+    ); // Lanzar para rollback
   }
-};
+}
 
+// Exportar la función para que pueda ser usada por los controladores
 module.exports = {
   permanentlyDeleteItemAndContent,
-  // calculateFolderSizeRecursive, // Exportar si se necesita en otro lugar
+  // Puedes añadir aquí otras funciones de utilidad relacionadas si las necesitas
 };

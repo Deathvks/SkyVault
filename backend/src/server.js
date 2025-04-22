@@ -7,6 +7,7 @@ const rateLimit = require("express-rate-limit");
 const jwt = require("jsonwebtoken"); // Importado para rate limit skip
 const { connectDB } = require("./config/database");
 const { scheduleTrashCleanup } = require("./jobs/trashCleanupJob");
+const favoriteRoutes = require('./routes/favoriteRoutes');
 
 // Importar Rutas
 const userRoutes = require("./routes/userRoutes");
@@ -82,6 +83,7 @@ app.use("/api/files", fileRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/trash", trashRoutes);
 app.use("/api/bulk", bulkRoutes); // <-- Registrar rutas masivas
+app.use('/api/favorites', favoriteRoutes);
 
 // Manejo 404
 app.use((req, res, next) => {

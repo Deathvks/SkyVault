@@ -3,7 +3,7 @@ const { Folder, File } = require("../models");
 const { Op } = require("sequelize");
 const { validationResult } = require("express-validator"); // <-- Importar validationResult
 
-// --- Crear una nueva carpeta ---
+// --- Crear una nueva carpeta (Versión con Alias en Create) ---
 exports.createFolder = async (req, res) => {
   // --- COMPROBAR VALIDACIÓN ---
   const errors = validationResult(req);
@@ -12,73 +12,93 @@ exports.createFolder = async (req, res) => {
   }
   // ---------------------------
   try {
+    // Obtener name del body, userId del middleware (req.userId)
     const { name, parentFolderId = null } = req.body;
     const userId = req.userId;
 
-    // La validación de !name ya la hace express-validator
-    // if (!name) { ... }
-
-    // Validar parentFolderId numérico si se proporciona (aunque ya lo valida la regla)
+    // Determinar el parentId real (null para raíz, o el número entero)
     let parentId = null;
     if (
       parentFolderId &&
       parentFolderId !== "root" &&
       parentFolderId !== null
     ) {
-      parentId = parseInt(parentFolderId, 10);
-      if (isNaN(parentId)) {
-        // Esto no debería pasar si la validación de ruta/body funciona
-        return res
+      // Validar que parentFolderId sea un entero positivo
+      const parsedParentId = parseInt(parentFolderId, 10);
+      if (isNaN(parsedParentId) || parsedParentId <= 0) {
+         // Esta validación también está en la ruta, pero doble check no hace daño
+         return res
           .status(400)
-          .json({ message: "ID de carpeta padre inválido." });
+          .json({ message: "ID de carpeta padre inválido en body." });
       }
-      // Verificar existencia y pertenencia (Sequelize usa paranoid:true por defecto aquí)
+      parentId = parsedParentId; // Usar el ID numérico
+
+      // Verificar existencia y pertenencia de la carpeta padre
       const parent = await Folder.findOne({
-        where: { id: parentId, user_id: userId },
+        where: { id: parentId, user_id: userId }, // Usa user_id (columna DB) para buscar
       });
       if (!parent) {
         return res
           .status(404)
           .json({ message: "La carpeta padre no existe o no te pertenece." });
       }
-    } else {
-      // Si es null o 'root', el parentId real es null
-      parentId = null;
     }
+    // Si no se proporcionó parentFolderId o era 'root', parentId se queda como null
 
-    // Verificar conflicto (Sequelize usa paranoid:true por defecto aquí)
+    // Log antes de crear
+    console.log(`DEBUG [createFolder] Intentando crear carpeta para userId: ${userId}, parentId: ${parentId}`);
+
+    // Verificar conflicto de nombre en la misma ubicación
     const existingFolder = await Folder.findOne({
-      where: { name, user_id: userId, parent_folder_id: parentId },
+      where: {
+          name: name.trim(), // Usar nombre sin espacios extra
+          user_id: userId, // Columna DB
+          parent_folder_id: parentId // Columna DB
+        },
     });
     if (existingFolder) {
       return res.status(409).json({
-        message: `Ya existe una carpeta llamada "${name}" en esta ubicación.`,
+        message: `Ya existe una carpeta llamada "${name.trim()}" en esta ubicación.`,
       });
     }
 
-    const newFolder = await Folder.create({
-      name, // El name ya viene trim() de la validación si se añadió .trim()
-      user_id: userId,
-      parent_folder_id: parentId,
-    });
+    // *** USA LOS ALIAS de asociación ('userId', 'parentFolderId') para el objeto de creación ***
+    const dataToCreate = {
+        name: name.trim(), // Guarda el nombre sin espacios extra
+        userId: userId,           // <-- ALIAS de la asociación User-Folder
+        parentFolderId: parentId  // <-- ALIAS de la asociación Folder-Folder
+    };
+    // ****************************************************************************************
 
+    console.log(`DEBUG [createFolder] Objeto pasado a Folder.create:`, JSON.stringify(dataToCreate));
+    const newFolder = await Folder.create(dataToCreate);
+
+    // Devuelve la respuesta exitosa con la nueva carpeta
     res
       .status(201)
       .json({ message: "Carpeta creada con éxito.", folder: newFolder });
+
   } catch (error) {
+    // Loguea el error completo
     console.error("Error al crear carpeta:", error);
+    // Loguea detalles del error de Sequelize si existen
+    if (error.sql) {
+        console.error("SQL con error:", error.sql);
+        console.error("Parámetros SQL:", error.parameters);
+    }
+    // Manejo específico para violación de unicidad (aunque la comprobación previa debería evitarlo)
     if (error.name === "SequelizeUniqueConstraintError") {
       return res.status(409).json({
-        message: `Ya existe una carpeta llamada "${req.body.name}" en esta ubicación.`,
+        message: `Ya existe una carpeta llamada "${req.body.name?.trim()}" en esta ubicación (conflicto DB).`,
       });
     }
+     // Error genérico para otros fallos
     res.status(500).json({ message: "Error interno al crear la carpeta." });
   }
 };
 
 // --- Obtener contenido de una carpeta (o raíz) ---
 exports.getFolderContents = async (req, res) => {
-  // ... (Validación existente)
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
@@ -86,13 +106,15 @@ exports.getFolderContents = async (req, res) => {
   try {
     const { folderId } = req.params;
     const userId = req.userId;
-    let parentFolderId = null;
+    let parentFolderId = null; // ID para filtrar en la DB (null para raíz)
 
+    // Determina el ID numérico del padre si no es la raíz
     if (folderId !== "root") {
-      parentFolderId = parseInt(folderId, 10);
-      // Verificar existencia (paranoid:true es default)
+      parentFolderId = parseInt(folderId, 10); // Asume que la validación ya aseguró que es int
+      // Verificar existencia y pertenencia de la carpeta padre
       const parentFolder = await Folder.findOne({
         where: { id: parentFolderId, user_id: userId },
+        attributes: ['id'] // Solo necesitamos saber si existe
       });
       if (!parentFolder) {
         return res
@@ -101,35 +123,45 @@ exports.getFolderContents = async (req, res) => {
       }
     }
 
-    // Usar el filtrado implícito de paranoid: true
-    const subFolders = await Folder.findAll({
+    // Busca las subcarpetas DENTRO de la carpeta actual (parentFolderId)
+    const subFolders = await Folder.findAll({ // <-- Renombrado a subFolders
       where: {
         user_id: userId,
-        parent_folder_id: parentFolderId,
+        parent_folder_id: parentFolderId // <-- Condición WHERE correcta
       },
       order: [["name", "ASC"]],
+      // attributes: [...] // Opcional: Si solo quieres campos específicos
     });
 
+    // Busca los archivos DENTRO de la carpeta actual (parentFolderId)
     const files = await File.findAll({
       where: {
         user_id: userId,
-        folder_id: parentFolderId,
+        folder_id: parentFolderId // <-- Condición WHERE correcta
       },
       order: [["name", "ASC"]],
+      // attributes: [...] // Opcional: Si solo quieres campos específicos
     });
 
+    // Logs de depuración (ahora usan 'subFolders')
     console.log("DEBUG [getFolderContents]: Files fetched:", files.length);
     console.log(
       "DEBUG [getFolderContents]: Folders fetched:",
-      subFolders.length
+      subFolders.length // <-- Usa la variable correcta
     );
 
-    res.status(200).json({ subFolders, files });
+    console.log(`[getFolderContents] Enviando respuesta para user ${userId}, folder ${parentFolderId}:`, { subFoldersCount: subFolders.length, filesCount: files.length }); // <-- Usa la variable correcta
+    console.log("[getFolderContents] Nombres carpetas:", subFolders.map(f => f.name)); // <-- Usa la variable correcta
+    console.log("[getFolderContents] Nombres archivos:", files.map(f => f.name));
+
+    // Envía la respuesta correcta
+    res.status(200).json({ subFolders, files }); // <-- Usa la variable correcta
+
   } catch (error) {
     console.error(
       "[getFolderContents] Error completo al obtener contenido:",
       error
-    ); // Log más detallado
+    );
     res.status(500).json({ message: "Error interno al obtener el contenido." });
   }
 };
@@ -188,15 +220,20 @@ exports.renameFolder = async (req, res) => {
       return res.status(200).json(folder); // Devolver la carpeta sin cambios
     }
 
+    // *** CORRECCIÓN AQUÍ: Asegurar que parent_folder_id sea null para la raíz ***
+    const parentId = folder.parent_folder_id ?? null;
+
     // Comprobar conflicto (findOne usa paranoid: true por defecto)
     const conflict = await Folder.findOne({
       where: {
         name: trimmedNewName,
         user_id: userId,
-        parent_folder_id: folder.parent_folder_id,
+        parent_folder_id: parentId, // <-- Usar la variable corregida
         id: { [Op.ne]: folderId }, // Excluir la carpeta actual
       },
     });
+    // *** FIN CORRECCIÓN ***
+
     if (conflict) {
       return res
         .status(409)
@@ -210,7 +247,7 @@ exports.renameFolder = async (req, res) => {
 
     res.status(200).json({ message: "Carpeta renombrada con éxito.", folder });
   } catch (error) {
-    console.error("Error al renombrar carpeta:", error);
+    console.error("Error al renombrar carpeta:", error); // Aquí es donde ves el error original
     if (error.name === "SequelizeUniqueConstraintError") {
       return res
         .status(409)
@@ -222,73 +259,77 @@ exports.renameFolder = async (req, res) => {
   }
 };
 
+
 // --- Obtener Árbol de Carpetas ---
+// --- Obtener Árbol de Carpetas ---
+// --- Obtener Árbol de Carpetas --- (Intento Final) ---
 exports.getFolderTree = async (req, res) => {
-  console.log("[getFolderTree] Iniciando obtención de árbol..."); // <-- Log inicio
+  console.log("[getFolderTree] Iniciando obtención de árbol...");
   try {
     const userId = req.userId;
-    console.log(`[getFolderTree] Buscando carpetas para user_id: ${userId}`); // <-- Log userId
+    console.log(`[getFolderTree] Buscando carpetas para user_id: ${userId}`);
 
-    // Fetches ONLY active folders for the user (paranoid: true is default)
+    // *** CAMBIO: Eliminada la opción 'attributes' ***
     const allFolders = await Folder.findAll({
-      where: { user_id: userId },
+      where: { user_id: userId }, // Mantiene el filtro por usuario
       order: [["name", "ASC"]],
-      attributes: ["id", "name", "parent_folder_id"],
+      // paranoid: true es implícito si está en el modelo
     });
+    // *********************************************
 
-    // --- Log detallado de las carpetas encontradas ---
     console.log(
       `[getFolderTree] Carpetas activas encontradas en BD: ${allFolders.length}`
     );
-    console.log(
-      "[getFolderTree] Muestra de carpetas:",
-      JSON.stringify(
-        allFolders
-          .slice(0, 10)
-          .map((f) => ({ id: f.id, name: f.name, parent: f.parent_folder_id })),
-        null,
-        2
-      )
-    );
-    // ------------------------------------------------
+    // Log de muestra opcional
+    // console.log("[getFolderTree] Muestra de carpetas:", JSON.stringify(allFolders.slice(0, 10).map(f => ({ id: f.id, name: f.name, parent: f.parentFolderId })), null, 2));
 
-    // Recursive function to build the tree structure
+
+    // --- Función buildTree (Usando ALIAS 'parentFolderId') ---
     const buildTree = (parentId = null) => {
+      // console.log(`[buildTree] Buscando hijos para parentId: ${parentId} (Tipo: ${typeof parentId})`); // Log opcional
+
       const children = allFolders
         .filter((folder) => {
-          // Asegurar comparación estricta con null
-          return folder.parent_folder_id === parentId;
+          // *** USA EL ALIAS 'parentFolderId' OTRA VEZ ***
+          // Al quitar 'attributes', Sequelize debería poblar este alias de la asociación
+          const currentParentId = folder.parentFolderId;
+          // *******************************************
+
+          // console.log(`[buildTree Filter] Carpeta ID: ${folder.id}, parentFolderId (ALIAS): ${currentParentId} (Tipo: ${typeof currentParentId}), Comparando con: ${parentId}`); // Log opcional
+
+          // Comparación estricta
+          return currentParentId === parentId;
         })
         .map((folder) => ({
           id: folder.id,
           name: folder.name,
-          children: buildTree(folder.id), // Recursive call for children
+          children: buildTree(folder.id),
         }));
+
+      // console.log(`[buildTree] Hijos encontrados para ${parentId}: ${children.length}`); // Log opcional
       return children;
     };
+    // --- FIN buildTree ---
 
-    // Build the tree starting from root (parentId = null)
     const folderTree = buildTree(null);
 
-    // --- Log detallado del árbol construido ---
     console.log(
       "[getFolderTree] Árbol construido:",
       JSON.stringify(folderTree, null, 2)
     );
-    // -----------------------------------------
 
-    // Send the result as JSON
-    res.status(200).json(folderTree); // Enviar el array construido
+    res.status(200).json(folderTree);
+
   } catch (error) {
     console.error(
       "[getFolderTree] Error completo al obtener árbol de carpetas:",
       error
-    ); // <-- Log del error
+    );
     res
       .status(500)
       .json({ message: "Error interno al obtener la estructura de carpetas." });
   }
-};
+}; // <-- Llave de cierre de exports.getFolderTree
 
 // --- Mover Carpeta ---
 exports.moveFolder = async (req, res) => {
