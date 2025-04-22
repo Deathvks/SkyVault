@@ -216,38 +216,42 @@ function DashboardPage() {
         setFolders(response.data.subFolders || []);
         setFiles(response.data.files || []);
 
-        // --- Actualización inteligente del Path ---
-        const currentPathLastEntryId = path[path.length - 1]?.id;
-        const folderIdNumber =
-          folderIdToLoad !== "root" ? parseInt(folderIdToLoad, 10) : "root";
+        // --- ELIMINAR TODO ESTE BLOQUE ---
+        /*
+            // --- Actualización inteligente del Path ---
+            const currentPathLastEntryId = path[path.length - 1]?.id;
+            const folderIdNumber =
+             folderIdToLoad !== "root" ? parseInt(folderIdToLoad, 10) : "root";
 
-        // Si vamos a la raíz
-        if (folderIdNumber === "root") {
-          if (path.length > 1 || path[0]?.id !== "root") {
-            setPath([{ id: "root", name: "Raíz" }]);
-          }
-        }
-        // Si estamos cargando una carpeta diferente a la última del path actual
-        else if (folderIdNumber !== currentPathLastEntryId) {
-          let newPath = [...path];
-          const existingIndex = newPath.findIndex(
-            (p) => p.id == folderIdNumber
-          ); // Usar == por si viene como string
+            // Si vamos a la raíz
+            if (folderIdNumber === "root") {
+             if (path.length > 1 || path[0]?.id !== "root") {
+               setPath([{ id: "root", name: "Raíz" }]);
+             }
+            }
+            // Si estamos cargando una carpeta diferente a la última del path actual
+            else if (folderIdNumber !== currentPathLastEntryId) {
+             let newPath = [...path];
+             const existingIndex = newPath.findIndex(
+               (p) => p.id == folderIdNumber
+             ); // Usar == por si viene como string
 
-          if (existingIndex !== -1) {
-            // Si ya existe en el path (navegando hacia atrás), cortar el path
-            newPath = newPath.slice(0, existingIndex + 1);
-          } else {
-            // Si es una carpeta nueva (hacia adelante), buscarla en la respuesta
-            const folderData = response.data.subFolders?.find(
-              (f) => f.id === folderIdNumber
-            );
-            const folderName = folderData ? folderData.name : "Desconocido"; // Nombre o fallback
-            newPath.push({ id: folderIdNumber, name: folderName });
-          }
-          setPath(newPath);
-        }
-        // Si estamos recargando la misma carpeta, no modificar el path
+             if (existingIndex !== -1) {
+               // Si ya existe en el path (navegando hacia atrás), cortar el path
+               newPath = newPath.slice(0, existingIndex + 1);
+             } else {
+               // Si es una carpeta nueva (hacia adelante), buscarla en la respuesta
+               const folderData = response.data.subFolders?.find(
+                 (f) => f.id === folderIdNumber
+               );
+               const folderName = folderData ? folderData.name : "Desconocido"; // Nombre o fallback
+               newPath.push({ id: folderIdNumber, name: folderName });
+             }
+             setPath(newPath); // <--- NO ACTUALIZAR PATH AQUÍ
+            }
+            // Si estamos recargando la misma carpeta, no modificar el path
+            */
+        // --- FIN DEL BLOQUE A ELIMINAR ---
       } catch (err) {
         console.error("Error loading folder contents:", err);
         if (showErrorNotifications) {
@@ -260,13 +264,13 @@ function DashboardPage() {
         // Solo volver a root si el error no fue cargando root
         if (folderIdToLoad !== "root") {
           setCurrentFolderId("root"); // Cambia el ID actual
-          setPath([{ id: "root", name: "Raíz" }]); // Resetea el path
+          setPath([{ id: "root", name: "Raíz" }]); // Resetea el path en caso de error grave
         }
       } finally {
         setIsLoading(false);
       }
     },
-    [path, logout, showErrorNotifications] // Dependencia de 'path' para lógica de path
+    [logout, showErrorNotifications] // Quitar 'path' de las dependencias si ya no lo usas para actualizar
   );
 
   useEffect(() => {
@@ -400,26 +404,45 @@ function DashboardPage() {
   };
 
   const handleFolderClick = (folder) => {
+    // 1. Verificar si hay acciones en curso o si se clickea la misma carpeta
     if (isActionLoading || folder.id === currentFolderId) return;
-    // Limpiar búsqueda si se hace clic en una carpeta desde resultados
+
+    // 2. Si estamos en modo búsqueda: Limpiar búsqueda y luego navegar
     if (searchTerm) {
-      clearSearch(); // Limpia término y resultados, recarga carpeta actual (que puede ser root)
-      // Navegar a la carpeta DESPUÉS de limpiar
+      clearSearch(); // Limpia término, resultados y dispara recarga de carpeta actual (via performSearch(''))
+      // Navegar a la carpeta DESPUÉS de que la limpieza haya probablemente terminado y recargado la vista
       setTimeout(() => {
+        // 2a. Definir la entrada para el nuevo path UNA SOLA VEZ aquí
+        const newPathEntry = { id: folder.id, name: folder.name };
+
+        // 2b. Actualizar el path. Decisión: Añadir al path actual.
+        // (Puede ser impreciso si la carpeta de búsqueda no es hija directa,
+        // pero es una implementación posible)
+        const finalPath = [...path];
+        if (finalPath[finalPath.length - 1]?.id !== folder.id) {
+          finalPath.push(newPathEntry); // Usar la variable ya declarada
+        }
+        setPath(finalPath);
+
+        // 2c. Cambiar la carpeta actual para disparar la carga
         setCurrentFolderId(folder.id);
-        // No necesitamos modificar el path aquí, loadContents lo hará
-      }, 50); // Pequeño delay
+      }, 100); // Delay para permitir que clearSearch termine
       return; // Importante salir aquí
     }
 
-    // Lógica original para navegación normal (sin búsqueda)
-    // No necesitamos añadir al path aquí, loadContents se encargará
-    // const newPathEntry = { id: folder.id, name: folder.name };
-    // if (path[path.length - 1]?.id !== folder.id) {
-    //   setPath((prevPath) => [...prevPath, newPathEntry]);
-    // }
+    // 3. Lógica para navegación normal (sin búsqueda)
+    // 3a. Actualizar el path ANTES de cambiar el ID
+    // Nota: Esta declaración de 'newPathEntry' está en un bloque diferente al del 'if (searchTerm)', por lo que NO causa conflicto.
+    const newPathEntry = { id: folder.id, name: folder.name };
+    // Evitar añadir si ya estamos ahí (doble click rápido o error lógico)
+    if (path[path.length - 1]?.id !== folder.id) {
+      setPath((prevPath) => [...prevPath, newPathEntry]);
+    }
 
-    setCurrentFolderId(folder.id); // Cambiar el ID dispara el useEffect para cargar
+    // 3b. Cambiar el ID actual, lo que disparará el useEffect [currentFolderId] -> loadContents
+    setCurrentFolderId(folder.id);
+
+    // 4. Resetear UI states
     setShowFabMenu(false);
     if (isMobileSearchVisible) setIsMobileSearchVisible(false);
   };
@@ -430,17 +453,19 @@ function DashboardPage() {
     // Siempre limpiar búsqueda si se usa el breadcrumb
     if (searchTerm) {
       clearSearch();
-      // Volver a la carpeta del breadcrumb DESPUÉS de limpiar
       setTimeout(() => {
-        setCurrentFolderId(folderId);
-        // No es necesario manipular el path aquí tampoco
+        // IMPORTANTE: Actualizar path ANTES de setCurrentFolderId
+        const newPath = path.slice(0, index + 1);
+        setPath(newPath);
+        setCurrentFolderId(folderId); // Dispara loadContents con path correcto
       }, 50);
       return; // Salir
     }
 
     // Lógica original para navegación normal
-    // const newPath = path.slice(0, index + 1);
-    // setPath(newPath); // <-- No setear path aquí, dejar que loadContents lo haga
+    // ACTUALIZAR PATH AQUÍ
+    const newPath = path.slice(0, index + 1);
+    setPath(newPath);
     setCurrentFolderId(folderId); // Esto dispara el useEffect
     setShowFabMenu(false);
     if (isMobileSearchVisible) setIsMobileSearchVisible(false);
@@ -1515,7 +1540,7 @@ function DashboardPage() {
                 className={styles.logoutButton}
                 disabled={isActionLoading}
               >
-                Logout
+                Cerrar sesión
               </button>
             </div>
             {/* Acciones Mobile */}
@@ -1524,6 +1549,7 @@ function DashboardPage() {
                 onClick={toggleMobileSearch}
                 className={styles.mobileIconButton}
                 title="Buscar"
+                disabled={isActionLoading} // Añadir disabled si cualquier acción está en progreso
               >
                 <SearchIcon />
               </button>
@@ -1533,6 +1559,7 @@ function DashboardPage() {
                 title="Más opciones"
                 aria-haspopup="true"
                 aria-expanded={isMobileMenuOpen}
+                disabled={isActionLoading} // Añadir disabled si cualquier acción está en progreso
               >
                 <MoreVertIcon />
               </button>
@@ -1543,6 +1570,15 @@ function DashboardPage() {
                       {getQuotaText()}
                     </div>
                   )}
+                  {/* --- Mi Perfil --- */}
+                  <Link
+                    to="/profile"
+                    className={styles.mobileDropdownLink}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <button>Mi Perfil</button>
+                  </Link>
+                  {/* --- Recargar --- */}
                   <button
                     onClick={() => {
                       handleReload();
@@ -1552,6 +1588,7 @@ function DashboardPage() {
                   >
                     Recargar
                   </button>
+                  {/* --- Ajustes --- */}
                   <Link
                     to="/settings"
                     className={styles.mobileDropdownLink}
@@ -1559,13 +1596,7 @@ function DashboardPage() {
                   >
                     <button>Ajustes</button>
                   </Link>
-                  <Link
-                    to="/profile"
-                    className={styles.mobileDropdownLink}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <button>Mi Perfil</button>
-                  </Link>
+                  {/* --- Papelera --- */}
                   <Link
                     to="/trash"
                     className={styles.mobileDropdownLink}
@@ -1573,12 +1604,14 @@ function DashboardPage() {
                   >
                     <button>Papelera</button>
                   </Link>
+                  {/* --- Logout --- */}
                   <button
                     onClick={() => {
                       handleLogout();
                       setIsMobileMenuOpen(false);
                     }}
                     className={styles.mobileDropdownLogout}
+                    disabled={isActionLoading} // Asegúrate que tiene el disabled
                   >
                     Logout
                   </button>

@@ -46,7 +46,7 @@ function RegisterPage() {
         {/* Añadir noValidate al form */}
         <form onSubmit={handleSubmit} noValidate>
           <div className={styles.formGroup}>
-            <label htmlFor="username" className={styles.label}>Username:</label>
+            <label htmlFor="username" className={styles.label}>Nombre de usuario:</label>
             <input
               type="text"
               id="username"
@@ -70,7 +70,7 @@ function RegisterPage() {
             />
           </div>
           <div className={styles.formGroup}>
-            <label htmlFor="password" className={styles.label}>Password:</label>
+            <label htmlFor="password" className={styles.label}>Contraseña:</label>
             <input
               type="password"
               id="password"

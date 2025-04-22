@@ -54,7 +54,7 @@ function LoginPage() {
             />
           </div>
           <div className={styles.formGroup}>
-            <label htmlFor="password" className={styles.label}>Password:</label>
+            <label htmlFor="password" className={styles.label}>Contraseña:</label>
             <input
               type="password"
               id="password"
@@ -68,7 +68,7 @@ function LoginPage() {
           {/* Ya no se muestra el error local aquí */}
           {/* {error && <p className={styles.error}>{error}</p>} */}
           <button type="submit" disabled={isLoading} className={styles.button}>
-            {isLoading ? 'Iniciando sesión...' : 'Login'}
+            {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
           </button>
         </form>
          <p className={styles.linkContainer}>
