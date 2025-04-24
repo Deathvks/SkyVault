@@ -201,40 +201,58 @@ function MoveItemModal({
   };
 
   // Manejador para confirmar la acción de mover
+  // Dentro de MoveItemModal.jsx
   const handleConfirm = () => {
-    // Asegurarse que hay items y no está cargando
+    console.log("[MoveItemModal Debug] handleConfirm INICIADO."); // <-- LOG INICIO
+
     if (
       !Array.isArray(itemsToMove) ||
       itemsToMove.length === 0 ||
       isActionLoading
     ) {
+      console.log(
+        "[MoveItemModal Debug] Salida temprana: No items o cargando."
+      ); // <-- LOG SALIDA TEMPRANA
       return;
     }
 
     const destinationIdForApi =
       selectedFolderId === null ? null : selectedFolderId;
+    console.log(
+      `[MoveItemModal Debug] Destino seleccionado (API): ${destinationIdForApi}, Nombre: ${selectedFolderName}`
+    ); // <-- LOG DESTINO
 
     // *** Validaciones ANTES de llamar a onConfirmMove ***
-
-    // 1. Validar si se intenta mover una carpeta a sí misma o a una subcarpeta
-    //    (Solo aplica si se mueve UNA carpeta)
     if (itemsToMove.length === 1 && itemsToMove[0].type === "folder") {
       const movingFolder = itemsToMove[0];
+      console.log(
+        `[MoveItemModal Debug] Validando mover carpeta ID ${movingFolder.id} a destino ${destinationIdForApi}`
+      ); // <-- LOG VALIDACIÓN CARPETA
+
       if (movingFolder.id === destinationIdForApi) {
+        console.warn(
+          "[MoveItemModal Debug] Validación FALLIDA: Mover carpeta a sí misma."
+        ); // <-- LOG FALLO 1
         toast.warn("No se puede mover una carpeta dentro de sí misma.");
         return;
       }
+      // Comprobar usando los IDs cacheados en disabledFolderIds
       if (disabledFolderIds.includes(destinationIdForApi)) {
-        // Esta comprobación usa los IDs calculados en useEffect
+        console.warn(
+          "[MoveItemModal Debug] Validación FALLIDA: Mover carpeta a subcarpeta (destino deshabilitado)."
+        ); // <-- LOG FALLO 2
         toast.warn(
           "No se puede mover una carpeta a una de sus propias subcarpetas."
         );
         return;
       }
+      console.log(
+        "[MoveItemModal Debug] Validación OK: Mover carpeta a sí misma/subcarpeta."
+      ); // <-- LOG OK 1
     }
 
-    // 2. Comprobar si el destino seleccionado es el mismo que el origen actual
-    //    (Aplica para uno o VARIOS elementos) <-- MODIFICACIÓN
+    // Comprobar si TODOS los elementos ya están en el destino
+    console.log("[MoveItemModal Debug] Validando si ya está(n) en destino..."); // <-- LOG VALIDACIÓN MISMA UBICACIÓN
     let allItemsAlreadyInDestination = false;
     if (Array.isArray(itemsToMove) && itemsToMove.length > 0) {
       allItemsAlreadyInDestination = itemsToMove.every((item) => {
@@ -246,17 +264,27 @@ function MoveItemModal({
     }
 
     if (allItemsAlreadyInDestination) {
+      console.info(
+        "[MoveItemModal Debug] Validación INFO: Ya está(n) en el destino."
+      ); // <-- LOG INFO MISMA UBICACIÓN
       const itemText =
         itemsToMove.length === 1
           ? `"${itemsToMove[0].name}"`
           : "Los elementos seleccionados";
-      toast.info(`${itemText} ya se encuentra(n) en "${selectedFolderName}".`);
-      onClose(); // Cerrar modal porque no hay nada que hacer
+      toast.info(
+        `${itemText} ya se encuentra(n) en "${selectedFolderName}".` // Corregido para template literal
+      );
+      onClose();
       return;
     }
+    console.log(
+      "[MoveItemModal Debug] Validación OK: No está(n) todos en el destino."
+    ); // <-- LOG OK 2
 
     // Si pasa las validaciones, llamar a la función externa
+    console.log("[MoveItemModal Debug] *** Llamando a onConfirmMove... ***"); // <-- LOG LLAMADA
     onConfirmMove(itemsToMove, destinationIdForApi);
+    console.log("[MoveItemModal Debug] *** onConfirmMove fue llamada. ***"); // <-- LOG DESPUÉS LLAMADA
   };
 
   // ==============================================================
@@ -290,9 +318,34 @@ function MoveItemModal({
       const currentParentId =
         (item.type === "folder" ? item.parent_folder_id : item.folder_id) ??
         null; // Origen actual (null si es raíz)
-      return currentParentId === selectedFolderId; // Comparar con destino seleccionado
+
+      // --- LOGS DE DEPURACIÓN ---
+      console.log("[MoveModal SameLocation Check] Item:", item);
+      console.log(
+        "[MoveModal SameLocation Check] Calculated currentParentId:",
+        currentParentId,
+        `(Type: ${typeof currentParentId})`
+      );
+      console.log(
+        "[MoveModal SameLocation Check] Comparing with selectedFolderId:",
+        selectedFolderId,
+        `(Type: ${typeof selectedFolderId})`
+      );
+      const comparisonResult = currentParentId === selectedFolderId;
+      console.log(
+        "[MoveModal SameLocation Check] Comparison Result:",
+        comparisonResult
+      );
+      // --- FIN LOGS ---
+
+      return comparisonResult; // Comparar con destino seleccionado
     });
   }
+
+  console.log(
+    "[MoveModal Debug] Final isDisabledBecauseSameLocation:",
+    isDisabledBecauseSameLocation
+  ); // <-- LOG AÑADIDO EXTRA
 
   // Combinar condiciones
   // El botón se deshabilita si está cargando, O si es una selección inválida (mover carpeta a subcarpeta),

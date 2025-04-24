@@ -12,6 +12,7 @@ import {
   removeFavorite as apiRemoveFavorite,
 } from "../services/api"; // Asegúrate que la ruta es correcta
 // import { useAuth } from './AuthContext'; // Descomenta si usas AuthContext para saber si el user está logueado
+import { useAuth } from './AuthContext'; // <-- AÑADIR ESTA LÍNEA
 
 // 1. Crear el Contexto
 const FavoritesContext = createContext();
@@ -21,7 +22,7 @@ export const FavoritesProvider = ({ children }) => {
   const [favorites, setFavorites] = useState([]); // Lista de favoritos [{ type: 'file'/'folder', id: ..., name: ..., ... }]
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  // const { user } = useAuth(); // Descomenta si necesitas el estado del usuario
+  const { user } = useAuth(); // Descomenta si necesitas el estado del usuario
 
   // Función para obtener los favoritos desde la API
   const fetchFavorites = useCallback(async () => {
@@ -102,12 +103,14 @@ export const FavoritesProvider = ({ children }) => {
 
   // Efecto para cargar los favoritos inicialmente (ej: cuando el componente se monta o el usuario cambia)
   useEffect(() => {
-    // if (user) { // Descomenta si usas AuthContext
-    fetchFavorites();
-    // } else { // Descomenta si usas AuthContext
-    //   setFavorites([]); // Limpiar favoritos si el usuario cierra sesión
-    // }
-  }, [fetchFavorites]); // Añade user si lo usas
+    if (user) { // Si hay un usuario logueado
+      console.log('[FavoritesContext] User detected, fetching favorites.'); // Log opcional
+      fetchFavorites(); // Carga sus favoritos
+    } else { // Si no hay usuario (logout)
+      console.log('[FavoritesContext] No user detected, clearing favorites.'); // Log opcional
+      setFavorites([]); // Limpia la lista de favoritos
+    }
+  }, [user, fetchFavorites]);
 
   // Valor que proporcionará el contexto
   const value = {

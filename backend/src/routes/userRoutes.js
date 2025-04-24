@@ -7,6 +7,11 @@ const { protect } = require("../middleware/authMiddleware"); // Importar protect
 
 const router = express.Router();
 
+// Lee la IP permitida desde las variables de entorno. Si no está definida, usa un array vacío.
+const allowedIPs = process.env.RATE_LIMIT_ALLOW_IP
+  ? [process.env.RATE_LIMIT_ALLOW_IP]
+  : [];
+
 // --- Rate Limiter para Autenticación ---
 const authLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutos
@@ -18,6 +23,7 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req, res) => req.ip,
+  allowList: allowedIPs, // Lista blanca de IPs permitidas
 });
 // --- Fin Rate Limiter ---
 

@@ -529,41 +529,53 @@ exports.moveFile = async (req, res) => {
     let { destinationFolderId } = req.body; // Validado int opcional o null/undefined
     const userId = req.userId;
 
-    const fileToMoveId = parseInt(fileId, 10); // Sabemos que es int
+    // --- Log Inicial ---
+    console.log(`[moveFile Debug] START - fileId: ${fileId}, destinationFolderId: ${destinationFolderId}, userId: ${userId}`);
+
+    const fileToMoveId = parseInt(fileId, 10);
 
     // --- Validar y normalizar destinationFolderId ---
     let destinationParentId = null; // Representa la raíz en la BD
-    // Si se proporciona y no es null/undefined (la validación ya aseguró que es numérico > 0 si existe)
     if (destinationFolderId !== undefined && destinationFolderId !== null) {
       destinationParentId = parseInt(destinationFolderId, 10);
+      console.log(`[moveFile Debug] Normalized destinationParentId: ${destinationParentId}`); // Log añadido
 
-      // Verificar que la carpeta destino existe y pertenece al usuario (solo carpetas activas)
+      // Verificar que la carpeta destino existe y pertenece al usuario
       const destFolder = await Folder.findOne({
         where: { id: destinationParentId, user_id: userId },
-        // paranoid: true default
       });
+      // --- Log Dest Folder ---
+      console.log(`[moveFile Debug] Destination folder check result:`, destFolder ? `Found ID ${destFolder.id}` : 'Not Found');
       if (!destFolder) {
+        console.warn(`[moveFile Debug] ABORT: Destination folder ${destinationParentId} not found or invalid.`); // Log añadido
         return res.status(404).json({
           message: "La carpeta de destino no existe o no te pertenece.",
         });
       }
-    } // Si era null o undefined, destinationParentId se queda como null (mover a la raíz)
+    } else {
+       console.log(`[moveFile Debug] Destination is root (destinationParentId: ${destinationParentId})`); // Log añadido
+    }
     // --- Fin Validación Destino ---
 
     // Encontrar archivo a mover (activo)
     const fileToMove = await File.findOne({
       where: { id: fileToMoveId, user_id: userId },
-      // paranoid: true default
     });
+     // --- Log File Found ---
+    console.log(`[moveFile Debug] File to move check result:`, fileToMove ? `Found ID ${fileToMove.id}` : 'Not Found');
     if (!fileToMove) {
+      console.warn(`[moveFile Debug] ABORT: File ${fileToMoveId} not found or invalid.`); // Log añadido
       return res
         .status(404)
         .json({ message: "Archivo a mover no encontrado o no te pertenece." });
     }
+    console.log(`[moveFile Debug] Current folderId of file: ${fileToMove.folderId}`); // Log añadido usando alias
 
     // Comprobar si ya está en el destino
-    const currentFolderId = fileToMove.folder_id ?? null; // Convertir null de BD a null explícito
+    const currentFolderId = fileToMove.folderId ?? null; // Usar alias camelCase
+    console.log(`[moveFile Debug] Checking if already moved: current=<span class="math-inline">\{currentFolderId\}, destination\=</span>{destinationParentId}`); // Log añadido
     if (currentFolderId === destinationParentId) {
+       console.log(`[moveFile Debug] SUCCESS (No change): Already in destination.`); // Log añadido
       return res.status(200).json({
         message: "El archivo ya está en la ubicación de destino.",
         file: fileToMove,
@@ -571,37 +583,39 @@ exports.moveFile = async (req, res) => {
     }
 
     // Comprobar conflicto de nombre en el destino (archivos activos)
+    console.log(`[moveFile Debug] Checking conflict for name: ${fileToMove.name} in destination folder_id: ${destinationParentId}`); // Log añadido
     const conflict = await File.findOne({
       where: {
-        name: fileToMove.name, // Mismo nombre
-        user_id: userId,
-        folder_id: destinationParentId, // En la carpeta destino
-        id: { [Op.ne]: fileToMoveId }, // Que no sea él mismo
+        name: fileToMove.name,
+        user_id: userId, // Columna DB
+        folder_id: destinationParentId, // Columna DB (null para raíz)
+        id: { [Op.ne]: fileToMoveId },
       },
-      // paranoid: true default
     });
+    // --- Log Conflict ---
+    console.log(`[moveFile Debug] Conflict check result:`, conflict ? `Conflict Found (ID ${conflict.id})` : 'No Conflict');
     if (conflict) {
+      console.warn(`[moveFile Debug] ABORT: Name conflict found with file ID ${conflict.id}.`); // Log añadido
       return res.status(409).json({
-        // 409 Conflict
         message: `Ya existe un archivo activo llamado "${fileToMove.name}" en la ubicación de destino.`,
       });
     }
 
     // Mover actualizando folder_id
-    fileToMove.folder_id = destinationParentId; // Asignar nuevo ID de carpeta (o null para raíz)
+    console.log(`[moveFile Debug] Attempting to set folderId to ${destinationParentId} and save.`); // Log añadido
+    fileToMove.folderId = destinationParentId; // Usar alias camelCase
     await fileToMove.save();
+    console.log(`[moveFile Debug] SUCCESS: Save completed.`); // Log añadido
     res
       .status(200)
       .json({ message: "Archivo movido con éxito.", file: fileToMove });
   } catch (error) {
-    console.error("Error al mover archivo:", error);
-    // Manejo de error de constraint (si falla la comprobación por concurrencia)
+    console.error("[moveFile Debug] ERROR during move operation:", error); // Log añadido
     if (error.name === "SequelizeUniqueConstraintError") {
       return res.status(409).json({
         message: `Conflicto DB: Ya existe un archivo con ese nombre en la ubicación de destino.`,
       });
     }
-    // Error genérico
     res.status(500).json({ message: "Error interno al mover el archivo." });
   }
 };

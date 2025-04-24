@@ -238,6 +238,7 @@ function DashboardPage() {
   const navigate = useNavigate(); // <-- Hook para limpiar estado de ruta
 
   // --- Funciones de Carga y Navegación ---
+  // Dentro de DashboardPage.jsx
   const loadContents = useCallback(
     async (folderIdToLoad) => {
       setSelectedItems(new Set());
@@ -247,12 +248,22 @@ function DashboardPage() {
       setFiles([]);
       try {
         const response = await getFolderContents(folderIdToLoad);
-        // *** NUEVO LOG ***
+
+        // --- LOG AÑADIDO ---
+        // Imprime como string JSON para ver la estructura exacta y los valores null/undefined
+        console.log(
+          `[loadContents API Response for ${folderIdToLoad}] Raw subFolders data:`,
+          JSON.stringify(response.data.subFolders, null, 2)
+        );
+        // --- FIN LOG ---
+
+        // *** NUEVO LOG *** // (Este ya estaba para referencia)
         console.log(
           `[loadContents] Respuesta recibida para folderId ${folderIdToLoad}:`,
           response.data
         );
         // *****************
+
         setFolders(response.data.subFolders || []);
         setFiles(response.data.files || []);
       } catch (err) {
@@ -264,6 +275,7 @@ function DashboardPage() {
         }
         if (err.response?.status === 401 || err.response?.status === 403)
           logout();
+        // Si falla la carga de una subcarpeta, volvemos a la raíz
         if (folderIdToLoad !== "root") {
           setCurrentFolderId("root");
           setPath([{ id: "root", name: "Raíz" }]);
@@ -272,7 +284,7 @@ function DashboardPage() {
         setIsLoading(false); // Terminar carga aquí
       }
     },
-    [logout, showErrorNotifications] // Dependencies remain the same
+    [logout, showErrorNotifications] // Asegúrate que las dependencias sean correctas para tu caso
   );
 
   // Efecto principal para cargar contenido o manejar navegación desde Favoritos
@@ -837,34 +849,58 @@ function DashboardPage() {
 
   const openMoveModal = (type, id, name) => {
     if (isActionLoading) return;
+    console.log("[openMoveModal Debug] Called with:", { type, id, name }); // <-- LOG AÑADIDO
+
     // Determinar la fuente de datos correcta (búsqueda o carpeta actual)
     const currentFoldersSource =
       searchTerm && searchResults ? searchResults.folders || [] : folders;
     const currentFilesSource =
       searchTerm && searchResults ? searchResults.files || [] : files;
+
+    // <-- LOGS AÑADIDOS ANTES DEL FIND -->
+    console.log(
+      "[openMoveModal Debug] Searching in folders:",
+      currentFoldersSource
+    );
+    console.log(
+      "[openMoveModal Debug] Searching in files:",
+      currentFilesSource
+    );
+    // <-- FIN LOGS -->
+
     const itemsSource =
       type === "folder" ? currentFoldersSource : currentFilesSource;
 
     const itemData = itemsSource?.find((i) => i.id === id);
+
+    console.log("[openMoveModal Debug] Found itemData:", itemData); // <-- LOG AÑADIDO
+
     if (!itemData) {
+      // ESTE ES TU ERROR ACTUAL
       if (showErrorNotifications) {
-        toast.error("Error al preparar para mover.");
+        toast.error("Error al preparar para mover."); //
       }
+      console.error("[openMoveModal Debug] Item not found in state for:", {
+        type,
+        id,
+        name,
+      }); // <-- LOG ERROR AÑADIDO
       return;
     }
     setItemsToMove([
+      //
       {
         type,
         id,
         name,
-        folder_id: itemData.folder_id ?? null,
-        parent_folder_id: itemData.parent_folder_id ?? null,
+        folder_id: itemData.folder_id ?? null, //
+        parent_folder_id: itemData.parentFolderId ?? null, //
       },
     ]);
-    setIsMoveModalOpen(true);
-    setShowFabMenu(false);
-    setIsMobileMenuOpen(false);
-    setIsContextMenuVisible(false);
+    setIsMoveModalOpen(true); //
+    setShowFabMenu(false); //
+    setIsMobileMenuOpen(false); //
+    setIsContextMenuVisible(false); //
   };
 
   const handleConfirmMove = async (itemsToProcess, destinationId) => {
@@ -1143,7 +1179,7 @@ function DashboardPage() {
           id,
           name: itemFound.name,
           folder_id: itemFound.folder_id ?? null,
-          parent_folder_id: itemFound.parent_folder_id ?? null,
+          parent_folder_id: itemFound.parentFolderId ?? null,
         });
     });
     if (itemsDataToMove.length > 0) {
@@ -1381,12 +1417,8 @@ function DashboardPage() {
         className={`${styles.listItem} ${
           isSelected ? styles.selectedItem : ""
         }`}
-        onContextMenu={(e) =>
-          !disableActions && openActionMenu(e, item.type, item)
-        }
-        onTouchStart={(e) =>
-          !disableActions && handleTouchStart(e, item.type, item)
-        }
+        onContextMenu={(e) => !disableActions && openActionMenu(e, type, item)}
+        onTouchStart={(e) => !disableActions && handleTouchStart(e, type, item)}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         style={{ WebkitTouchCallout: "none", userSelect: "none" }}
@@ -1468,7 +1500,7 @@ function DashboardPage() {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              !disableActions && openActionMenu(e, item.type, item);
+              !disableActions && openActionMenu(e, type, item);
             }}
             className={`${styles.itemActionButton} ${styles.mobileItemMenuButton}`}
             title="Más acciones"

@@ -338,104 +338,115 @@ exports.moveFolder = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
   try {
-    const { folderId } = req.params;
-    let { destinationFolderId } = req.body;
+    const { folderId } = req.params; // Carpeta a mover (validado int)
+    let { destinationFolderId } = req.body; // Carpeta destino (validado int opcional o null/undefined)
     const userId = req.userId;
+
     const folderToMoveId = parseInt(folderId, 10);
 
-    let destinationParentId = null;
+    // --- Log Inicial ---
+    console.log(`[moveFolder Debug] START - folderToMoveId: ${folderToMoveId}, destinationFolderId: ${destinationFolderId}, userId: ${userId}`);
+
+    // --- Normalizar y Validar Destino ---
+    let destinationParentId = null; // Representa la raíz en la BD
     if (destinationFolderId !== undefined && destinationFolderId !== null) {
       destinationParentId = parseInt(destinationFolderId, 10);
-    }
+      console.log(`[moveFolder Debug] Normalized destinationParentId: ${destinationParentId}`); // Log añadido
 
-    // Validaciones lógicas (auto-movimiento, ciclo, existencia destino)
-    if (folderToMoveId === destinationParentId) {
-      return res
-        .status(400)
-        .json({ message: "No se puede mover una carpeta dentro de sí misma." });
-    }
+      // *** Comprobar si el destino es la propia carpeta que se mueve ***
+      if (folderToMoveId === destinationParentId) {
+          console.warn(`[moveFolder Debug] ABORT: Cannot move folder into itself (ID: ${folderToMoveId}).`);
+          return res.status(400).json({ message: "No puedes mover una carpeta dentro de sí misma." });
+      }
 
-    const folderToMove = await Folder.findOne({
-      where: { id: folderToMoveId, user_id: userId },
-    }); // paranoid: true default
+      // Verificar que la carpeta destino existe y pertenece al usuario
+      const destFolder = await Folder.findOne({ where: { id: destinationParentId, user_id: userId } }); // Usar columna DB 'user_id'
+      // --- Log Dest Folder ---
+      console.log(`[moveFolder Debug] Destination folder check result:`, destFolder ? `Found ID ${destFolder.id}` : 'Not Found');
+      if (!destFolder) {
+          console.warn(`[moveFolder Debug] ABORT: Destination folder ${destinationParentId} not found or invalid.`); // Log añadido
+          return res.status(404).json({ message: "La carpeta de destino no existe o no te pertenece." });
+      }
+
+      // *** Comprobar si el destino es una subcarpeta de la carpeta que se mueve ***
+      // (Esta es la lógica anti-recursividad)
+      let currentParent = destFolder;
+      while (currentParent) {
+          // Usa el alias camelCase 'parentFolderId' definido en models/index.js para el modelo
+          console.log(`[moveFolder Debug] Checking ancestor: currentParent.id=${currentParent.id}, currentParent.parentFolderId=${currentParent.parentFolderId}`);
+          if (currentParent.id === folderToMoveId) {
+               console.warn(`[moveFolder Debug] ABORT: Cannot move folder (ID: ${folderToMoveId}) into its own subfolder (ID: ${destinationParentId}).`);
+               // ESTE ES PROBABLEMENTE EL ERROR QUE VES
+               return res.status(400).json({ message: "No puedes mover una carpeta dentro de sí misma o a una de sus subcarpetas." });
+          }
+          if (!currentParent.parentFolderId) break; // Llegamos a la raíz
+          // ¡OJO! Asume que parentFolderId es el alias correcto en tu modelo Folder
+          currentParent = await Folder.findByPk(currentParent.parentFolderId);
+      }
+      console.log(`[moveFolder Debug] Recursive check passed.`); // Log añadido
+
+    } else {
+       console.log(`[moveFolder Debug] Destination is root (destinationParentId: ${destinationParentId})`); // Log añadido
+    }
+    // --- Fin Validación Destino ---
+
+
+    // --- Encontrar Carpeta a Mover ---
+    const folderToMove = await Folder.findOne({ where: { id: folderToMoveId, user_id: userId } }); // Usar columna DB 'user_id'
+     // --- Log Folder Found ---
+    console.log(`[moveFolder Debug] Folder to move check result:`, folderToMove ? `Found ID ${folderToMove.id}` : 'Not Found');
     if (!folderToMove) {
-      return res
-        .status(404)
-        .json({ message: "Carpeta a mover no encontrada o no te pertenece." });
+         console.warn(`[moveFolder Debug] ABORT: Folder to move ${folderToMoveId} not found or invalid.`); // Log añadido
+        return res.status(404).json({ message: "Carpeta a mover no encontrada o no te pertenece." });
     }
+     // Asegúrate que usas el alias correcto (parentFolderId vs parent_folder_id) del modelo
+    console.log(`[moveFolder Debug] Current parentFolderId of folder: ${folderToMove.parentFolderId}`); // Log añadido
 
-    // Validar ciclo y existencia destino (findOne usa paranoid: true)
-    if (destinationParentId !== null) {
-      let currentAncestorId = destinationParentId;
-      while (currentAncestorId !== null) {
-        if (currentAncestorId === folderToMoveId) {
-          return res
-            .status(400)
-            .json({
-              message:
-                "No se puede mover una carpeta a una de sus subcarpetas.",
-            });
-        }
-        const ancestor = await Folder.findOne({
-          attributes: ["parent_folder_id"],
-          where: { id: currentAncestorId, user_id: userId },
-        }); // paranoid: true default
-        if (!ancestor) break;
-        currentAncestorId = ancestor.parent_folder_id;
-      }
-      const destinationExists = await Folder.count({
-        where: { id: destinationParentId, user_id: userId },
-      }); // paranoid: true default
-      if (destinationExists === 0) {
-        return res
-          .status(404)
-          .json({
-            message: "La carpeta de destino no existe o no te pertenece.",
-          });
-      }
-    }
 
-    // Comprobar si ya está en el destino
-    // Comparar null explícitamente vs undefined/null
-    const currentParentId =
-      folderToMove.parent_folder_id === null
-        ? null
-        : folderToMove.parent_folder_id;
+    // --- Comprobar si ya está en destino ---
+    const currentParentId = folderToMove.parentFolderId ?? null; // Usar alias camelCase
+    console.log(`[moveFolder Debug] Checking if already moved: current=${currentParentId}, destination=${destinationParentId}`); // Log añadido
     if (currentParentId === destinationParentId) {
-      return res
-        .status(200)
-        .json({
-          message: "La carpeta ya está en la ubicación de destino.",
-          folder: folderToMove,
-        });
+        console.log(`[moveFolder Debug] SUCCESS (No change): Already in destination.`); // Log añadido
+        return res.status(200).json({ message: "La carpeta ya está en la ubicación de destino.", folder: folderToMove });
     }
 
-    // Comprobar conflicto de nombre en el destino (findOne usa paranoid: true)
+
+    // --- Comprobar conflicto de nombre en destino ---
+    console.log(`[moveFolder Debug] Checking conflict for name: ${folderToMove.name} in destination parent_folder_id: ${destinationParentId}`); // Log añadido
     const conflict = await Folder.findOne({
-      where: {
-        name: folderToMove.name,
-        user_id: userId,
-        parent_folder_id: destinationParentId,
-        id: { [Op.ne]: folderToMoveId },
-      },
+        where: {
+            name: folderToMove.name,
+            user_id: userId, // Columna DB
+            parent_folder_id: destinationParentId, // Columna DB (null para raíz)
+            id: { [Op.ne]: folderToMoveId }, // Excluirse a sí misma
+        },
+         // paranoid: true es default, busca solo carpetas activas
     });
+    // --- Log Conflict ---
+    console.log(`[moveFolder Debug] Conflict check result:`, conflict ? `Conflict Found (ID ${conflict.id})` : 'No Conflict');
     if (conflict) {
-      return res
-        .status(409)
-        .json({
-          message: `Ya existe una carpeta activa llamada "${folderToMove.name}" en la ubicación de destino.`,
-        });
+        console.warn(`[moveFolder Debug] ABORT: Name conflict found with folder ID ${conflict.id}.`); // Log añadido
+        return res.status(409).json({ message: `Ya existe una carpeta activa llamada "${folderToMove.name}" en la ubicación de destino.` });
     }
 
-    // Mover
-    folderToMove.parent_folder_id = destinationParentId;
-    await folderToMove.save();
 
-    res
-      .status(200)
-      .json({ message: "Carpeta movida con éxito.", folder: folderToMove });
+    // --- Mover ---
+    console.log(`[moveFolder Debug] Attempting to set parentFolderId to ${destinationParentId} and save.`); // Log añadido
+    // Asegúrate que usas el alias correcto (parentFolderId vs parent_folder_id) del modelo
+    folderToMove.parentFolderId = destinationParentId; // Asignar nuevo ID de carpeta padre (o null para raíz)
+    await folderToMove.save();
+    console.log(`[moveFolder Debug] SUCCESS: Save completed.`); // Log añadido
+    res.status(200).json({ message: "Carpeta movida con éxito.", folder: folderToMove });
+
+
   } catch (error) {
-    console.error("Error al mover carpeta:", error);
+    console.error("[moveFolder Debug] ERROR during move operation:", error); // Log añadido
+    // Manejo de error de constraint (si falla la comprobación por concurrencia)
+    if (error.name === "SequelizeUniqueConstraintError") {
+        return res.status(409).json({ message: `Conflicto DB: Ya existe una carpeta con ese nombre en la ubicación de destino.` });
+    }
+    // Error genérico
     res.status(500).json({ message: "Error interno al mover la carpeta." });
   }
 };

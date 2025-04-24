@@ -69,12 +69,23 @@ router.put(
   folderController.renameFolder
 );
 
-// PUT /api/folders/:folderId/move -> Mover
 router.put(
   "/:folderId/move",
-  folderIdParamValidation,
-  moveFolderValidation,
-  folderController.moveFolder
+  folderIdParamValidation, // Middleware de validación 1
+  moveFolderValidation,    // Middleware de validación 2
+
+  // --- AÑADIR ESTE MIDDLEWARE DE LOG ---
+  (req, res, next) => {
+    console.log(`\n--- [folderRoutes LOG] Ruta /:folderId/move alcanzada ---`);
+    console.log(`       folderId Param: ${req.params.folderId}`); // ID de la carpeta a mover
+    console.log(`       req.body (destino):`, req.body);        // Debería contener { destinationFolderId: ID_o_null }
+    console.log(`       userId Autenticado: ${req.userId}`);     // ID del usuario desde middleware 'protect' (asegúrate que 'protect' está antes si es necesario)
+    console.log(`---------------------------------------------------\n`);
+    next(); // MUY IMPORTANTE: Pasar al siguiente manejador (folderController.moveFolder)
+  },
+  // --- FIN MIDDLEWARE DE LOG ---
+
+  folderController.moveFolder // El controlador que debería ejecutarse después del log
 );
 
 // DELETE /api/folders/:folderId -> Eliminar
