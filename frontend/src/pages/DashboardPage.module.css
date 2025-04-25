@@ -1101,6 +1101,64 @@
   border-bottom-color: var(--system-gray-300-dark);
 }
 
+.favoriteButton {
+  background: none !important;
+  border: none !important;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  display: inline-flex; /* Asegurar alineación */
+  align-items: center;
+  justify-content: center;
+  /* Color por defecto (estrella vacía) - sutil */
+  color: var(--system-gray-500);
+  transition: color 0.15s ease, transform 0.1s ease, opacity 0.2s ease;
+  border-radius: 50%; /* Redondeado para hover */
+  width: 30px; /* Tamaño similar a otros botones de acción pequeños */
+  height: 30px;
+  margin-right: 8px; /* Espacio a la derecha en vista lista */
+  flex-shrink: 0; /* Evitar que se encoja */
+  vertical-align: middle; /* Alinear con texto/iconos */
+  -webkit-tap-highlight-color: transparent;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.favoriteButton svg {
+  width: 20px; /* Tamaño del icono estrella */
+  height: 20px;
+  display: block;
+  fill: currentColor; /* Hereda el color del botón */
+}
+
+/* Color cuando es favorito */
+.favoriteButton.isFavorite {
+  color: var(--primary-blue) !important; /* Naranja/Dorado para favorito */
+}
+
+/* Hover sutil */
+.favoriteButton:hover:not(:disabled) {
+  /* Hacer la estrella un poco más oscura/brillante al pasar el ratón */
+  color: var(--text-link); /* Usar azul primario en hover (incluso si no es favorito) */
+  background-color: rgba(0, 122, 255, 0.08); /* Fondo azul muy sutil */
+}
+/* Hover específico si ya es favorito */
+.favoriteButton.isFavorite:hover:not(:disabled) {
+  background-color: rgba(255, 159, 10, 0.1); /* Fondo naranja sutil */
+}
+
+/* Feedback al hacer clic */
+.favoriteButton:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+/* Deshabilitado */
+.favoriteButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: transparent !important;
+}
+
 /* --- Media Queries --- */
 /* En frontend/src/pages/DashboardPage.module.css */
 
@@ -1330,6 +1388,48 @@
   .quotaInfoDesktop {
     display: inline-block;
   }
+
+  .favoriteButton {
+    position: absolute; /* Posición absoluta en la tarjeta */
+    top: 8px; /* Espacio desde arriba */
+    right: 8px; /* Espacio desde la derecha */
+    z-index: 3; /* Encima del contenido, quizá encima del checkbox */
+    margin-right: 0; /* Quitar margen en grid */
+    /* Fondo semi-transparente opcional para mejor visibilidad sobre imágenes */
+    /* background-color: rgba(255, 255, 255, 0.6); */
+    /* backdrop-filter: blur(2px); */
+    width: 32px; /* Ligeramente más grande */
+    height: 32px;
+  }
+
+  /* Dark Mode para el fondo opcional */
+  /* :global(:root[data-theme="dark"]) .favoriteButton {
+    background-color: rgba(0, 0, 0, 0.3);
+  } */
+
+  .favoriteButton svg {
+    width: 18px; /* Icono un poco más pequeño dentro del botón más grande */
+    height: 18px;
+  }
+
+  /* Ajustar hover en grid */
+  .favoriteButton:hover:not(:disabled) {
+     /* Un fondo más notable en grid */
+    background-color: var(--system-gray-100);
+  }
+   .favoriteButton.isFavorite:hover:not(:disabled) {
+     background-color: var(--system-gray-100);
+     color: var(--primary-blue) !important; /* Mantener color estrella */
+   }
+
+   /* Dark Mode hover en grid */
+  :global(:root[data-theme="dark"]) .favoriteButton:hover:not(:disabled) {
+    background-color: var(--system-gray-300-dark);
+  }
+   :global(:root[data-theme="dark"]) .favoriteButton.isFavorite:hover:not(:disabled) {
+     background-color: var(--system-gray-300-dark);
+     color: var(--system-orange-dark); /* Usar naranja oscuro */
+   }
 }
 
 @media (max-width: 700px) {

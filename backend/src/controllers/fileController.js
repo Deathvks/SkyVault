@@ -9,7 +9,7 @@ const { validationResult } = require("express-validator");
 // Define la cuota estándar en bytes (2 GB) - puede importarse de una config si prefieres
 const STANDARD_USER_QUOTA_BYTES = 2 * 1024 * 1024 * 1024;
 
-// --- Subir un archivo ---
+// --- Subir un archivo (Versión con Alias en Create) ---
 exports.uploadFile = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -34,8 +34,6 @@ exports.uploadFile = async (req, res) => {
 
   // --- Verificar si hay archivo (Multer lo pone en req.file) ---
   if (!req.file) {
-    // No debería llegar aquí si Multer está bien configurado y el archivo es requerido,
-    // pero es una doble comprobación.
     return res
       .status(400)
       .json({ message: "Archivo no subido, vacío o tipo no permitido." });
@@ -45,7 +43,8 @@ exports.uploadFile = async (req, res) => {
   const userId = req.userId;
   const userRole = req.userRole; // Obtenido del middleware protect
   const newFileSize = req.file.size;
-  const tempPath = req.file.path; // Ruta donde Multer guardó temporalmente
+  const tempPath = req.file.path; // Ruta completa donde Multer guardó temporalmente (aún necesaria para limpieza)
+  const generatedFilename = req.file.filename; // Nombre relativo generado por Multer (¡NUEVO USO!)
   let originalname = req.file.originalname; // Nombre original
   const mimetype = req.file.mimetype;
   const { folderId: rawFolderId = null } = req.body; // ID de carpeta del cuerpo de la petición
@@ -76,7 +75,7 @@ exports.uploadFile = async (req, res) => {
     if (userRole !== "admin") {
       // Los admins no tienen límite (quota_bytes es null)
       const user = await User.findByPk(userId, {
-        attributes: ["storage_used_bytes", "storage_quota_bytes"],
+        attributes: ["storage_used_bytes", "storage_quota_bytes"], // CAMBIO: Usar 'storage_used' si renombraste columna
       });
 
       if (!user) {
@@ -85,10 +84,8 @@ exports.uploadFile = async (req, res) => {
         return res.status(404).json({ message: "Usuario no encontrado." });
       }
 
-      // Usa la cuota específica del usuario si existe, si no la estándar.
-      // El hook beforeCreate ya debería haberla puesto para usuarios normales.
       const userQuota = user.storage_quota_bytes ?? STANDARD_USER_QUOTA_BYTES;
-      const currentUsage = user.storage_used_bytes;
+      const currentUsage = user.storage_used; // CAMBIO: Usar 'storage_used'
 
       // Comprobar si el nuevo archivo excedería la cuota
       if (currentUsage + newFileSize > userQuota) {
@@ -99,7 +96,6 @@ exports.uploadFile = async (req, res) => {
         );
         await fsPromises.unlink(tempPath); // ¡Importante! Borrar archivo temporal porque excede cuota
         return res.status(413).json({
-          // 413 Payload Too Large es apropiado
           message: `No se puede subir el archivo. Excederías tu cuota de almacenamiento (${(
             userQuota /
             (1024 * 1024 * 1024)
@@ -110,75 +106,92 @@ exports.uploadFile = async (req, res) => {
     // --- FIN VALIDACIÓN DE CUOTA ---
 
     // --- Lógica para validar carpeta padre ---
-    let parentFolderId = null;
+    let parentFolderId = null; // ID numérico para la BD (null si es raíz)
     if (rawFolderId && rawFolderId !== "root" && rawFolderId !== null) {
       parentFolderId = parseInt(rawFolderId, 10);
-      // Verificar existencia y pertenencia de la carpeta padre
       const parentFolder = await Folder.findOne({
-        where: { id: parentFolderId, user_id: userId },
-        attributes: ["id"], // Solo necesitamos saber si existe
+        where: { id: parentFolderId, user_id: userId }, // Columna DB 'user_id'
+        attributes: ["id"],
       });
       if (!parentFolder) {
-        await fsPromises.unlink(tempPath); // Limpiar archivo si la carpeta no existe
+        await fsPromises.unlink(tempPath);
         return res.status(404).json({
           message: "La carpeta de destino no existe o no te pertenece.",
         });
       }
-    } // Si no, parentFolderId se queda como null (raíz)
+    }
     // --- Fin lógica carpeta padre ---
 
     // --- Lógica para comprobar conflicto de nombre ---
-    // Busca un archivo ACTIVO con el mismo nombre en la misma ubicación para este usuario
     const existingFile = await File.findOne({
       where: {
         name: originalname,
-        user_id: userId,
-        folder_id: parentFolderId, // folder_id es null para la raíz
+        user_id: userId, // Columna DB 'user_id'
+        folder_id: parentFolderId, // Columna DB 'folder_id' (null para raíz)
       },
-      // paranoid: true es el default, así que solo busca activos
     });
     if (existingFile) {
-      await fsPromises.unlink(tempPath); // Limpiar archivo si ya existe uno con ese nombre
+      await fsPromises.unlink(tempPath);
       return res.status(409).json({
-        // 409 Conflict
         message: `Ya existe un archivo activo llamado "${originalname}" en esta ubicación.`,
       });
     }
     // --- Fin lógica conflicto ---
 
-    // --- CREAR REGISTRO DE ARCHIVO Y ACTUALIZAR USO (Idealmente en transacción) ---
-    // Para simplificar, no usamos transacción explícita aquí, pero sería ideal
-    // para asegurar que si falla la actualización del usuario, se revierta la creación del archivo.
+    // --- CREAR REGISTRO DE ARCHIVO Y ACTUALIZAR USO ---
 
-    const newFile = await File.create({
+    const dataToCreate = {
       name: originalname,
-      storage_path: tempPath, // Guardar la ruta completa donde Multer dejó el archivo
+      // ***** CAMBIO IMPORTANTE AQUÍ *****
+      storage_path: generatedFilename, // Guardar solo el nombre relativo generado
+      // *********************************
       mime_type: mimetype,
       size: newFileSize,
-      user_id: userId,
-      folder_id: parentFolderId,
-    });
+      userId: userId, // <-- ALIAS de la asociación User-File
+      folderId: parentFolderId, // <-- ALIAS de la asociación Folder-File (puede ser null)
+    };
+
+    console.log(
+      `DEBUG [uploadFile] Objeto pasado a File.create:`,
+      JSON.stringify(dataToCreate)
+    );
+    const newFile = await File.create(dataToCreate); // Sequelize mapeará alias a columnas DB
 
     // Incrementar el uso del usuario DESPUÉS de crear el archivo exitosamente
-    // Volvemos a buscar el usuario para asegurar datos frescos y usamos incremento
+    // Incrementar el uso del usuario DESPUÉS de crear el archivo exitosamente
+    // Incrementar el uso del usuario DESPUÉS de crear el archivo exitosamente
     const userToUpdate = await User.findByPk(userId);
     if (userToUpdate) {
-      // Usar el método de Sequelize para incrementar atómicamente si es posible,
-      // o simplemente sumar y guardar. Sumar y guardar es más simple aquí.
-      userToUpdate.storage_used_bytes =
-        (userToUpdate.storage_used_bytes || 0) + newFileSize;
-      await userToUpdate.save(); // Guardar el nuevo uso
-      console.log(
-        `Uso actualizado para usuario ${userId}: ${userToUpdate.storage_used_bytes} bytes`
-      );
+      try {
+        // Verifica que 'storage_used' sea el nombre correcto de tu campo
+        userToUpdate.storage_used_bytes =
+          (userToUpdate.storage_used_bytes || 0) + newFileSize;
+
+        // --- NUEVOS LOGS ---
+        console.log(`[UploadQuota Debug] Valor ANTES de save() para user ${userId}: ${userToUpdate.storage_used}`);
+        await userToUpdate.save(); // <-- Intenta guardar
+        // Recargar el usuario desde la BD para verificar el valor persistido
+        await userToUpdate.reload();
+        console.log(`[UploadQuota Debug] Valor DESPUÉS de save() y reload() para user ${userId}: ${userToUpdate.storage_used}`);
+        // --- FIN NUEVOS LOGS ---
+
+        // Log original (ahora debería coincidir con el log de arriba si todo va bien)
+        console.log(
+          `Uso actualizado para usuario ${userId}: ${userToUpdate.storage_used} bytes`
+        );
+      } catch (saveError) {
+        console.error(
+          `Error CRÍTICO al guardar actualización de cuota para usuario ${userId} tras subir archivo ${newFile?.id || '?'}:`, // Añadido newFile.id opcional
+          saveError
+        );
+        // Considerar si este error debería causar alguna acción adicional
+      }
     } else {
-      // Caso raro: el usuario fue eliminado entre la comprobación de cuota y aquí
-      console.error(
-        `Usuario ${userId} no encontrado para actualizar uso después de subir archivo ${newFile.id}`
-      );
-      // Considerar loggear esto como un posible problema de inconsistencia.
-      // Podríamos intentar borrar el registro File creado, pero es complejo sin transacción.
+        console.error(
+            `Usuario ${userId} no encontrado para actualizar uso después de subir archivo ${newFile?.id || '?'}` // Añadido newFile.id opcional
+        );
     }
+
     // --- FIN CREACIÓN Y ACTUALIZACIÓN ---
 
     res
@@ -187,17 +200,16 @@ exports.uploadFile = async (req, res) => {
   } catch (error) {
     console.error("Error detallado al subir archivo:", error);
     // Asegurarse de borrar el archivo temporal si aún existe y hubo cualquier error
-    // durante las operaciones de base de datos u otras validaciones.
     try {
-      if (fs.existsSync(tempPath)) {
-        // Comprobar si aún existe antes de borrar
+      // Usar tempPath (la ruta completa original) para la limpieza
+      // Comprobar si aún existe, ya que pudo borrarse por validaciones previas
+      if (tempPath && fs.existsSync(tempPath)) {
         await fsPromises.unlink(tempPath);
         console.log(
           `Archivo temporal ${tempPath} borrado por error durante el procesamiento.`
         );
       }
     } catch (unlinkError) {
-      // Ignorar si ya no existe o hay error al borrar (ej. permisos)
       if (unlinkError.code !== "ENOENT") {
         console.error(
           "Error al intentar borrar archivo temporal tras fallo:",
@@ -208,12 +220,10 @@ exports.uploadFile = async (req, res) => {
 
     // Manejo de errores específicos y genéricos
     if (error.name === "SequelizeUniqueConstraintError") {
-      // Este error puede ocurrir si hay una condición de carrera a pesar de la comprobación
       return res.status(409).json({
         message: `Conflicto: Ya existe un archivo llamado "${originalname}" en esta ubicación.`,
       });
     }
-    // Error genérico
     res
       .status(500)
       .json({ message: "Error interno del servidor al subir el archivo." });
@@ -232,18 +242,32 @@ exports.downloadFile = async (req, res) => {
 
     // Buscar archivo ACTIVO (paranoid: true es default)
     const file = await File.findOne({ where: { id: fileId, user_id: userId } });
-    if (!file) {
+    if (!file || !file.storage_path) {
+      // Añadida comprobación de storage_path
       return res
         .status(404)
-        .json({ message: "Archivo no encontrado o no te pertenece." });
+        .json({
+          message:
+            "Archivo no encontrado, no te pertenece o no tiene ruta de almacenamiento.",
+        });
     }
+
+    // ***** CAMBIO: Construir ruta absoluta desde la relativa *****
+    const absolutePath = path.join(
+      __dirname,
+      "..",
+      "..",
+      "uploads",
+      file.storage_path
+    );
+    // ************************************************************
 
     // Comprobar si el archivo físico existe antes de intentar descargar
     try {
-      await fsPromises.access(file.storage_path);
+      await fsPromises.access(absolutePath); // Usar absolutePath
     } catch (accessError) {
       console.error(
-        `Error de acceso al archivo físico ${file.storage_path} (ID: ${fileId}):`,
+        `Error de acceso al archivo físico ${absolutePath} (ID: ${fileId}):`,
         accessError
       );
       return res
@@ -252,7 +276,8 @@ exports.downloadFile = async (req, res) => {
     }
 
     // Intentar descargar (res.download fuerza Content-Disposition: attachment)
-    res.download(file.storage_path, file.name, (err) => {
+    res.download(absolutePath, file.name, (err) => {
+      // Usar absolutePath
       if (err) {
         // Manejar errores durante el envío (ej. conexión cerrada)
         if (!res.headersSent) {
@@ -295,7 +320,7 @@ exports.deleteFile = async (req, res) => {
         .json({ message: "Archivo no encontrado o no te pertenece." });
     }
 
-    // Solo marcar como borrado en la BD (Sequelize se encarga con paranoid: true)
+    // Solo marcar como borrado en la BD (Sequelize se encarga con paranoid: true en el modelo)
     await file.destroy(); // Esto hace SOFT delete porque paranoid=true en el modelo
 
     res.status(200).json({ message: "Archivo movido a la papelera." }); // Mensaje actualizado
@@ -321,14 +346,23 @@ exports.viewFile = async (req, res) => {
 
     // Validar si existe el registro y si tiene ruta
     if (!file || !file.storage_path) {
+      // Asegurar que storage_path existe
       return res.sendStatus(404); // Not Found
     }
 
-    const absolutePath = file.storage_path; // Asumimos que storage_path es absoluto o relativo a un punto conocido
+    // ***** CAMBIO: Construir ruta absoluta desde la relativa *****
+    const absolutePath = path.join(
+      __dirname,
+      "..",
+      "..",
+      "uploads",
+      file.storage_path
+    );
+    // ************************************************************
 
     // Validar si el archivo físico existe
     try {
-      await fsPromises.access(absolutePath);
+      await fsPromises.access(absolutePath); // Usar absolutePath
     } catch (accessError) {
       console.error(
         `Archivo físico no encontrado o sin permisos en ${absolutePath} (ID: ${fileId})`
@@ -337,22 +371,19 @@ exports.viewFile = async (req, res) => {
     }
 
     // --- Establecer Content-Disposition a 'inline' ---
-    // Sugiere al navegador mostrar el archivo en lugar de descargarlo.
-    // Usamos encodeURIComponent para manejar nombres de archivo con caracteres especiales seguros en headers.
     res.setHeader(
       "Content-Disposition",
-      // Incluir filename* para soporte UTF-8 extendido
       `inline; filename*=UTF-8''${encodeURIComponent(file.name)}`
     );
 
     // Opcional: Establecer Content-Type explícitamente si confías en el mime_type guardado.
-    // sendFile usualmente lo detecta bien, pero esto da más control.
     if (file.mime_type) {
       res.setHeader("Content-Type", file.mime_type);
     }
 
     // Usar res.sendFile para enviar el archivo para visualización/incrustación
     res.sendFile(absolutePath, (err) => {
+      // Usar absolutePath
       if (err) {
         if (!res.headersSent) {
           console.error(
@@ -361,7 +392,6 @@ exports.viewFile = async (req, res) => {
           );
           res.sendStatus(500); // Internal Server Error si falla antes de enviar
         } else {
-          // Si el error ocurre durante la transmisión, solo podemos loguear
           console.error(
             "Error durante transmisión de archivo para visualización:",
             err
@@ -440,16 +470,21 @@ exports.renameFile = async (req, res) => {
         .json({ message: "No se realizaron cambios en el nombre.", file }); // Devolver sin cambios
     }
 
+    // *** CORRECCIÓN AQUÍ: Asegurar que parentFolderId sea null para la raíz ***
+    const parentFolderId = file.folder_id ?? null;
+
     // Comprobar conflicto de nombre en la misma carpeta (archivos activos)
     const conflict = await File.findOne({
       where: {
         name: finalNewName, // Usar el nombre final con extensión
         user_id: userId,
-        folder_id: file.folder_id, // Misma carpeta
+        folder_id: parentFolderId, // <-- Usar la variable corregida
         id: { [Op.ne]: fileId }, // Excluirse a sí mismo
       },
       // paranoid: true es default
     });
+    // *** FIN CORRECCIÓN ***
+
     if (conflict) {
       return res.status(409).json({
         // 409 Conflict
@@ -462,15 +497,17 @@ exports.renameFile = async (req, res) => {
     await file.save();
     res.status(200).json({ message: "Archivo renombrado con éxito.", file });
   } catch (error) {
-    console.error("Error al renombrar archivo:", error);
+    console.error("Error al renombrar archivo:", error); // Aquí es donde ves el error original
     // Manejo de error de constraint único (si la comprobación anterior falla por concurrencia)
     if (error.name === "SequelizeUniqueConstraintError") {
       // Intentar construir el nombre final para el mensaje de error
+      // CORRECCIÓN: Acceder a file.name solo si file existe
+      const originalExt = file ? path.extname(file.name) : "";
       const finalNameAttempt = req.body.newName
         ? path.basename(
             req.body.newName.trim(),
             path.extname(req.body.newName.trim())
-          ) + (path.extname(file?.name) || "") // Usar extensión original si es posible
+          ) + originalExt
         : "desconocido";
       return res.status(409).json({
         message: `Conflicto DB: Ya existe un archivo llamado "${finalNameAttempt}" en esta ubicación.`,
@@ -492,41 +529,53 @@ exports.moveFile = async (req, res) => {
     let { destinationFolderId } = req.body; // Validado int opcional o null/undefined
     const userId = req.userId;
 
-    const fileToMoveId = parseInt(fileId, 10); // Sabemos que es int
+    // --- Log Inicial ---
+    console.log(`[moveFile Debug] START - fileId: ${fileId}, destinationFolderId: ${destinationFolderId}, userId: ${userId}`);
+
+    const fileToMoveId = parseInt(fileId, 10);
 
     // --- Validar y normalizar destinationFolderId ---
     let destinationParentId = null; // Representa la raíz en la BD
-    // Si se proporciona y no es null/undefined (la validación ya aseguró que es numérico > 0 si existe)
     if (destinationFolderId !== undefined && destinationFolderId !== null) {
       destinationParentId = parseInt(destinationFolderId, 10);
+      console.log(`[moveFile Debug] Normalized destinationParentId: ${destinationParentId}`); // Log añadido
 
-      // Verificar que la carpeta destino existe y pertenece al usuario (solo carpetas activas)
+      // Verificar que la carpeta destino existe y pertenece al usuario
       const destFolder = await Folder.findOne({
         where: { id: destinationParentId, user_id: userId },
-        // paranoid: true default
       });
+      // --- Log Dest Folder ---
+      console.log(`[moveFile Debug] Destination folder check result:`, destFolder ? `Found ID ${destFolder.id}` : 'Not Found');
       if (!destFolder) {
+        console.warn(`[moveFile Debug] ABORT: Destination folder ${destinationParentId} not found or invalid.`); // Log añadido
         return res.status(404).json({
           message: "La carpeta de destino no existe o no te pertenece.",
         });
       }
-    } // Si era null o undefined, destinationParentId se queda como null (mover a la raíz)
+    } else {
+       console.log(`[moveFile Debug] Destination is root (destinationParentId: ${destinationParentId})`); // Log añadido
+    }
     // --- Fin Validación Destino ---
 
     // Encontrar archivo a mover (activo)
     const fileToMove = await File.findOne({
       where: { id: fileToMoveId, user_id: userId },
-      // paranoid: true default
     });
+     // --- Log File Found ---
+    console.log(`[moveFile Debug] File to move check result:`, fileToMove ? `Found ID ${fileToMove.id}` : 'Not Found');
     if (!fileToMove) {
+      console.warn(`[moveFile Debug] ABORT: File ${fileToMoveId} not found or invalid.`); // Log añadido
       return res
         .status(404)
         .json({ message: "Archivo a mover no encontrado o no te pertenece." });
     }
+    console.log(`[moveFile Debug] Current folderId of file: ${fileToMove.folderId}`); // Log añadido usando alias
 
     // Comprobar si ya está en el destino
-    const currentFolderId = fileToMove.folder_id ?? null; // Convertir null de BD a null explícito
+    const currentFolderId = fileToMove.folderId ?? null; // Usar alias camelCase
+    console.log(`[moveFile Debug] Checking if already moved: current=<span class="math-inline">\{currentFolderId\}, destination\=</span>{destinationParentId}`); // Log añadido
     if (currentFolderId === destinationParentId) {
+       console.log(`[moveFile Debug] SUCCESS (No change): Already in destination.`); // Log añadido
       return res.status(200).json({
         message: "El archivo ya está en la ubicación de destino.",
         file: fileToMove,
@@ -534,37 +583,39 @@ exports.moveFile = async (req, res) => {
     }
 
     // Comprobar conflicto de nombre en el destino (archivos activos)
+    console.log(`[moveFile Debug] Checking conflict for name: ${fileToMove.name} in destination folder_id: ${destinationParentId}`); // Log añadido
     const conflict = await File.findOne({
       where: {
-        name: fileToMove.name, // Mismo nombre
-        user_id: userId,
-        folder_id: destinationParentId, // En la carpeta destino
-        id: { [Op.ne]: fileToMoveId }, // Que no sea él mismo
+        name: fileToMove.name,
+        user_id: userId, // Columna DB
+        folder_id: destinationParentId, // Columna DB (null para raíz)
+        id: { [Op.ne]: fileToMoveId },
       },
-      // paranoid: true default
     });
+    // --- Log Conflict ---
+    console.log(`[moveFile Debug] Conflict check result:`, conflict ? `Conflict Found (ID ${conflict.id})` : 'No Conflict');
     if (conflict) {
+      console.warn(`[moveFile Debug] ABORT: Name conflict found with file ID ${conflict.id}.`); // Log añadido
       return res.status(409).json({
-        // 409 Conflict
         message: `Ya existe un archivo activo llamado "${fileToMove.name}" en la ubicación de destino.`,
       });
     }
 
     // Mover actualizando folder_id
-    fileToMove.folder_id = destinationParentId; // Asignar nuevo ID de carpeta (o null para raíz)
+    console.log(`[moveFile Debug] Attempting to set folderId to ${destinationParentId} and save.`); // Log añadido
+    fileToMove.folderId = destinationParentId; // Usar alias camelCase
     await fileToMove.save();
+    console.log(`[moveFile Debug] SUCCESS: Save completed.`); // Log añadido
     res
       .status(200)
       .json({ message: "Archivo movido con éxito.", file: fileToMove });
   } catch (error) {
-    console.error("Error al mover archivo:", error);
-    // Manejo de error de constraint (si falla la comprobación por concurrencia)
+    console.error("[moveFile Debug] ERROR during move operation:", error); // Log añadido
     if (error.name === "SequelizeUniqueConstraintError") {
       return res.status(409).json({
         message: `Conflicto DB: Ya existe un archivo con ese nombre en la ubicación de destino.`,
       });
     }
-    // Error genérico
     res.status(500).json({ message: "Error interno al mover el archivo." });
   }
 };

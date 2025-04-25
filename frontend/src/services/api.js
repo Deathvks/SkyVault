@@ -131,6 +131,29 @@ export const bulkMoveItemsToTrash = (items) =>
 export const bulkMoveItems = (items, destinationFolderId) =>
   apiClient.post("/bulk/move", { items, destinationFolderId });
 
+// --- Favoritos ---
+
+/**
+ * Obtiene la lista de favoritos del usuario.
+ * @returns {Promise<axios.AxiosResponse>} La respuesta de Axios con la lista de favoritos.
+ */
+export const getFavorites = () => apiClient.get("/favorites");
+
+/**
+ * Añade un archivo o carpeta a favoritos.
+ * @param {{ fileId?: number, folderId?: number }} data - Objeto con fileId o folderId.
+ * @returns {Promise<axios.AxiosResponse>} La respuesta de Axios.
+ */
+export const addFavorite = (data) => apiClient.post("/favorites", data);
+
+/**
+ * Elimina un archivo o carpeta de favoritos.
+ * @param {{ fileId?: number, folderId?: number }} params - Objeto con fileId o folderId para los query params.
+ * @returns {Promise<axios.AxiosResponse>} La respuesta de Axios.
+ */
+export const removeFavorite = (params) =>
+  apiClient.delete("/favorites", { params });
+
 // --- FIN NUEVA FUNCIÓN API ---
 
 export default apiClient; // Exportar instancia configurada por si se necesita en otro lugar
