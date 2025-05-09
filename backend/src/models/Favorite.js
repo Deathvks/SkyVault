@@ -1,9 +1,9 @@
-// src/models/Favorite.js
+// backend/src/models/Favorite.js
 const { DataTypes } = require("sequelize");
-const { sequelize } = require("../config/database"); // Importa la instancia de sequelize
-const User = require('./User'); // Asegúrate que la ruta es correcta
-const File = require('./File'); // Asegúrate que la ruta es correcta
-const Folder = require('./Folder'); // Asegúrate que la ruta es correcta
+const { sequelize } = require("../config/database");
+const User = require("./User");
+const File = require("./File");
+const Folder = require("./Folder");
 
 const Favorite = sequelize.define(
   "Favorite",
@@ -16,40 +16,50 @@ const Favorite = sequelize.define(
     userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      field: "user_id", // <--- AÑADIDO: Mapeo a la columna de la BD
       references: {
-        model: User, // Referencia al modelo User importado
+        model: User,
         key: "id",
       },
     },
     fileId: {
       type: DataTypes.INTEGER,
       allowNull: true,
+      field: "file_id", // <--- AÑADIDO: Mapeo a la columna de la BD
       references: {
-        model: File, // Referencia al modelo File importado
+        model: File,
         key: "id",
       },
     },
     folderId: {
       type: DataTypes.INTEGER,
       allowNull: true,
+      field: "folder_id", // <--- AÑADIDO: Mapeo a la columna de la BD
       references: {
-        model: Folder, // Referencia al modelo Folder importado
+        model: Folder,
         key: "id",
       },
     },
+    // createdAt y updatedAt son manejados por Sequelize
   },
   {
     tableName: "Favorites",
-    timestamps: true,
+    timestamps: true, // Habilita createdAt y updatedAt
+    // Sequelize usará automáticamente 'created_at' y 'updated_at' como nombres de columna
+    // si no se especifica `underscored: true` o nombres de campo personalizados para ellos.
+    // Si tus columnas se llaman 'createdAt' y 'updatedAt' en la BD, está bien.
+    // Si se llaman 'created_at' y 'updated_at', añade `underscored: true` aquí.
+    // Basado en tu script SQL, se llaman 'createdAt' y 'updatedAt', así que no se necesita `underscored: true`.
+
     indexes: [
-      // Índice único para evitar duplicados exactos
-      { unique: true, fields: ["userId", "fileId"] },
-      { unique: true, fields: ["userId", "folderId"] },
+      { unique: true, fields: ["user_id", "file_id"] }, // Usar nombres de columna de BD para índices
+      { unique: true, fields: ["user_id", "folder_id"] }, // Usar nombres de columna de BD para índices
     ],
     validate: {
       eitherFileOrFolder() {
-        // Valida que solo fileId O folderId tenga valor, pero no ambos ni ninguno
-        if (!((this.fileId === null) ^ (this.folderId === null))) { // XOR check
+        // Esta validación se ejecuta antes de guardar en la BD
+        if (!((this.fileId === null) ^ (this.folderId === null))) {
+          // XOR check
           throw new Error(
             "Favorite must reference either a file or a folder, not both or neither."
           );
@@ -59,14 +69,4 @@ const Favorite = sequelize.define(
   }
 );
 
-// Definición de asociaciones (opcional aquí, pero recomendado)
-// Asegúrate que los modelos referenciados también definen la asociación inversa si es necesario
-Favorite.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });
-Favorite.belongsTo(File, { foreignKey: 'fileId', onDelete: 'CASCADE', constraints: false, // Permite que fileId sea null
-allowNull: true });
-Favorite.belongsTo(Folder, { foreignKey: 'folderId', onDelete: 'CASCADE', constraints: false, // Permite que folderId sea null
-allowNull: true });
-
-
-// Exporta el modelo directamente
 module.exports = Favorite;

@@ -118,7 +118,7 @@ Sigue estos pasos para poner en marcha SkyVault en tu máquina local:
           ```
         * **Ejecuta el siguiente script SQL** para crear las tablas (`Users`, `Folders`, `Files`) con la estructura correcta, incluyendo las columnas de cuota, índices y relaciones:
           ```sql
-          -- Script de Base de Datos para SkyVault (MySQL)
+                    -- Script de Base de Datos para SkyVault (MySQL)
           -- Derivado de los modelos Sequelize. Considera usar migraciones Sequelize.
 
           USE tu_base_de_datos_skyvault; -- Asegúrate de seleccionar tu base de datos
@@ -170,10 +170,27 @@ Sigue estos pasos para poner en marcha SkyVault en tu máquina local:
             CONSTRAINT `Files_ibfk_2` FOREIGN KEY (`folder_id`) REFERENCES `Folders` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+          -- Tabla Favorites
+          CREATE TABLE IF NOT EXISTS `Favorites` (
+            `id` INTEGER NOT NULL auto_increment,
+            `user_id` INTEGER NOT NULL,
+            `file_id` INTEGER NULL,
+            `folder_id` INTEGER NULL,
+            `createdAt` DATETIME NOT NULL,
+            `updatedAt` DATETIME NOT NULL,
+            PRIMARY KEY (`id`),
+            UNIQUE INDEX `Favorites_user_id_file_id_unique` (`user_id`, `file_id`),
+            UNIQUE INDEX `Favorites_user_id_folder_id_unique` (`user_id`, `folder_id`),
+            CONSTRAINT `Favorites_ibfk_user` FOREIGN KEY (`user_id`) REFERENCES `Users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+            CONSTRAINT `Favorites_ibfk_file` FOREIGN KEY (`file_id`) REFERENCES `Files` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+            CONSTRAINT `Favorites_ibfk_folder` FOREIGN KEY (`folder_id`) REFERENCES `Folders` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+            -- La CONSTRAINT CK_Favorite_FileOrFolder CHECK ha sido eliminada.
+            -- Esta lógica se maneja a nivel de aplicación mediante las validaciones del modelo Sequelize.
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
           -- Nota: Los índices únicos incluyen `deletedAt` para permitir nombres duplicados
           -- si uno de los elementos está en la papelera (soft-deleted).
           -- La gestión de estos índices puede variar ligeramente según la configuración exacta de MySQL.
-          ```
         * *Alternativa (si usas migraciones Sequelize):* Ejecuta `npx sequelize-cli db:migrate` (esto requiere que hayas configurado `sequelize-cli` y creado los archivos de migración correspondientes a los modelos).
         * (Si es una base de datos existente) Ejecuta los comandos `ALTER TABLE` necesarios para añadir las columnas de cuota (`storage_quota_bytes`, `storage_used_bytes`) a la tabla `Users` y actualiza las cuotas/uso de usuarios existentes si es necesario.
     * Inicia el servidor backend: `npm run dev` (usa Nodemon para recarga automática) o `npm start` (usa Node directamente). Deberías ver un mensaje indicando que el servidor escucha en el puerto `SERVER_PORT` (ej. 3001) y que la conexión a la BD fue exitosa.

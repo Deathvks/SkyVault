@@ -1,14 +1,11 @@
-// Dentro de backend/src/models/User.js
 const { DataTypes } = require("sequelize");
-const { sequelize } = require("../config/database"); // Importa la instancia de sequelize
+const { sequelize } = require("../config/database");
 
-// Define la cuota estándar en bytes (2 GB)
-const STANDARD_USER_QUOTA_BYTES = 2 * 1024 * 1024 * 1024;
+const STANDARD_USER_QUOTA_BYTES = 2 * 1024 * 1024 * 1024; // 2 GB
 
 const User = sequelize.define(
   "User",
   {
-    // No es necesario definir 'id' explícitamente, Sequelize lo añade por defecto
     username: {
       type: DataTypes.STRING(50),
       allowNull: false,
@@ -19,7 +16,7 @@ const User = sequelize.define(
       allowNull: false,
       unique: true,
       validate: {
-        isEmail: true, // Validación básica de formato email
+        isEmail: true,
       },
     },
     password_hash: {
@@ -27,41 +24,42 @@ const User = sequelize.define(
       allowNull: false,
     },
     role: {
-      type: DataTypes.ENUM("user", "admin"), // Define los roles permitidos
+      type: DataTypes.ENUM("user", "admin"),
       allowNull: false,
-      defaultValue: "user", // Por defecto, todos son 'user'
+      defaultValue: "user",
     },
-    // --- CAMPOS DE CUOTA ---
     storage_quota_bytes: {
-      type: DataTypes.BIGINT.UNSIGNED, // Usar BIGINT UNSIGNED para bytes (gran capacidad, no negativo)
-      allowNull: true, // Permitimos null para representar 'ilimitado' (ej. para admin)
-      // El hook se encarga de poner el valor por defecto para 'user'
+      type: DataTypes.BIGINT.UNSIGNED,
+      allowNull: true,
     },
     storage_used_bytes: {
       type: DataTypes.BIGINT.UNSIGNED,
       allowNull: false,
-      defaultValue: 0, // El uso siempre empieza en 0
+      defaultValue: 0,
     },
-    // ---------------------
-    // Timestamps 'createdAt' y 'updatedAt' son añadidos automáticamente por Sequelize
   },
   {
-    // Opciones adicionales del modelo
-    timestamps: true, // Habilita createdAt y updatedAt
-    tableName: "Users", // Asegura que el nombre de la tabla sea 'Users' (plural)
+    timestamps: true,
+    tableName: "Users",
   }
 );
 
-// Hook para asignar cuota por defecto a usuarios NO admin ANTES de que se creen en la BD.
-// Esto asegura que los nuevos usuarios 'user' tengan su cuota establecida.
 User.beforeCreate(async (user, options) => {
-  // Si el rol es 'user' y no se ha especificado una cuota (es null)
-  if (user.role === "user" && user.storage_quota_bytes === null) {
-    // Asigna la cuota estándar
+  if (
+    user.role === "user" &&
+    (user.storage_quota_bytes === null ||
+      typeof user.storage_quota_bytes === "undefined")
+  ) {
     user.storage_quota_bytes = STANDARD_USER_QUOTA_BYTES;
+    console.log(
+      `[Hook beforeCreate] Asignando cuota estándar de ${STANDARD_USER_QUOTA_BYTES} bytes al usuario '${user.username}' (rol: ${user.role}).`
+    );
+  } else if (user.role === "admin") {
+    user.storage_quota_bytes = null;
+    console.log(
+      `[Hook beforeCreate] Asegurando cuota NULL (ilimitada) para admin '${user.username}'.`
+    );
   }
-  // Si el rol es 'admin', dejamos storage_quota_bytes como null (o el valor que tuviera),
-  // que interpretaremos en nuestra lógica (ej. en fileController) como 'sin límite'.
 });
 
 module.exports = User;
